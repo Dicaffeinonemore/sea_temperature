@@ -10,6 +10,7 @@ import re
 import streamlit as st
 
 from client import fetch_regions
+from locations import DISTRICTS
 
 SPECIES = ["조피볼락 (우럭)", "넙치 (광어)", "참돔", "돌돔", "감성돔", "숭어", "굴", "멍게", "전복", "기타"]
 METHODS = ["가두리", "육상"]
@@ -50,6 +51,7 @@ HERO_ART = """
 def go(page: str):
     if page == "register":
         st.session_state.pop("registration_regions", None)
+        st.session_state.pop("registration_initialized", None)
     st.session_state.page = page
     st.session_state.menu_open = False
 
@@ -74,6 +76,11 @@ def index_of(options: list[str], value: str | None) -> int | None:
 
 def register_page():
     saved = st.session_state.get("farm", {})
+    if not st.session_state.get("registration_initialized"):
+        for field in ("region", "district", "species", "method", "insurance"):
+            st.session_state[f"farm_{field}"] = saved.get(field)
+        st.session_state.farm_district_custom = saved.get("district", "")
+        st.session_state.registration_initialized = True
     st.button("‹ 처음으로", type="tertiary", on_click=go, args=("start",))
     st.markdown('<div class="page-title">내 양식장 등록</div>', unsafe_allow_html=True)
 
@@ -81,23 +88,33 @@ def register_page():
     if "registration_regions" not in st.session_state:
         st.session_state.registration_regions = fetch_regions()
     regions, from_api = st.session_state.registration_regions
-    with st.form("farm_form", border=False):
-        region = st.selectbox("양식 지역", regions, index=index_of(regions, saved.get("region")),
-                              placeholder="지역을 선택하세요")
-        species = st.selectbox("양식 품종", SPECIES, index=index_of(SPECIES, saved.get("species")),
-                               placeholder="품종을 선택하세요")
-        method = st.segmented_control("양식 방식", METHODS, default=saved.get("method"), width="stretch")
-        insurance = st.segmented_control("보험 가입 상태", INSURANCE, default=saved.get("insurance"),
-                                         width="stretch")
-        submitted = st.form_submit_button("등록하기", type="primary", width="stretch")
+    # form 밖의 위젯은 선택 즉시 재실행되어 종속 목록을 갱신할 수 있다.
+    region = st.selectbox("양식 지역", regions, index=None, key="farm_region",
+                          placeholder="지역을 선택하세요", on_change=reset_district)
+    districts = DISTRICTS.get(region, [])
+    if region and not districts:
+        district = st.text_input("읍·면·동", key="farm_district_custom",
+                                 placeholder="읍·면·동 이름을 입력하세요",
+                                 help="아직 선택 목록이 없는 지역입니다. 직접 입력해 주세요.").strip()
+    else:
+        if st.session_state.get("farm_district") not in districts:
+            st.session_state.farm_district = None
+        district = st.selectbox("읍·면·동", districts, index=None, key="farm_district",
+                                placeholder="읍·면·동을 선택하세요" if region else "양식 지역을 먼저 선택하세요",
+                                disabled=not region)
+    species = st.selectbox("양식 품종", SPECIES, index=None, key="farm_species",
+                           placeholder="품종을 선택하세요")
+    method = st.segmented_control("양식 방식", METHODS, key="farm_method", width="stretch")
+    insurance = st.segmented_control("보험 가입 상태", INSURANCE, key="farm_insurance", width="stretch")
+    submitted = st.button("등록하기", type="primary", width="stretch")
 
     if not from_api:
         st.caption("기본 지역 목록으로 바로 등록할 수 있습니다.")
     st.caption("※ 입력한 정보는 맞춤형 정보 제공에만 사용됩니다.")
 
     if submitted:
-        farm = {"region": region, "species": species, "method": method, "insurance": insurance}
-        labels = {"region": "양식 지역", "species": "양식 품종", "method": "양식 방식", "insurance": "보험 가입 상태"}
+        farm = {"region": region, "district": district, "species": species, "method": method, "insurance": insurance}
+        labels = {"region": "양식 지역", "district": "읍·면·동", "species": "양식 품종", "method": "양식 방식", "insurance": "보험 가입 상태"}
         missing = [labels[name] for name, value in farm.items() if not value]
         if missing:
             st.error(f"{', '.join(missing)}을(를) 선택해 주세요.")
@@ -107,14 +124,20 @@ def register_page():
         st.rerun()
 
 
+def reset_district():
+    """상위 지역이 바뀌면 이전 지역의 세부 주소를 지운다."""
+    st.session_state.farm_district = None
+    st.session_state.farm_district_custom = ""
+
+
 def signup_page():
     farm = st.session_state.farm
     st.button("‹ 양식장 정보 수정", type="tertiary", on_click=go, args=("register",))
     st.caption("가입 단계 2 / 2")
     st.markdown('<div class="page-title">가입 정보 입력</div>', unsafe_allow_html=True)
     rows = "".join(
-        f"<dt>{label}</dt><dd>{escape(farm[key])}</dd>"
-        for key, label in (("region", "양식 지역"), ("species", "양식 품종"),
+        f"<dt>{label}</dt><dd>{escape(farm.get(key) or '미선택')}</dd>"
+        for key, label in (("region", "양식 지역"), ("district", "읍·면·동"), ("species", "양식 품종"),
                            ("method", "양식 방식"), ("insurance", "보험 가입"))
     )
     st.markdown(f'<div class="summary"><dl>{rows}</dl></div>', unsafe_allow_html=True)
