@@ -140,4 +140,3 @@ header, footer, #MainMenu, [data-testid="stToolbar"], [data-testid="stDecoration
 """,
     unsafe_allow_html=True,
 )
-
