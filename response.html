@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>대응 요령</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#1f5fd6; --blue-d:#174bb0; --blue-l:#eaf1ff; --blue-ll:#f5f8ff;
+    --green:#16a34a; --green-d:#15803d; --green-l:#e9f8ef; --amber:#b45309; --amber-l:#fff4e0;
+    --red:#dc2626; --red-l:#fdecec;
+    --ink:#111827; --sub:#374151; --mute:#6b7280; --line:#e5e7eb; --bg:#eef2f8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Noto Sans KR',system-ui,sans-serif;background:var(--bg);color:var(--ink);margin:0}
+  .screen{background:#fff;max-width:480px;margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;position:relative;overflow:hidden}
+  /* 햄버거 메뉴 */
+  .dim{position:absolute;inset:0;background:rgba(17,24,39,.35);opacity:0;pointer-events:none;transition:opacity .2s;z-index:5}
+  .menu{position:absolute;top:0;right:0;bottom:0;width:78%;background:#fff;z-index:6;transform:translateX(100%);transition:transform .25s;
+        display:flex;flex-direction:column;padding:56px 14px 20px;box-shadow:-8px 0 24px rgba(17,24,39,.15)}
+  .screen.menu-open .dim{opacity:1;pointer-events:auto}
+  .screen.menu-open .menu{transform:none}
+  .menu-top{display:flex;justify-content:space-between;align-items:center;padding:0 6px 14px;border-bottom:1px solid var(--line);margin-bottom:10px}
+  .menu-top b{font-size:20px;font-weight:800}
+  .menu a{display:flex;align-items:center;gap:14px;padding:15px 12px;border-radius:14px;font-size:18px;font-weight:700;color:var(--ink);text-decoration:none}
+  .menu a .mi{width:42px;height:42px;border-radius:12px;background:#f3f4f6;display:grid;place-items:center;font-size:21px}
+  .menu a.on{background:var(--blue-ll);color:var(--blue)}
+  .menu a.on .mi{background:var(--blue-l)}
+  .menu a.on::after{content:"현재";margin-left:auto;font-size:13px;font-weight:700;background:var(--blue);color:#fff;border-radius:99px;padding:3px 9px}
+  .menu a:focus-visible,.icon-btn:focus-visible{outline:3px solid #93b4f5;outline-offset:2px}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top)) 18px 6px}
+  .top h2{font-size:22px;font-weight:800}
+  .icon-btn{background:none;border:0;font-size:24px;color:var(--ink);cursor:pointer;width:40px;height:40px}
+  .scroll{flex:1;overflow-y:auto;padding:4px 16px 20px}
+  .scroll::-webkit-scrollbar{width:0}
+
+  .cond{background:var(--blue-ll);border:1px solid #d7e3fb;border-radius:12px;padding:12px;font-size:15px;color:var(--sub);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .cond b{color:var(--ink)}
+  .cond a{color:var(--blue);font-weight:700;text-decoration:none;font-size:15px;white-space:nowrap}
+
+  /* 오늘 상황 카드 */
+  .today{border-radius:18px;padding:16px;margin-bottom:18px;border:2px solid var(--green);background:#fff}
+  .today.lv1{border-color:var(--green);background:#f6fdf8}
+  .today.lv2{border-color:#f59e0b;background:#fffaf0}
+  .today.lv3{border-color:var(--red);background:#fff7f7}
+  .today .when{font-size:14.5px;color:var(--mute);font-weight:600}
+  .today .head{display:flex;align-items:center;gap:12px;margin:8px 0 10px}
+  .today .big{font-size:44px;line-height:1}
+  .today h3{font-size:24px;font-weight:800;line-height:1.3}
+  .lv1 h3{color:var(--green-d)} .lv2 h3{color:var(--amber)} .lv3 h3{color:var(--red)}
+  .today .msg{font-size:17px;color:var(--ink);line-height:1.6;font-weight:500}
+  .today .data{display:flex;gap:8px;margin-top:12px}
+  .today .data div{flex:1;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .today .data small{display:block;font-size:14px;color:var(--mute)}
+  .today .data b{font-size:22px;font-weight:800}
+  .today .data b sub{font-size:14px;vertical-align:baseline;font-weight:700;margin-left:2px}
+  .today .also{font-size:15px;color:var(--sub);margin-top:10px;line-height:1.5}
+
+  .sec{font-size:19px;font-weight:800;margin:4px 0 10px}
+
+  /* 할 일 (읽기 전용 번호 목록) */
+  .act{display:flex;gap:14px;align-items:flex-start;padding:15px 14px;border:1px solid var(--line);border-radius:16px;background:#fff;margin-bottom:10px}
+  .act .num{flex:none;width:34px;height:34px;border-radius:50%;background:var(--blue);color:#fff;font-size:18px;font-weight:800;display:grid;place-items:center}
+  .act.urgent{border-color:#f3b4b4;background:#fffafa}
+  .act.urgent .num{background:var(--red)}
+  .act .now{display:inline-block;font-size:13.5px;font-weight:800;border-radius:6px;padding:1px 8px;background:var(--red-l);color:var(--red);margin-bottom:4px}
+  .act b{display:block;font-size:18.5px;line-height:1.4}
+  .act p{font-size:16px;color:var(--sub);line-height:1.55;margin-top:3px}
+
+  .link{display:flex;justify-content:center;align-items:center;gap:4px;margin:4px 0 18px;padding:14px;border-radius:12px;border:1px solid #c9d8f7;
+        color:var(--blue);font-weight:700;font-size:16px;text-decoration:none;background:#fff}
+
+  /* 피해 발생 시 */
+  .card{border:1px solid var(--line);border-radius:16px;padding:16px 14px;margin-bottom:14px;background:#fff}
+  .card h4{font-size:19px;font-weight:800;margin-bottom:12px}
+  .steps{list-style:none;counter-reset:s;display:flex;flex-direction:column;gap:10px}
+  .steps li{counter-increment:s;font-size:16.5px;color:var(--sub);line-height:1.5;display:flex;gap:10px}
+  .steps li::before{content:counter(s);flex:none;width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;font-size:14px;font-weight:800;display:grid;place-items:center;margin-top:1px}
+  .steps li b{color:var(--ink)}
+  .card .go{display:flex;justify-content:center;margin-top:14px;padding:13px;border-radius:12px;background:var(--blue-ll);font-size:16px;font-weight:700;color:var(--blue);text-decoration:none}
+
+  .help{background:var(--blue-ll);border:1px solid #d7e3fb;border-radius:16px;padding:16px 14px;margin-bottom:6px}
+  .help h4{font-size:19px;font-weight:800;margin-bottom:12px}
+  .help a{display:flex;align-items:center;gap:12px;font-size:17.5px;font-weight:800;border-radius:14px;padding:15px 16px;text-decoration:none;background:#fff;color:var(--ink);border:1px solid #c9d8f7;margin-bottom:8px}
+  .help a small{display:block;font-size:14.5px;color:var(--mute);font-weight:500}
+  .help a .call{margin-left:auto;font-size:15px;font-weight:800;color:#fff;background:var(--blue);border-radius:99px;padding:7px 14px;white-space:nowrap}
+  .help a.p{border-color:var(--blue)}
+  .help a:focus-visible,.link:focus-visible,.card .go:focus-visible{outline:3px solid #93b4f5;outline-offset:2px}
+
+  .bd{display:inline-block;font-size:12.5px;font-weight:700;border-radius:6px;padding:2px 7px}
+  .bd.ex{background:#f3f4f6;color:var(--mute)}
+  .tbd{display:inline-block;font-size:12.5px;font-weight:700;background:var(--amber-l);color:var(--amber);border-radius:5px;padding:1px 6px;vertical-align:1px}
+  .ex{font-size:13.5px;color:var(--mute);margin-top:12px;line-height:1.6}
+
+  /* 하단 탭바 */
+  .tabbar{display:flex;gap:4px;border-top:1px solid var(--line);background:#fff;padding:6px 10px calc(10px + env(safe-area-inset-bottom));flex:none}
+  .tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0 6px;border-radius:14px;
+            font-size:14.5px;font-weight:700;color:var(--mute);text-decoration:none}
+  .tabbar a .ti{font-size:25px;line-height:1;filter:grayscale(1);opacity:.55}
+  .tabbar a.on{color:var(--blue);background:var(--blue-ll)}
+  .tabbar a.on .ti{filter:none;opacity:1}
+  .tabbar a:focus-visible{outline:3px solid #93b4f5;outline-offset:2px}
+</style>
+</head>
+<body>
+
+
+<div class="screen">
+  <div class="top">
+    <button class="icon-btn" aria-label="뒤로">‹</button>
+    <h2>대응 요령</h2>
+    <button class="icon-btn" id="menuBtn" aria-label="메뉴" aria-expanded="false" aria-controls="menu">☰</button>
+  </div>
+
+  <div class="dim" id="dim"></div>
+  <nav class="menu" id="menu" aria-label="전체 메뉴" aria-hidden="true">
+    <div class="menu-top"><b>메뉴</b><button class="icon-btn" id="menuClose" aria-label="메뉴 닫기">✕</button></div>
+    <a href="#"><span class="mi">🏠</span>홈</a>
+    <a href="#"><span class="mi">🌡️</span>오늘의 수온</a>
+    <a href="#" class="on" aria-current="page"><span class="mi">📋</span>대응 요령</a>
+    <a href="insurance.html"><span class="mi">🛡️</span>보험 정보</a>
+    <a href="#"><span class="mi">👤</span>내 정보</a>
+  </nav>
+
+  <div class="scroll">
+    <div class="cond">
+      <span><b>통영시</b> · <b>조피볼락(우럭)</b> · 가두리</span>
+      <a href="#">조건 수정</a>
+    </div>
+
+    <div id="today"></div>
+
+    <h3 class="sec" id="todoTitle"></h3>
+    <div id="todo"></div>
+
+    <a class="link" href="#" target="_blank" rel="noopener">공식 대응요령 자세히 보기 ↗</a>
+
+    <div class="card">
+      <h4>🆘 피해가 생겼다면</h4>
+      <ol class="steps">
+        <li><span><b>바로 신고</b>하세요 · 시·군청 해양수산과</span></li>
+        <li><span><b>사진을 찍어</b> 두세요 · 죽은 고기 수, 날짜</span></li>
+        <li><span><b>피해조사</b>를 받으세요 · 시·군청이 나와요</span></li>
+        <li><span>보험 가입자는 <b>수협에 보험금 청구</b></span></li>
+      </ol>
+      <a class="go" href="insurance.html">🛡️ 내 보험 보장 확인하기</a>
+    </div>
+
+    <div class="help">
+      <h4>도움이 필요하신가요?</h4>
+      <a class="p" href="tel:1588-4119">🎧<span>수협 공제상담<small>1588-4119</small></span><span class="call">전화</span></a>
+      <a href="#">🏛️<span>통영시청 해양수산과<small>번호 <span class="tbd">미확정</span></small></span><span class="call">전화</span></a>
+    </div>
+
+    <p class="ex" id="exNote"></p>
+  </div>
+
+  <nav class="tabbar" aria-label="하단 메뉴">
+    <a href="#" class="on" aria-current="page"><span class="ti">📋</span>대응 요령</a>
+    <a href="#"><span class="ti">🏠</span>홈</a>
+    <a href="insurance.html"><span class="ti">🛡️</span>보험 정보</a>
+  </nav>
+</div>
+
+<script>
+/* ===== 오늘 데이터 (예시 · 실시간 수온/특보 API 연결 예정) =====
+   warn: 기관 특보 값 그대로 받기 — 'hot' | 'cold' | 'redtide' | null
+   level: 1 관심(예비주의보) · 2 주의보 · 3 경보                                    */
+const SAMPLES={
+  hot:    {label:'고수온 주의보',warn:'hot',level:2,temp:28.4,diff:+1.8,also:null},
+  hotMax: {label:'고수온 경보',warn:'hot',level:3,temp:29.6,diff:+2.9,also:'적조 관심'},
+  cold:   {label:'저수온 주의보',warn:'cold',level:2,temp:6.8,diff:-2.1,also:null},
+  redtide:{label:'적조 주의보',warn:'redtide',level:2,temp:24.1,diff:+0.4,also:null},
+  normal: {label:'특보 없음',warn:null,level:0,temp:21.3,diff:+0.2,also:null}
+};
+let today=SAMPLES.hot;
+
+const RISK={
+  hot:{ic:'🌡️',name:'고수온'},cold:{ic:'❄️',name:'저수온'},redtide:{ic:'🦠',name:'적조'}
+};
+const LEVELS=['','관심','주의보','경보'];
+const MSG={
+  hot:['바다 수온이 오르기 시작했어요. 미리 준비하세요.','수온이 높아요. 오늘은 산소와 사료부터 챙기세요.','수온이 매우 높아요. 지금 바로 산소를 넣어주세요.'],
+  cold:['바다 수온이 내려가고 있어요. 미리 준비하세요.','수온이 낮아요. 사료를 줄이고 고기를 건드리지 마세요.','수온이 매우 낮아요. 피해가 나면 바로 신고하세요.'],
+  redtide:['근처 바다에 적조 소식이 있어요. 미리 준비하세요.','적조가 생겼어요. 오늘은 먹이를 주지 마세요.','적조가 심해요. 먹이를 멈추고 산소를 넣어주세요.']
+};
+
+/* ===== 할 일 (예시 · 국립수산과학원 공식 대응요령 확인 후 교체) =====
+   min: 이 단계 이상일 때만 보여줌, urgent: 이 단계 이상이면 "지금 바로"             */
+const TODO={
+  hot:[
+    {t:'산소 공급 장비 켜기',s:'액화산소·산소발생기가 잘 돌아가는지 보세요',min:1,urgent:2},
+    {t:'사료 줄이기',s:'고기가 잘 안 먹으면 사료를 멈추세요',min:1,urgent:2},
+    {t:'수온 자주 보기',s:'아침·저녁 하루 두 번 확인하세요',min:1},
+    {t:'고기 상태 살피기',s:'힘없이 떠 있거나 안 먹으면 바로 신고하세요',min:2},
+    {t:'일찍 내다 팔지 수협과 상의',s:'팔 수 있는 크기면 미리 출하를 생각해 보세요',min:3}
+  ],
+  cold:[
+    {t:'사료 줄이기',s:'수온이 낮으면 고기가 소화를 잘 못 해요',min:1,urgent:2},
+    {t:'고기 건드리지 않기',s:'선별·이동은 따뜻해질 때까지 미루세요',min:1,urgent:2},
+    {t:'수온 자주 보기',s:'아침 수온이 가장 낮아요',min:1},
+    {t:'깊은 곳으로 옮길지 상의',s:'한파가 길어지면 월동장 이동을 생각해 보세요',min:2},
+    {t:'고기 상태 살피기',s:'바닥에 가라앉거나 움직임이 둔하면 신고하세요',min:2}
+  ],
+  redtide:[
+    {t:'먹이 주지 않기',s:'먹이를 주면 산소가 더 빨리 줄어요',min:2,urgent:2},
+    {t:'산소 공급 장비 켜기',s:'바로 돌릴 수 있게 미리 점검하세요',min:1,urgent:3},
+    {t:'적조 소식 매일 보기',s:'근처 바다 적조 속보를 확인하세요',min:1},
+    {t:'황토는 시·군청 안내대로',s:'마음대로 뿌리지 말고 방제 일정을 따르세요',min:2},
+    {t:'고기 상태 살피기',s:'숨을 헐떡이거나 떠오르면 바로 신고하세요',min:2}
+  ],
+  normal:[
+    {t:'수온 확인하기',s:'하루 한 번 앱에서 오늘 수온을 보세요'},
+    {t:'산소 장비 미리 점검',s:'고수온·적조 철 전에 고장이 없는지 보세요'},
+    {t:'보험 가입 확인',s:'가입 시기를 놓치지 않게 미리 확인하세요'}
+  ]
+};
+
+const $=s=>document.querySelector(s);
+function fmtDiff(d){return (d>0?'+':'')+d.toFixed(1)+'℃'}
+
+function renderToday(){
+  const w=today.warn, lv=today.level;
+  const r=w?RISK[w]:{ic:'☀️',name:'오늘은'};
+  const title=w?`${r.name} ${LEVELS[lv]}`:'특별한 위험 없음';
+  const msg=w?MSG[w][lv-1]:'오늘은 바다 상태가 좋아요. 평소처럼 관리하세요.';
+  $('#today').innerHTML=`
+    <section class="today lv${w?lv:1}" aria-live="polite">
+      <div class="when">2026년 10월 19일 오전 10시 · 통영 해역 <span class="bd ex">예시</span></div>
+      <div class="head"><span class="big" aria-hidden="true">${r.ic}</span><h3>${title}</h3></div>
+      <p class="msg">${msg}</p>
+      <div class="data">
+        <div><small>지금 수온</small><b>${today.temp.toFixed(1)}<sub>℃</sub></b></div>
+        <div><small>지난주보다</small><b>${fmtDiff(today.diff)}</b></div>
+      </div>
+      ${today.also?`<p class="also">함께 확인: <b>${today.also}</b></p>`:''}
+    </section>`;
+}
+function renderTodo(){
+  const w=today.warn, lv=today.level;
+  const list=w?TODO[w].filter(x=>lv>=(x.min||1)):TODO.normal;
+  $('#todoTitle').textContent=w?'오늘 꼭 할 일':'평소에 챙길 일';
+  $('#todo').innerHTML=list.map((x,i)=>{
+    const urg=w&&x.urgent&&lv>=x.urgent;
+    return `<div class="act ${urg?'urgent':''}">
+      <span class="num">${i+1}</span>
+      <div>${urg?'<span class="now">지금 바로</span>':''}<b>${x.t}</b><p>${x.s}</p></div>
+    </div>`}).join('');
+}
+function render(){
+  renderToday(); renderTodo();
+  $('#exNote').innerHTML='※ 오늘 상황과 할 일은 화면 구성용 예시입니다. 실제로는 그날 수온·특보 정보에 따라 자동으로 바뀌며, 할 일 내용은 국립수산과학원 공식 대응요령 확인 후 교체 예정입니다. 단계 기준 수온 <span class="tbd">미확정</span>';
+}
+
+
+function setMenu(open){
+  $('.screen').classList.toggle('menu-open',open);
+  $('#menuBtn').setAttribute('aria-expanded',open);
+  $('#menu').setAttribute('aria-hidden',!open);
+}
+$('#menuBtn').onclick=()=>setMenu(true);
+$('#menuClose').onclick=()=>setMenu(false);
+$('#dim').onclick=()=>setMenu(false);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')setMenu(false)});
+render();
+</script>
+</body>
+</html>
