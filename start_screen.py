@@ -16,13 +16,18 @@ SUBTITLE = "양식어가 든든한 파트너"
 
 # 배경 사진: 파일 경로를 넣으면 사진으로, 비워 두면("") 그라데이션으로 표시돼요.
 # 예) BG_IMAGE = "assets/start_bg.jpg"  (start_screen.py 기준 상대 경로)
-BG_IMAGE = ""
+BG_IMAGE = "assets/start_bg.jpg"
 
 # 글씨 크기
 TITLE_SIZE = "44px"
 SUBTITLE_SIZE = "22px"
 
-# 색상
+# 색상 - 사진 배경일 때
+PHOTO_TITLE_COLOR = "#FFFFFF"     # 제목 (흰색)
+PHOTO_SUBTITLE_COLOR = "#E3EAF2"  # 부제목 (밝은 회색)
+PHOTO_OVERLAY = 0.55              # 위쪽 어두운 막 진하기 (0~1, 클수록 글씨가 잘 보임)
+
+# 색상 - 사진이 없을 때(그라데이션 배경)
 TITLE_COLOR = "#0B2E5C"      # 제목 (진한 남색)
 SUBTITLE_COLOR = "#4A5A6E"   # 부제목 (회색)
 BG_GRADIENT = (
@@ -35,20 +40,25 @@ PAGE_BG = "#DDE3EA"          # PC에서 폰 화면 바깥 배경색
 SCREEN_MAX_WIDTH = "430px"
 # ============================================================
 
+BG_PATH = Path(__file__).parent / BG_IMAGE if BG_IMAGE else None
+USE_PHOTO = bool(BG_PATH and BG_PATH.exists())
+if USE_PHOTO:
+    TITLE_COLOR, SUBTITLE_COLOR = PHOTO_TITLE_COLOR, PHOTO_SUBTITLE_COLOR
+TEXT_SHADOW = "0 2px 8px rgba(0,0,0,0.35)" if USE_PHOTO else "none"
+
 
 def background_css() -> str:
     """사진 파일이 있으면 사진, 없으면 그라데이션을 배경으로 써요."""
-    if BG_IMAGE:
-        path = Path(__file__).parent / BG_IMAGE
-        if path.exists():
-            ext = path.suffix.lower().lstrip(".").replace("jpg", "jpeg")
-            data = base64.b64encode(path.read_bytes()).decode()
-            # 위쪽은 글씨가 잘 보이게 밝은 막을 살짝 덮어요.
-            return (
-                "linear-gradient(180deg, rgba(255,255,255,0.85) 0%,"
-                " rgba(255,255,255,0.4) 35%, rgba(255,255,255,0) 60%),"
-                f" url('data:image/{ext};base64,{data}') center / cover no-repeat"
-            )
+    if USE_PHOTO:
+        ext = BG_PATH.suffix.lower().lstrip(".").replace("jpg", "jpeg")
+        data = base64.b64encode(BG_PATH.read_bytes()).decode()
+        # 위쪽에 어두운 막을 덮어 흰 글씨가 하늘 위에서도 잘 보이게 해요.
+        o = PHOTO_OVERLAY
+        return (
+            f"linear-gradient(180deg, rgba(5,25,50,{o}) 0%,"
+            f" rgba(5,25,50,{o * 0.6:.2f}) 30%, rgba(5,25,50,0) 50%),"
+            f" url('data:image/{ext};base64,{data}') center / cover no-repeat"
+        )
     return BG_GRADIENT
 
 
@@ -88,6 +98,7 @@ header, footer, #MainMenu, [data-testid="stToolbar"], [data-testid="stDecoration
     margin: 0 !important;
     padding: 0 !important;
     font-family: inherit !important;
+    text-shadow: {TEXT_SHADOW};
 }}
 .start-subtitle {{
     color: {SUBTITLE_COLOR} !important;
@@ -95,6 +106,7 @@ header, footer, #MainMenu, [data-testid="stToolbar"], [data-testid="stDecoration
     font-weight: 500 !important;
     margin: 20px 0 0 !important;
     font-family: inherit !important;
+    text-shadow: {TEXT_SHADOW};
 }}
 
 /* 바다 물결 장식 (사진을 넣으면 숨겨져요) */
@@ -103,7 +115,7 @@ header, footer, #MainMenu, [data-testid="stToolbar"], [data-testid="stDecoration
     left: 0; right: 0; bottom: 0;
     width: 100%;
     height: 45%;
-    display: {"none" if BG_IMAGE else "block"};
+    display: {"none" if USE_PHOTO else "block"};
 }}
 </style>
 
@@ -128,3 +140,4 @@ header, footer, #MainMenu, [data-testid="stToolbar"], [data-testid="stDecoration
 """,
     unsafe_allow_html=True,
 )
+
