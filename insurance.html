@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>보험 정보 비교</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#1f5fd6; --blue-d:#174bb0; --blue-l:#eaf1ff; --blue-ll:#f5f8ff;
+    --green:#16a34a; --green-d:#15803d; --green-l:#e9f8ef; --amber:#b45309; --amber-l:#fff4e0;
+    --ink:#111827; --sub:#374151; --mute:#6b7280; --line:#e5e7eb; --bg:#eef2f8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Noto Sans KR',system-ui,sans-serif;background:var(--bg);color:var(--ink);margin:0}
+  .screen{background:#fff;max-width:480px;margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;position:relative;overflow:hidden}
+  /* 햄버거 메뉴 */
+  .dim{position:absolute;inset:0;background:rgba(17,24,39,.35);opacity:0;pointer-events:none;transition:opacity .2s;z-index:5}
+  .menu{position:absolute;top:0;right:0;bottom:0;width:78%;background:#fff;z-index:6;transform:translateX(100%);transition:transform .25s;
+        display:flex;flex-direction:column;padding:56px 14px 20px;box-shadow:-8px 0 24px rgba(17,24,39,.15)}
+  .screen.menu-open .dim{opacity:1;pointer-events:auto}
+  .screen.menu-open .menu{transform:none}
+  .menu-top{display:flex;justify-content:space-between;align-items:center;padding:0 6px 14px;border-bottom:1px solid var(--line);margin-bottom:10px}
+  .menu-top b{font-size:20px;font-weight:800}
+  .menu a{display:flex;align-items:center;gap:14px;padding:15px 12px;border-radius:14px;font-size:18px;font-weight:700;color:var(--ink);text-decoration:none}
+  .menu a .mi{width:42px;height:42px;border-radius:12px;background:#f3f4f6;display:grid;place-items:center;font-size:21px}
+  .menu a.on{background:var(--blue-ll);color:var(--blue)}
+  .menu a.on .mi{background:var(--blue-l)}
+  .menu a.on::after{content:"현재";margin-left:auto;font-size:13px;font-weight:700;background:var(--blue);color:#fff;border-radius:99px;padding:3px 9px}
+  .menu a:focus-visible,.icon-btn:focus-visible{outline:3px solid #93b4f5;outline-offset:2px}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top)) 18px 6px}
+  .top h2{font-size:22px;font-weight:800}
+  .icon-btn{background:none;border:0;font-size:24px;color:var(--ink);cursor:pointer;width:40px;height:40px}
+  .scroll{flex:1;overflow-y:auto;padding:4px 16px 20px}
+  .scroll::-webkit-scrollbar{width:0}
+
+
+  .tabs{display:flex;gap:8px;margin:0 0 14px}
+  .tab{flex:1;padding:12px 0;border-radius:12px;border:1px solid var(--line);background:#fff;font:inherit;font-size:16.5px;color:var(--mute);font-weight:600;cursor:pointer}
+  .tab.on{border-color:var(--blue);color:var(--blue);background:var(--blue-ll);font-weight:800}
+
+  .cats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+  .cat{border:1px solid var(--line);background:#fff;border-radius:14px;padding:12px 2px 10px;cursor:pointer;font:inherit;
+       display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--sub);transition:.15s}
+  .cat .ic{font-size:26px;line-height:1}
+  .cat span{font-size:16px;font-weight:700;white-space:nowrap}
+  .cat.on{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 4px 12px rgba(31,95,214,.28)}
+  .cat:focus-visible,.tab:focus-visible,.acc-h:focus-visible,.btn:focus-visible,.toggle:focus-visible{outline:3px solid #93b4f5;outline-offset:2px}
+
+  .cond{background:var(--blue-ll);border:1px solid #d7e3fb;border-radius:12px;padding:12px;font-size:15px;color:var(--sub);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .cond b{color:var(--ink)}
+  .cond a{color:var(--blue);font-weight:700;text-decoration:none;font-size:15px;white-space:nowrap}
+
+  .bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .bar b{font-size:17.5px} .bar b em{font-style:normal;color:var(--blue)}
+  .toggle{font:inherit;font-size:14.5px;border:1px solid var(--line);background:#fff;border-radius:99px;padding:7px 13px;color:var(--sub);cursor:pointer;font-weight:600}
+  .toggle.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  /* 드롭다운 블록 (보험·지원제도 공통) */
+  .acc{border:1px solid var(--line);border-radius:16px;margin-bottom:10px;background:#fff;overflow:hidden;transition:border-color .15s}
+  .acc.mine{border-color:#b9cdf5}
+  .acc.open{border:2px solid var(--blue);box-shadow:0 6px 18px rgba(31,95,214,.12)}
+  .acc.sup.open{border-color:var(--green);box-shadow:0 6px 18px rgba(22,163,74,.12)}
+  .acc-h{width:100%;display:flex;align-items:center;gap:12px;padding:14px 12px;background:none;border:0;font:inherit;text-align:left;cursor:pointer;color:inherit}
+  .acc-ic{width:46px;height:46px;border-radius:13px;background:var(--blue-l);display:grid;place-items:center;font-size:24px;flex:none}
+  .sup .acc-ic{background:var(--green-l)}
+  .acc-t{flex:1;min-width:0}
+  .acc-t b{display:block;font-size:17px;line-height:1.4}
+  .acc-t small{font-size:14px;color:var(--mute)}
+  .badges{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px}
+  .bd{display:inline-block;font-size:12.5px;font-weight:700;border-radius:6px;padding:2px 7px}
+  .bd.mine{background:var(--blue);color:#fff}
+  .bd.ok{background:var(--green-l);color:var(--green-d)}
+  .bd.ex{background:#f3f4f6;color:var(--mute)}
+  .bd.tbd{background:var(--amber-l);color:var(--amber)}
+  .chev{width:30px;height:30px;border-radius:50%;background:#f3f4f6;display:grid;place-items:center;flex:none;transition:transform .2s}
+  .chev::before{content:"";width:8px;height:8px;border-right:2px solid var(--sub);border-bottom:2px solid var(--sub);transform:translateY(-2px) rotate(45deg)}
+  .acc.open .chev{transform:rotate(180deg);background:var(--blue-l)}
+  .acc-b{display:none;padding:0 14px 14px}
+  .acc.open .acc-b{display:block}
+
+  .hit{display:flex;gap:8px;align-items:flex-start;background:#fff7d6;border-radius:12px;padding:11px 12px;font-size:15px;line-height:1.5;margin-bottom:10px;color:#713f12}
+  .hit b{color:#713f12}
+  .hit.no{background:#f3f4f6;color:var(--sub)} .hit.no b{color:var(--ink)}
+  .ben{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+  .ben:first-of-type{border-top:0}
+  .ben .bi{width:34px;height:34px;border-radius:9px;background:var(--green-l);display:grid;place-items:center;font-size:17px;flex:none}
+  .ben h5{font-size:16px;font-weight:800;margin-bottom:4px}
+  .ben p{font-size:15px;color:var(--sub);line-height:1.6}
+  .ben p+p{margin-top:4px}
+  .ben .sm{font-size:14px;color:var(--mute)}
+  .tbd{display:inline-block;font-size:12.5px;font-weight:700;background:var(--amber-l);color:var(--amber);border-radius:5px;padding:1px 6px;vertical-align:1px}
+  .chips{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+  .chip{display:flex;justify-content:space-between;align-items:center;font-size:15px;padding:7px 10px;border-radius:10px;background:#f6f7f9;color:var(--sub)}
+  .chip i{font-style:normal;font-size:13.5px;font-weight:700;padding:2px 8px;border-radius:99px}
+  .chip i.base{background:var(--green-l);color:var(--green-d)}
+  .chip i.opt{background:var(--blue-l);color:var(--blue)}
+  .chip i.excl{background:var(--amber-l);color:var(--amber)}
+  .chip i.none{background:#eceef1;color:var(--mute)}
+  .chip.on{background:#fde68a;color:#713f12;font-weight:700}
+  .docs{display:flex;gap:6px;margin-top:6px}
+  .doc{flex:1;font-size:14px;text-align:center;border:1px solid var(--line);border-radius:9px;padding:8px 2px;color:var(--sub)}
+  .doc::before{content:"PDF ";color:#dc2626;font-weight:800;font-size:12px}
+  .acc-cta{display:flex;gap:6px;margin-top:12px}
+  .acc-cta a{flex:1;text-align:center;font-size:15.5px;font-weight:700;border-radius:12px;padding:13px 4px;text-decoration:none}
+  .acc-cta .p{background:var(--blue);color:#fff}
+  .acc-cta .s{background:#fff;color:var(--blue);border:1px solid #c9d8f7}
+  .sup .acc-cta .p{background:var(--green)}
+  .sup .acc-cta .s{color:var(--green-d);border-color:#bfe5cc}
+  .steps{list-style:none;counter-reset:s;display:flex;flex-direction:column;gap:6px;margin-top:4px}
+  .steps li{counter-increment:s;font-size:15px;color:var(--sub);line-height:1.5;display:flex;gap:8px}
+  .steps li::before{content:counter(s);flex:none;width:22px;height:22px;border-radius:50%;background:var(--green);color:#fff;font-size:13px;font-weight:800;display:grid;place-items:center;margin-top:1px}
+
+  .ex{font-size:13.5px;color:var(--mute);margin-top:8px;line-height:1.6}
+  .btn{display:flex;width:100%;justify-content:center;align-items:center;gap:6px;border-radius:14px;padding:15px;font:inherit;font-size:17px;font-weight:800;cursor:pointer;text-decoration:none;border:0}
+  .btn.pri{background:var(--ink);color:#fff;margin-top:10px}
+  .foot{font-size:13px;color:var(--mute);margin-top:12px;line-height:1.6}
+  .empty{font-size:15px;color:var(--mute);padding:24px 0;text-align:center}
+
+  /* 하단 탭바 */
+  .tabbar{display:flex;gap:4px;border-top:1px solid var(--line);background:#fff;padding:6px 10px calc(10px + env(safe-area-inset-bottom));flex:none}
+  .tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0 6px;border-radius:14px;
+            font-size:14.5px;font-weight:700;color:var(--mute);text-decoration:none}
+  .tabbar a .ti{font-size:25px;line-height:1;filter:grayscale(1);opacity:.55}
+  .tabbar a.on{color:var(--blue);background:var(--blue-ll)}
+  .tabbar a.on .ti{filter:none;opacity:1}
+  .tabbar a:focus-visible{outline:3px solid #93b4f5;outline-offset:2px}
+</style>
+</head>
+<body>
+
+
+<div class="screen">
+  <div class="top">
+    <button class="icon-btn" aria-label="뒤로">‹</button>
+    <h2>보험 정보 비교</h2>
+    <button class="icon-btn" id="menuBtn" aria-label="메뉴" aria-expanded="false" aria-controls="menu">☰</button>
+  </div>
+
+  <div class="dim" id="dim"></div>
+  <nav class="menu" id="menu" aria-label="전체 메뉴" aria-hidden="true">
+    <div class="menu-top"><b>메뉴</b><button class="icon-btn" id="menuClose" aria-label="메뉴 닫기">✕</button></div>
+    <a href="#"><span class="mi">🏠</span>홈</a>
+    <a href="#"><span class="mi">🌡️</span>오늘의 수온</a>
+    <a href="#"><span class="mi">📋</span>대응 요령</a>
+    <a href="#" class="on" aria-current="page"><span class="mi">🛡️</span>보험 정보</a>
+    <a href="#"><span class="mi">👤</span>내 정보</a>
+  </nav>
+
+  <div class="scroll">
+    <div class="tabs" role="tablist">
+      <button class="tab on" role="tab" aria-selected="true" data-tab="ins">내 조건에 맞는 보험</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="sup">지원제도</button>
+    </div>
+
+    <div class="cats" id="cats"></div>
+
+    <div class="cond">
+      <span><b>통영시</b> · <b>조피볼락(우럭)</b> · 가두리 · 미가입</span>
+      <a href="#">조건 수정</a>
+    </div>
+
+    <div class="bar">
+      <b id="cnt"></b>
+      <button class="toggle" id="mineOnly" aria-pressed="false">내 품종만</button>
+    </div>
+
+    <div id="list"></div>
+
+    <p class="ex" id="exNote"></p>
+    <a class="btn pri" href="tel:1588-4119">🎧 수협 공제상담 1588-4119</a>
+    <p class="foot" id="foot"></p>
+  </div>
+
+  <nav class="tabbar" aria-label="하단 메뉴">
+    <a href="#"><span class="ti">📋</span>대응 요령</a>
+    <a href="#"><span class="ti">🏠</span>홈</a>
+    <a href="#" class="on" aria-current="page"><span class="ti">🛡️</span>보험 정보</a>
+  </nav>
+</div>
+
+<script>
+const SUHYUP_URL='https://www.suhyup-bank.com/ib20/mnu/PBM01315';
+const CATS=[
+  {id:'all',ic:'📋',label:'전체'},
+  {id:'hot',ic:'🌡️',label:'고수온'},
+  {id:'cold',ic:'❄️',label:'저수온'},
+  {id:'redtide',ic:'🦠',label:'적조'}
+];
+const RISK3=['hot','cold','redtide'];
+// 보장 방식 표시
+const COV={
+  base:{t:'기본 보장',cls:'base'},
+  opt:{t:'특약 가입 시',cls:'opt'},
+  excl:{t:'기본 보장 · 빼기 특약 있음',cls:'excl'},
+  none:{t:'보장 안 함',cls:'none'}
+};
+const JOINT='지자체 또는 합동피해조사반이 직접 원인으로 인정한 경우에 한함';
+const DEDUCT_STD='표준형 Ⅰ형: 보험금 × 자기부담비율 (최저 보험가입금액의 1% 또는 2%)<br>표준형 Ⅱ형: 가입금액 × 자기부담비율, 보험기간 중 보험금 합계가 이를 넘는 부분만 지급';
+
+/* ===== 약관 확인 상품 5개 (2026-05-13 판매개시 약관·사업방법서·상품요약서 기준) ===== */
+const VERIFIED=[
+ {name:'해상가두리어류 양식수산물재해보험',group:'fish',start:'2026-05-13',mine:true,
+  cov:{hot:'opt',cold:'opt',redtide:'excl'},
+  covNote:{hot:'고수온원인 특약(선택) · '+JOINT,cold:'저수온원인 특약(선택) · '+JOINT,redtide:'주계약 보장 · 적조 부담보 특약에 가입하면 제외'},
+  other:'태풍 · 해일 · 풍랑 (기본) / 이상수질 · 화재 (특약)',
+  pay:'보험가입금액 한도에서 손해액 전액. 가입금액이 보험가액보다 적으면 손해액 × (가입금액 ÷ 보험가액)',
+  subsidy:'정책보험으로 계약자 부담 보험료의 <b>일부를 국가가 보조</b>',subsidyTbd:true,
+  target:'어류 등 양식업 면허 또는 복합양식업 면허(행사계약 포함) 보유자',
+  targetSub:'대상 어종: 조피볼락, 볼락, 참돔, 돌돔, 감성돔, 점농어, 말쥐치, 참쥐치, 가숭어, 능성어, 방어 (어종별 따로 가입)',
+  deduct:DEDUCT_STD+'<br>보급형: 자기부담금 최저한도 없음',
+  period:'보험기간 1년(참쥐치·방어는 별도) · 가입 1~5월, 10~12월'},
+ {name:'굴 양식수산물재해보험',group:'shell',start:'2026-05-13',
+  cov:{hot:'opt',cold:'opt',redtide:'base'},
+  covNote:{hot:'이상수온원인 특약(선택) · '+JOINT,cold:'이상수온원인 특약(선택, 냉수대 포함) · '+JOINT,redtide:'주계약 보장'},
+  other:'태풍 · 해일 · 풍랑 (기본) / 용존산소 · 염분·영양염류 (특약) / 시설물 (고정 특약)',
+  pay:'수산물: 가입금액 한도에서 손해액 전액(부족 시 비례 보상). 시설물: 가입금액이 보험가액의 80% 이상이면 전액',
+  payExtra:'본수하 후 90일 안에 피해율 60% 이상이면 <b>양식불능보험금</b> 신청 가능 (자기부담금 차감 없음)',
+  subsidy:'계약자 부담 보험료의 <b>50%를 국가가 보조</b>',subsidyTbd:false,
+  target:'패류 양식업 면허 또는 복합양식업 면허(행사계약 포함) 보유자',
+  targetSub:'연승수하식 양식굴 (월하굴 제외)',
+  deduct:DEDUCT_STD+'<br>시설물: 매 사고당 자기부담금, 최저 50만원',
+  period:'가입 11월~익년 9월 · 보험기간은 가입월에 따라 다름'},
+ {name:'멍게 양식수산물재해보험',group:'shell',start:'2026-05-13',
+  cov:{hot:'base',cold:'base',redtide:'base'},
+  covNote:{hot:'이상수온 주계약 보장 · '+JOINT,cold:'이상수온(냉수대 포함) 주계약 보장 · '+JOINT,redtide:'주계약 보장'},
+  other:'태풍 · 해일 · 풍랑 · 용존산소 · 영양염류 · 염분 (기본) / 시설물 (고정 특약) · 물렁증은 보장 안 함',
+  pay:'수산물: 가입금액 한도에서 손해액 전액(부족 시 비례 보상). 시설물: 가입금액이 보험가액의 80% 이상이면 전액',
+  subsidy:'정책보험으로 계약자 부담 보험료의 <b>일부를 국가가 보조</b>',subsidyTbd:true,
+  target:'어류 등 양식업 면허 또는 복합양식업 면허(행사계약 포함) 보유자',
+  targetSub:'연승수하식 양식멍게 (돌멍게·붉은멍게 제외)',
+  deduct:DEDUCT_STD+'<br>시설물: 매 사고당 자기부담금, 최저 50만원',
+  period:'보험기간 1년 · 가입 4~10월'},
+ {name:'오만둥이 양식수산물재해보험',group:'shell',start:'2026-05-13',
+  cov:{hot:'excl',cold:'excl',redtide:'base'},
+  covNote:{hot:'이상수온 주계약 보장 · 이상수온 부담보 특약에 가입하면 제외 · '+JOINT,cold:'이상수온 주계약 보장 · 부담보 특약 가입 시 제외',redtide:'주계약 보장'},
+  other:'태풍 · 해일 · 풍랑 · 영양염류 · 염분 · 용존산소 (기본) / 시설물 (고정 특약)',
+  pay:'수산물: 가입금액 한도에서 손해액 전액(부족 시 비례 보상). 시설물: 가입금액이 보험가액의 80% 이상이면 전액',
+  subsidy:'정책보험으로 계약자 부담 보험료의 <b>일부를 국가가 보조</b>',subsidyTbd:true,
+  target:'어류 등 양식업 면허(행사계약 포함) 또는 복합양식업 면허 보유자',
+  targetSub:'연승수하식 양식오만둥이',
+  deduct:DEDUCT_STD+'<br>시설물: 매 사고당 자기부담금, 최저 50만원',
+  period:'시설 설치 41일째부터 12월 말(전기산) 또는 4월 말(후기산 포함) · 가입 7~11월'},
+ {name:'육상수조식전복 양식수산물재해보험',group:'shell',start:'2026-05-13',
+  cov:{hot:'opt',cold:'base',redtide:'base'},
+  covNote:{hot:'고수온원인 특약(선택) · '+JOINT,cold:'주계약 보장 · '+JOINT,redtide:'주계약 보장'},
+  other:'태풍(강풍) · 해일 · 호우 · 홍수 · 대설 · 한파 (기본) / 전기장치 · 이상수질 · 화재 (특약)',
+  pay:'보험가입금액 한도에서 손해액 전액. 가입금액이 보험가액보다 적으면 손해액 × (가입금액 ÷ 보험가액)',
+  subsidy:'정책보험으로 계약자 부담 보험료의 <b>일부를 국가가 보조</b>',subsidyTbd:true,
+  target:'육상양식업 허가(신고필증 포함) 보유자',
+  targetSub:'참전복(북방전복), 각장 3cm 이상 또는 무게 5g 이상',
+  deduct:DEDUCT_STD,
+  period:'보험기간 1년 · 가입 1~5월, 10~12월'}
+];
+
+/* ===== 나머지 상품: 화면 구성용 예시 (약관 확인 후 교체) ===== */
+const GROUP={
+  fish:{label:'어류',ic:'🐟',risks:['hot','cold','redtide'],
+        pay:'재해로 폐사한 양식 어류의 수량 × 가입 단가 기준으로 보상',target:'해당 품종을 양식하는 어업인(면허·허가 어장)'},
+  shell:{label:'패류·피낭류',ic:'🐚',risks:['hot','cold','redtide'],
+        pay:'재해로 폐사·유실된 양식물의 피해 수량 기준으로 보상',target:'해당 품종을 양식하는 어업인(면허 어장)'},
+  seaweed:{label:'해조류',ic:'🌿',risks:['hot'],
+        pay:'재해로 인한 엽체 탈락·유실 등 피해 면적·수량 기준으로 보상',target:'해당 해조류를 양식하는 어업인(면허 어장)'},
+  etc:{label:'갑각류·기타',ic:'🦐',risks:['hot','cold'],
+        pay:'재해로 폐사한 양식물의 피해 수량 기준으로 보상',target:'해당 품종을 양식하는 어업인'},
+  facility:{label:'시설물',ic:'🏗️',risks:[],
+        pay:'재해로 파손된 양식시설의 손해액 기준으로 보상',target:'양식시설(가두리·수조·종자시설 등)을 보유한 어업인'}
+};
+const EXAMPLE=[
+ ['넙치 양식수산물재해보험','fish','2026-05-13'],['강도다리양식보험','fish','2026-05-13'],
+ ['육상수조식 돌돔양식보험','fish','2026-05-13'],['터봇양식보험','fish','2026-05-13'],
+ ['방어 양식수산물재해보험','fish','2026-05-13'],['송어양식보험','fish','2026-05-13'],
+ ['뱀장어양식보험','fish','2026-05-13'],['메기양식보험','fish','2026-05-13'],
+ ['향어양식보험','fish','2026-05-13'],['미꾸라지 양식수산물재해보험','fish','2026-08-03'],
+ ['전복 양식수산물재해보험','shell','2026-05-13'],['전복종자양식보험','shell','2026-05-13'],
+ ['홍합양식보험','shell','2026-05-13'],['가리비양식보험','shell','2026-05-13'],
+ ['미더덕양식보험','shell','2026-05-13'],
+ ['김양식보험','seaweed','2026-01-16'],['김(즉시보상형)양식보험','seaweed','2026-01-16'],
+ ['김(황백화)양식보험','seaweed','2025-09-01'],['미역양식보험','seaweed','2026-01-16'],
+ ['다시마양식보험','seaweed','2026-01-16'],['톳양식보험','seaweed','2026-01-16'],
+ ['해조류양식보험','seaweed','2026-01-16'],
+ ['흰다리새우 양식수산물재해보험','etc','2026-05-13'],['왕우렁이 양식수산물재해보험','etc','2026-04-20'],
+ ['해상가두리어류양식보험(시설물)','facility','2026-05-13',true],['육상수조식 양식시설물재해보험','facility','2026-05-13'],
+ ['육상종자시설물 양식보험','facility','2026-05-13'],['시설물전용 양식보험','facility','2025-11-12']
+];
+const P=[
+  ...VERIFIED.map(v=>({...v,verified:true,g:GROUP[v.group],risks:RISK3.filter(r=>v.cov[r]!=='none')})),
+  ...EXAMPLE.map(r=>({name:r[0],group:r[1],start:r[2],mine:!!r[3],verified:false,g:GROUP[r[1]],risks:GROUP[r[1]].risks}))
+].map((p,i)=>({...p,id:i}));
+
+/* ===== 지원제도 블록 ===== */
+const SUP=[
+ {id:'s1',ic:'🏛️',name:'양식보험 보험료 국가 보조',org:'해양수산부 · 수협',risks:['hot','cold','redtide'],state:'part',
+  what:['굴: 계약자 부담 보험료의 <b>50% 국가 보조</b> (굴 상품요약서)',
+        '해상가두리어류·멍게·오만둥이·육상수조식전복: 보험료 <b>일부 국가 보조</b> · 비율 <span class="tbd">미확정</span>'],
+  who:'양식수산물재해보험에 가입하는 어업인 (품목별 면허·허가 필요)',
+  steps:['가까운 지역 수협 방문','품목·가입금액 상담 후 청약','자부담 보험료만 납부 (100만원 이상이면 나눠 내기 가능)'],
+  where:'지역 수협 · 수협 공제상담 1588-4119',
+  basis:'각 품목 상품요약서 「보험료 보조」 항목',cta:{t:'상담 신청하기',href:'tel:1588-4119'}},
+ {id:'s2',ic:'🏙️',name:'지자체 보험료 추가 지원',org:'경상남도 · 시·군',risks:['hot','cold','redtide'],state:'tbd',
+  what:['국가 보조 외에 지자체가 자부담 보험료 일부를 추가 지원 <span class="tbd">미확정</span>','지원 비율·한도는 시·군마다 다름 <span class="tbd">미확정</span>'],
+  who:'해당 시·군에 양식장이 있는 보험 가입 어업인 <span class="tbd">미확정</span>',
+  steps:['시·군청 해양수산과에 지원 여부 문의 <span class="tbd">미확정</span>','수협 가입 시 지원 적용 확인'],
+  where:'통영시청 해양수산과 <span class="tbd">미확정</span>',
+  basis:'근거 자료 없음 · 팀 기획 문서의 조사 메모(최대 90%)만 있음',cta:null},
+ {id:'s3',ic:'🆘',name:'재해 피해 신고 · 복구 지원금',org:'시·군 · 해양수산부',risks:['hot','cold','redtide'],state:'part',
+  what:['고수온·저수온·적조 등 자연재해로 피해가 나면 피해조사 후 복구 지원','지원 단가·한도 <span class="tbd">미확정</span>','보험금과 중복으로 받을 수 있는지 <span class="tbd">미확정</span>'],
+  who:'자연재해로 양식물 피해를 입은 어업인',
+  steps:['피해 확인 즉시 관할 시·군에 신고','지자체·합동피해조사반 피해조사','보험 가입자는 수협에 보험금 청구, 복구 지원은 시·군 안내에 따름'],
+  where:'관할 시·군 해양수산과 · 보험 청구는 지역 수협',
+  basis:'약관에 「어업재해 피해조사·보고 및 복구지원요령」, 「자연재난 복구비용 산정기준」이 근거로 나옴 (지원 금액은 약관에 없음)',cta:{t:'수협에 보험금 문의',href:'tel:1588-4119'}},
+ {id:'s4',ic:'🧰',name:'고수온 대응 장비 보급',org:'경상남도 · 시·군',risks:['hot'],state:'tbd',
+  what:['액화산소·차광막·산소발생기 등 대응 장비 지원 <span class="tbd">미확정</span>','지원 품목·자부담 비율 <span class="tbd">미확정</span>'],
+  who:'고수온 피해 우려 해역 양식 어업인 <span class="tbd">미확정</span>',
+  steps:['시·군 공고 확인 <span class="tbd">미확정</span>','신청서 제출','선정 후 장비 수령'],
+  where:'시·군청 해양수산과 <span class="tbd">미확정</span>',
+  basis:'근거 자료 없음 · 팀 기획 문서의 조사 메모만 있음',cta:null},
+ {id:'s5',ic:'💳',name:'수산 정책자금 (재해 대출)',org:'수협',risks:['hot','cold','redtide'],state:'tbd',
+  what:['재해 피해 어가 대상 정책자금 대출 <span class="tbd">미확정</span>','금리·한도·신청 기간 <span class="tbd">미확정</span>'],
+  who:'재해 피해 어업인 <span class="tbd">미확정</span>',
+  steps:['지역 수협 상담','대출 신청 <span class="tbd">미확정</span>'],
+  where:'지역 수협',
+  basis:'PRD의 「수산업 관련 정책금융 전체(수협)」 데이터 연결 예정 · 내용 미반영',cta:null}
+];
+const SUP_STATE={ok:{t:'약관 확인',c:'ok'},part:{t:'일부 확인',c:'ok'},tbd:{t:'미확정',c:'tbd'}};
+
+let tab='ins', cat='hot', mineOnly=false, openId=-1, openSup='';
+const $=s=>document.querySelector(s);
+const C=id=>CATS.find(x=>x.id===id);
+
+function renderCats(){
+  $('#cats').innerHTML=CATS.map(c=>`<button class="cat ${c.id===cat?'on':''}" data-id="${c.id}" aria-pressed="${c.id===cat}"><span class="ic">${c.ic}</span><span>${c.label}</span></button>`).join('');
+  $('#cats').querySelectorAll('.cat').forEach(b=>b.onclick=()=>{cat=b.dataset.id;renderCats();render();});
+}
+
+function hitLine(p){
+  if(cat==='all') return '';
+  const c=C(cat);
+  if(p.verified){
+    const k=p.cov[cat]||'none';
+    if(k==='none') return `<div class="hit no">${c.ic} <span><b>${c.label}</b> 피해는 보장하지 않아요</span></div>`;
+    return `<div class="hit">${c.ic} <span><b>${c.label}</b> 피해: ${COV[k].t}<br><small>${p.covNote[cat]}</small></span></div>`;
+  }
+  return `<div class="hit">${c.ic} <span><b>${c.label}</b> 피해 시 보상 대상 (예시)</span></div>`;
+}
+function covChips(p){
+  return `<div class="chips">${RISK3.map(r=>{
+    const c=C(r); const k=p.verified?(p.cov[r]||'none'):(p.risks.includes(r)?'base':'none');
+    const label=p.verified?COV[k].t:(k==='none'?'보장 안 함 (예시)':'보장 (예시)');
+    return `<span class="chip ${r===cat?'on':''}">${c.ic} ${c.label}<i class="${COV[k].cls}">${label}</i></span>`;
+  }).join('')}</div>`;
+}
+function insBody(p){
+  const g=p.g;
+  if(p.verified){
+    return `${hitLine(p)}
+    <div class="ben"><span class="bi">🛡️</span><div style="flex:1"><h5>보상하는 재해</h5>${covChips(p)}
+      <p class="sm" style="margin-top:6px">그 외: ${p.other}</p></div></div>
+    <div class="ben"><span class="bi">💰</span><div><h5>보상 방식</h5><p>${p.pay}</p>${p.payExtra?`<p>${p.payExtra}</p>`:''}<p class="sm">산정된 보험금에서 자기부담금을 빼고 지급</p></div></div>
+    <div class="ben"><span class="bi">🏛️</span><div><h5>보험료 정부 지원</h5><p>${p.subsidy}${p.subsidyTbd?' · 비율 <span class="tbd">미확정</span>':''}</p><p class="sm">지자체 추가 지원 여부 <span class="tbd">미확정</span></p></div></div>
+    <div class="ben"><span class="bi">👤</span><div><h5>가입 대상</h5><p>${p.target}</p><p class="sm">${p.targetSub}</p></div></div>
+    <div class="ben"><span class="bi">📌</span><div><h5>자기부담금</h5><p>${p.deduct}</p><p class="sm">자기부담비율 선택지 <span class="tbd">미확정</span></p></div></div>
+    <div class="ben"><span class="bi">📅</span><div><h5>가입 시기 · 보험기간</h5><p>${p.period}</p></div></div>
+    <div class="ben"><span class="bi">📄</span><div style="flex:1"><h5>공시자료 (2026-05-13)</h5>
+      <div class="docs"><span class="doc">보험약관</span><span class="doc">상품요약서</span><span class="doc">사업방법서</span></div></div></div>
+    <div class="acc-cta"><a class="p" href="tel:1588-4119">상담 신청하기</a><a class="s" href="${SUHYUP_URL}" target="_blank" rel="noopener">공시실에서 보기 ↗</a></div>`;
+  }
+  return `${hitLine(p)}
+    <div class="ben"><span class="bi">🛡️</span><div style="flex:1"><h5>보상하는 재해</h5>${covChips(p)}</div></div>
+    <div class="ben"><span class="bi">💰</span><div><h5>보상 방식</h5><p>${g.pay} (예시)</p></div></div>
+    <div class="ben"><span class="bi">🏛️</span><div><h5>보험료 정부 지원</h5><p>국가·지자체가 보험료 일부 지원 (예시) · 비율 <span class="tbd">미확정</span></p></div></div>
+    <div class="ben"><span class="bi">👤</span><div><h5>가입 대상</h5><p>${g.target} (예시)</p></div></div>
+    <div class="ben"><span class="bi">📌</span><div><h5>자기부담금</h5><p>가입 시 선택한 자기부담 비율만큼 보험금에서 차감 (예시)</p></div></div>
+    <div class="ben"><span class="bi">📄</span><div style="flex:1"><h5>공시자료</h5>
+      <div class="docs"><span class="doc">보험약관</span><span class="doc">상품요약서</span><span class="doc">사업방법서</span></div></div></div>
+    <div class="acc-cta"><a class="p" href="tel:1588-4119">상담 신청하기</a><a class="s" href="${SUHYUP_URL}" target="_blank" rel="noopener">공시실에서 보기 ↗</a></div>`;
+}
+function supBody(s){
+  return `
+    <div class="ben"><span class="bi">🎁</span><div><h5>지원 내용</h5>${s.what.map(w=>`<p>• ${w}</p>`).join('')}</div></div>
+    <div class="ben"><span class="bi">👤</span><div><h5>지원 대상</h5><p>${s.who}</p></div></div>
+    <div class="ben"><span class="bi">🧭</span><div style="flex:1"><h5>신청 순서</h5><ol class="steps">${s.steps.map(x=>`<li><span>${x}</span></li>`).join('')}</ol></div></div>
+    <div class="ben"><span class="bi">📍</span><div><h5>신청처</h5><p>${s.where}</p></div></div>
+    <div class="ben"><span class="bi">📄</span><div><h5>근거</h5><p class="sm">${s.basis}</p></div></div>
+    ${s.cta?`<div class="acc-cta"><a class="p" href="${s.cta.href}">${s.cta.t}</a></div>`:''}`;
+}
+
+function renderIns(){
+  const arr=P.filter(p=>(cat==='all'||p.risks.includes(cat))&&(!mineOnly||p.mine))
+             .sort((a,b)=>(b.mine-a.mine)||(b.verified-a.verified));
+  if(!arr.some(p=>p.id===openId)) openId=-1;
+  $('#cnt').innerHTML=cat==='all'?`판매 중 상품 <em>${arr.length}</em>개`:`${C(cat).label} 보장 상품 <em>${arr.length}</em>개`;
+  $('#list').innerHTML=arr.length?arr.map(p=>`
+    <div class="acc ${p.mine?'mine':''} ${p.id===openId?'open':''}" data-id="${p.id}">
+      <button class="acc-h" aria-expanded="${p.id===openId}">
+        <span class="acc-ic">${p.g.ic}</span>
+        <span class="acc-t"><span class="badges">${p.mine?'<span class="bd mine">내 품종 대상</span>':''}${p.verified?'<span class="bd ok">약관 확인</span>':'<span class="bd ex">예시</span>'}</span>
+          <b>${p.name}</b><small>${p.g.label} · 판매개시 ${p.start}</small></span>
+        <span class="chev" aria-hidden="true"></span>
+      </button>
+      <div class="acc-b">${p.id===openId?insBody(p):''}</div>
+    </div>`).join(''):'<p class="empty">조건에 맞는 상품이 없습니다.</p>';
+  $('#list').querySelectorAll('.acc-h').forEach(h=>h.onclick=()=>{
+    const id=+h.parentElement.dataset.id; openId=(openId===id)?-1:id; renderIns();
+  });
+  $('#exNote').textContent='※ "약관 확인" 상품 5개는 2026-05-13 판매개시 약관·사업방법서·상품요약서 기준으로 요약했고, 나머지 상품은 화면 구성용 예시입니다. 실제 조건은 약관과 상담으로 확인하세요.';
+  $('#foot').innerHTML='출처: 수협은행 보험 &gt; 공시실 &gt; 양식수산물재해보험공시 &gt; 판매중인상품 (2026-10-15 기준 33개 상품)';
+}
+function renderSup(){
+  const arr=SUP.filter(s=>cat==='all'||s.risks.includes(cat));
+  if(!arr.some(s=>s.id===openSup)) openSup='';
+  $('#cnt').innerHTML=cat==='all'?`받을 수 있는 제도 <em>${arr.length}</em>개`:`${C(cat).label} 관련 제도 <em>${arr.length}</em>개`;
+  $('#list').innerHTML=arr.map(s=>{const st=SUP_STATE[s.state];return `
+    <div class="acc sup ${s.id===openSup?'open':''}" data-id="${s.id}">
+      <button class="acc-h" aria-expanded="${s.id===openSup}">
+        <span class="acc-ic">${s.ic}</span>
+        <span class="acc-t"><span class="badges"><span class="bd ${st.c}">${st.t}</span></span>
+          <b>${s.name}</b><small>${s.org}</small></span>
+        <span class="chev" aria-hidden="true"></span>
+      </button>
+      <div class="acc-b">${s.id===openSup?supBody(s):''}</div>
+    </div>`}).join('');
+  $('#list').querySelectorAll('.acc-h').forEach(h=>h.onclick=()=>{
+    const id=h.parentElement.dataset.id; openSup=(openSup===id)?'':id; renderSup();
+  });
+  $('#exNote').textContent='※ 지원제도는 확정 전 시안입니다. "미확정" 표시는 근거 자료를 아직 확인하지 못한 값이니, 신청 전 시·군청과 수협에 꼭 확인하세요.';
+  $('#foot').innerHTML='근거: 양식수산물재해보험 약관·상품요약서(굴·멍게·오만둥이·육상수조식전복·해상가두리어류, 2026-05-13)';
+}
+function render(){
+  $('#mineOnly').style.display=tab==='ins'?'':'none';
+  tab==='ins'?renderIns():renderSup();
+}
+$('#mineOnly').onclick=e=>{mineOnly=!mineOnly;e.currentTarget.classList.toggle('on',mineOnly);e.currentTarget.setAttribute('aria-pressed',mineOnly);render();};
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  tab=t.dataset.tab;
+  document.querySelectorAll('.tab').forEach(x=>{x.classList.toggle('on',x===t);x.setAttribute('aria-selected',x===t)});
+  render();
+});
+function setMenu(open){
+  $('.screen').classList.toggle('menu-open',open);
+  $('#menuBtn').setAttribute('aria-expanded',open);
+  $('#menu').setAttribute('aria-hidden',!open);
+}
+$('#menuBtn').onclick=()=>setMenu(true);
+$('#menuClose').onclick=()=>setMenu(false);
+$('#dim').onclick=()=>setMenu(false);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')setMenu(false)});
+renderCats();render();
+</script>
+</body>
+</html>
