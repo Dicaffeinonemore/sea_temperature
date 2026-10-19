@@ -1,9 +1,11 @@
 """우리 바다 안심도우미 - 모바일 웹앱 화면.
 
-프로젝트 최상위 폴더에서 실행: .\\.venv\\Scripts\\python.exe -m streamlit run frontend/app.py
+프로젝트 폴더에서 실행: py -m streamlit run app.py
 """
 from html import escape
 from pathlib import Path
+from datetime import date, datetime, timedelta, timezone
+import re
 
 import streamlit as st
 
@@ -46,10 +48,14 @@ HERO_ART = """
 
 
 def go(page: str):
+    if page == "register":
+        st.session_state.pop("registration_regions", None)
     st.session_state.page = page
+    st.session_state.menu_open = False
 
 
 def start_page():
+    fetch_regions()  # 시작 화면을 보는 동안 지역 목록을 미리 조회한다.
     # 빈 줄이나 4칸 들여쓰기가 섞이면 마크다운이 HTML을 코드 블록으로 바꾸므로 한 덩어리로 넘긴다.
     st.markdown(
         f'<div class="hero">{HERO_ART.strip()}<div class="hero-text">'
@@ -71,7 +77,10 @@ def register_page():
     st.button("‹ 처음으로", type="tertiary", on_click=go, args=("start",))
     st.markdown('<div class="page-title">내 양식장 등록</div>', unsafe_allow_html=True)
 
-    regions, from_api = fetch_regions()
+    # 입력 도중 API 응답으로 선택 항목이 바뀌거나 초기화되지 않게 고정한다.
+    if "registration_regions" not in st.session_state:
+        st.session_state.registration_regions = fetch_regions()
+    regions, from_api = st.session_state.registration_regions
     with st.form("farm_form", border=False):
         region = st.selectbox("양식 지역", regions, index=index_of(regions, saved.get("region")),
                               placeholder="지역을 선택하세요")
@@ -83,7 +92,7 @@ def register_page():
         submitted = st.form_submit_button("등록하기", type="primary", width="stretch")
 
     if not from_api:
-        st.caption("서버에 연결하지 못해 기본 지역 목록을 표시합니다.")
+        st.caption("기본 지역 목록으로 바로 등록할 수 있습니다.")
     st.caption("※ 입력한 정보는 맞춤형 정보 제공에만 사용됩니다.")
 
     if submitted:
@@ -94,30 +103,145 @@ def register_page():
             st.error(f"{', '.join(missing)}을(를) 선택해 주세요.")
             return
         st.session_state.farm = farm
-        go("done")
+        go("risk" if "profile" in st.session_state else "signup")
         st.rerun()
 
 
-def done_page():
+def signup_page():
     farm = st.session_state.farm
-    st.markdown('<div class="page-title">등록이 완료되었습니다</div>', unsafe_allow_html=True)
+    st.button("‹ 양식장 정보 수정", type="tertiary", on_click=go, args=("register",))
+    st.caption("가입 단계 2 / 2")
+    st.markdown('<div class="page-title">가입 정보 입력</div>', unsafe_allow_html=True)
     rows = "".join(
         f"<dt>{label}</dt><dd>{escape(farm[key])}</dd>"
         for key, label in (("region", "양식 지역"), ("species", "양식 품종"),
                            ("method", "양식 방식"), ("insurance", "보험 가입"))
     )
     st.markdown(f'<div class="summary"><dl>{rows}</dl></div>', unsafe_allow_html=True)
-    st.write("")
-    # 3번 '오늘의 위험정보' 화면은 다음 단계에서 연결한다.
-    st.button("오늘의 위험정보 보기 (준비 중)", type="primary", width="stretch", disabled=True)
-    st.button("정보 수정", width="stretch", on_click=go, args=("register",))
+    st.caption("화면 체험용 가입입니다. 실제 계정은 생성되지 않으며 비밀번호는 저장하지 않습니다.")
+    today = datetime.now(timezone(timedelta(hours=9))).date()
+    with st.form("signup_form", border=False):
+        name = st.text_input("이름", placeholder="이름을 입력하세요", max_chars=50)
+        birth = st.date_input("생년월일", value=None, min_value=date(1900, 1, 1),
+                              max_value=today, format="YYYY/MM/DD")
+        phone = st.text_input("전화번호", placeholder="010-1234-5678", max_chars=20)
+        password = st.text_input("비밀번호 설정", type="password", key="signup_password",
+                                 placeholder="8자 이상 입력하세요", max_chars=128)
+        submitted = st.form_submit_button("가입완료", type="primary", width="stretch")
+    if submitted:
+        errors = []
+        if not name.strip():
+            errors.append("이름을 입력해 주세요.")
+        if birth is None:
+            errors.append("생년월일을 선택해 주세요.")
+        digits = re.sub(r"[\s-]", "", phone)
+        if not re.fullmatch(r"0[0-9]{8,10}", digits):
+            errors.append("전화번호를 확인해 주세요. 숫자 9~11자리로 입력해 주세요.")
+        if len(password) < 8 or not password.strip():
+            errors.append("비밀번호를 8자 이상 입력해 주세요.")
+        if errors:
+            for error in errors:
+                st.error(error)
+            return
+        st.session_state.profile = {"name": name.strip(), "birth": birth.isoformat(), "phone": digits}
+        st.session_state.clear_password = True
+        go("risk")
+        st.rerun()
+
+
+def toggle_menu():
+    st.session_state.menu_open = not st.session_state.get("menu_open", False)
+
+
+def navigation():
+    if not st.session_state.get("menu_open", False):
+        return
+    with st.container(key="navigation_drawer"):
+        st.button("✕ 메뉴 닫기", on_click=toggle_menu, width="stretch")
+        st.subheader("우리 바다 안심도우미")
+        st.write(f"{st.session_state.profile['name']}님")
+        st.caption(st.session_state.farm["region"])
+        st.divider()
+        for label, target in (("오늘의 위험정보", "risk"), ("내 양식장 정보 수정", "register"),
+                              ("맞춤형 대응 안내", "response"), ("보험 정보 비교", "insurance"),
+                              ("상담 및 다음 단계", "consult")):
+            st.button(label, key=f"nav_{target}", width="stretch", on_click=go, args=(target,))
+        st.divider()
+        st.button("시작 화면으로", width="stretch", on_click=go, args=("start",))
+
+
+def page_header(title):
+    heading, menu = st.columns([4, 1], vertical_alignment="center")
+    with heading:
+        st.markdown(f'<h1 class="screen-title">{escape(title)}</h1>', unsafe_allow_html=True)
+    with menu:
+        st.button("☰", help="사이드바 메뉴 열기 / 닫기", on_click=toggle_menu, width="stretch")
+    navigation()
+
+
+def risk_chart():
+    # 예시 이미지와 같은 7일 추이. 실제 관측 또는 진단에 사용하지 않는다.
+    values = [22.0, 22.8, 23.5, 24.6, 25.5, 26.2, 28.4]
+    points = [(38 + i * 45, 168 - (v - 20) * 12) for i, v in enumerate(values)]
+    line = " ".join(f"{x},{y:.1f}" for x, y in points)
+    grid = "".join(f'<line x1="38" y1="{168-(v-20)*12}" x2="308" y2="{168-(v-20)*12}" stroke="#e2e8f0"/>'
+                   f'<text x="8" y="{172-(v-20)*12}">{v}</text>' for v in (20, 22, 24, 26, 28, 30))
+    dots = "".join(f'<circle cx="{x}" cy="{y:.1f}" r="4" fill="white" stroke="#1677ff" stroke-width="2"/>'
+                   f'<text x="{x}" y="192" text-anchor="middle">8/{14+i}</text>'
+                   for i, (x, y) in enumerate(points))
+    st.html(f'<svg class="risk-chart" viewBox="0 0 338 210" role="img" aria-label="예시 수온: 8월 14일 22도에서 20일 28.4도로 상승">'
+            f'<text x="8" y="20">°C</text><rect x="38" y="48" width="270" height="48" fill="#fff0ef"/>{grid}'
+            f'<polygon points="38,168 {line} 308,168" fill="#1677ff" opacity=".08"/>'
+            f'<polyline points="{line}" fill="none" stroke="#1677ff" stroke-width="3"/>{dots}</svg>')
+
+
+def risk_page():
+    page_header("오늘의 위험정보")
+    farm = st.session_state.farm
+    st.caption(f"{farm['region']} · {farm['species']} · {farm['method']}")
+    st.markdown('<div class="demo-label">미리보기 · 실제 관측·예측·특보가 아닌 예시 데이터</div>', unsafe_allow_html=True)
+    st.caption("예시 기준: 2025년 8월 20일 10:00")
+    current, forecast, alerts = st.tabs(["현재 상황", "예측 추이", "특보 정보"])
+    with current:
+        st.html('<div class="temperature-card"><strong>현재 수온</strong>'
+                '<div class="temperature-row"><span class="temperature">28.4<small>°C</small></span>'
+                '<span class="risk-badge">♨ 주의 단계</span></div>'
+                '<p>최근 1주 평균 대비 +1.8°C<br>선택 지역 관측소 기준 (예시)</p></div>')
+        st.markdown("#### 최근 7일 수온 추이")
+        risk_chart()
+        st.caption("🟥 고수온 주의 구간 (예시)")
+    with forecast:
+        st.markdown("#### 앞으로의 수온 변화")
+        st.caption("화면 구성용 가상 예측입니다.")
+        st.table({"날짜": ["8/21", "8/22", "8/23"], "예상 수온": ["28.6°C", "28.9°C", "29.1°C"]})
+    with alerts:
+        st.info("고수온 주의 알림 (예시)")
+        st.write("실제 특보는 아직 연결되지 않았습니다. 추후 공식 발표와 발표 시각을 표시합니다.")
+    st.button("대비 행동 보기 →", type="primary", width="stretch", on_click=go, args=("response",))
+
+
+def placeholder_page():
+    titles = {"response": "맞춤형 대응 안내", "insurance": "보험 정보 비교", "consult": "상담 및 다음 단계"}
+    page_header(titles[st.session_state.page])
+    st.info("준비 중인 화면입니다.")
+    st.write("이 메뉴의 상세 내용은 다음 단계에서 추가할 예정입니다.")
+    st.button("오늘의 위험정보로 돌아가기", width="stretch", on_click=go, args=("risk",))
 
 
 st.set_page_config(page_title="우리 바다 안심도우미", page_icon="🌊", layout="centered")
 # <style>만 담은 st.html은 화면에 빈칸을 만들지 않는다.
 st.html(f"<style>{Path(__file__).with_name('style.css').read_text(encoding='utf-8')}</style>")
 
+if st.session_state.pop("clear_password", False):
+    st.session_state.pop("signup_password", None)
 page = st.session_state.setdefault("page", "start")
-if page == "done" and "farm" not in st.session_state:
+if page == "done":  # 기존 실행 세션의 완료 화면을 새 흐름에 연결한다.
+    page = "signup"
+if page not in ("start", "register") and "farm" not in st.session_state:
     page = "register"
-{"start": start_page, "register": register_page, "done": done_page}[page]()
+elif page in ("risk", "response", "insurance", "consult") and "profile" not in st.session_state:
+    page = "signup"
+st.session_state.page = page
+{"start": start_page, "register": register_page, "signup": signup_page,
+ "risk": risk_page, "response": placeholder_page, "insurance": placeholder_page,
+ "consult": placeholder_page}[page]()
