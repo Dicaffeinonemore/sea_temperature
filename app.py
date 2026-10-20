@@ -49,6 +49,7 @@ HERO_ART = """
 
 
 def go(page: str):
+    st.session_state.clear_password = True
     if page == "register":
         st.session_state.pop("registration_regions", None)
         st.session_state.pop("registration_initialized", None)
@@ -120,7 +121,7 @@ def register_page():
             st.error(f"{', '.join(missing)}을(를) 선택해 주세요.")
             return
         st.session_state.farm = farm
-        go("risk" if "profile" in st.session_state else "signup")
+        go("risk")
         st.rerun()
 
 
@@ -130,10 +131,33 @@ def reset_district():
     st.session_state.farm_district_custom = ""
 
 
+def login_page():
+    st.button("‹ 비회원으로 계속 이용", type="tertiary", on_click=go, args=("risk",))
+    st.markdown('<div class="page-title">로그인</div>', unsafe_allow_html=True)
+    st.caption("가입한 전화번호로 로그인해 주세요.")
+    st.info("로그인 기능은 준비 중입니다. 지금은 비회원으로 모든 조회 화면을 이용할 수 있습니다.")
+    with st.form("login_form", border=False, clear_on_submit=True):
+        phone = st.text_input("전화번호", placeholder="010-1234-5678", max_chars=20)
+        password = st.text_input("비밀번호", type="password", key="login_password", max_chars=128)
+        submitted = st.form_submit_button("로그인", type="primary", width="stretch")
+    if submitted:
+        if not phone.strip() or not password:
+            st.session_state.login_notice = ("error", "전화번호와 비밀번호를 입력해 주세요.")
+        else:
+            st.session_state.login_notice = ("info", "아직 계정 인증이 연결되지 않았습니다. 비회원으로 계속 이용해 주세요.")
+        st.session_state.clear_password = True
+        st.rerun()
+    notice = st.session_state.pop("login_notice", None)
+    if notice:
+        level, message = notice
+        (st.error if level == "error" else st.info)(message)
+    st.caption("아직 계정이 없으신가요?")
+    st.button("회원가입", width="stretch", on_click=go, args=("signup",))
+
+
 def signup_page():
     farm = st.session_state.farm
-    st.button("‹ 양식장 정보 수정", type="tertiary", on_click=go, args=("register",))
-    st.caption("가입 단계 2 / 2")
+    st.button("‹ 로그인으로 돌아가기", type="tertiary", on_click=go, args=("login",))
     st.markdown('<div class="page-title">가입 정보 입력</div>', unsafe_allow_html=True)
     rows = "".join(
         f"<dt>{label}</dt><dd>{escape(farm.get(key) or '미선택')}</dd>"
@@ -182,7 +206,8 @@ def navigation():
     with st.container(key="navigation_drawer"):
         st.button("✕ 메뉴 닫기", on_click=toggle_menu, width="stretch")
         st.subheader("우리 바다 안심도우미")
-        st.write(f"{st.session_state.profile['name']}님")
+        st.write("비회원으로 이용 중")
+        st.button("로그인 / 회원가입", key="nav_login", width="stretch", on_click=go, args=("login",))
         st.caption(st.session_state.farm["region"])
         st.divider()
         for label, target in (("오늘의 위험정보", "risk"), ("내 양식장 정보 수정", "register"),
@@ -194,6 +219,7 @@ def navigation():
 
 
 def page_header(title):
+    st.button("로그인", key="header_login", type="tertiary", on_click=go, args=("login",))
     heading, menu = st.columns([4, 1], vertical_alignment="center")
     with heading:
         st.markdown(f'<h1 class="screen-title">{escape(title)}</h1>', unsafe_allow_html=True)
@@ -257,14 +283,13 @@ st.html(f"<style>{Path(__file__).with_name('style.css').read_text(encoding='utf-
 
 if st.session_state.pop("clear_password", False):
     st.session_state.pop("signup_password", None)
+    st.session_state.pop("login_password", None)
 page = st.session_state.setdefault("page", "start")
 if page == "done":  # 기존 실행 세션의 완료 화면을 새 흐름에 연결한다.
     page = "signup"
 if page not in ("start", "register") and "farm" not in st.session_state:
     page = "register"
-elif page in ("risk", "response", "insurance", "consult") and "profile" not in st.session_state:
-    page = "signup"
 st.session_state.page = page
-{"start": start_page, "register": register_page, "signup": signup_page,
+{"start": start_page, "register": register_page, "login": login_page, "signup": signup_page,
  "risk": risk_page, "response": placeholder_page, "insurance": placeholder_page,
  "consult": placeholder_page}[page]()
