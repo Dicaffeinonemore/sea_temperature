@@ -146,3 +146,62 @@ def product_detail(product_id: Annotated[int, Path(gt=0)], db: DB):
         FROM insurance.insurance_claim_rules WHERE product_id = %s ORDER BY id
     """, (product_id,)).fetchall()
     return product
+
+
+# ---- 전체 상품 목록: 위험(고수온·저수온·적조)별 보장 방식까지 한 번에 ----
+Coverage = Literal["base", "opt", "excl", "none"]
+RISK_PATTERNS = {
+    "hot": re.compile("고수온|이상수온"),
+    "cold": re.compile("저수온|이상수온"),
+    "redtide": re.compile("적조"),
+}
+
+
+class RiskCoverage(BaseModel):
+    status: Coverage  # base 기본 보장 / opt 선택 특약 / excl 기본 보장이지만 빼는 특약 있음 / none 보장 안 함
+    names: list[str]
+
+
+class InsuranceProductOverview(BaseModel):
+    product_id: int
+    product_name: str | None
+    species: str | None
+    document_version: str | None
+    sale_period: str | None
+    risks: dict[str, RiskCoverage]
+
+
+def risk_coverage(coverages: list[dict], pattern: re.Pattern) -> RiskCoverage:
+    hits = [c for c in coverages if c["effect"] != "납입제도"
+            and pattern.search(f"{c['risk_types'] or ''} {c['name'] or ''} {c['coverage_key'] or ''}")]
+    adds = [c for c in hits if c["effect"] != "보장제외"]
+    base = [c for c in adds if c["contract_type"] == "주계약"
+            or (c["contract_type"] != "특약" and not c["is_optional"])
+            or (c["contract_type"] == "특약" and c["is_optional"] is False)]
+    opt = [c for c in adds if c not in base]
+    minus = [c for c in hits if c["effect"] == "보장제외"]
+    if base:
+        status = "excl" if minus else "base"
+    elif opt:
+        status = "opt"
+    else:
+        status = "none"
+    return RiskCoverage(status=status, names=[c["name"] for c in base + opt + minus if c["name"]])
+
+
+@router.get("/overview", response_model=list[InsuranceProductOverview])
+def overview(db: DB):
+    products = db.execute("""
+        SELECT product_id, product_name, species, document_version, sale_period
+        FROM insurance.insurance_products ORDER BY product_id
+    """).fetchall()
+    coverages: dict[int, list[dict]] = {}
+    for row in db.execute("""
+        SELECT product_id, coverage_key, contract_type, name, risk_types, effect, is_optional
+        FROM insurance.insurance_coverages
+    """).fetchall():
+        coverages.setdefault(row["product_id"], []).append(row)
+    for product in products:
+        cov = coverages.get(product["product_id"], [])
+        product["risks"] = {risk: risk_coverage(cov, pattern) for risk, pattern in RISK_PATTERNS.items()}
+    return products

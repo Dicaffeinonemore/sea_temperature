@@ -9,6 +9,7 @@ from backend.api import router as api_router
 from backend.config import get_settings
 from backend.db import get_db
 from backend.insurance import router as insurance_router
+from backend.support import router as support_router
 from backend.routes import router
 
 logger = logging.getLogger(__name__)
@@ -20,6 +21,7 @@ app = FastAPI(
 app.include_router(router)
 app.include_router(api_router)
 app.include_router(insurance_router)
+app.include_router(support_router)
 # HTML 화면(insurance.html 등)이 브라우저에서 직접 부르므로 허용할 주소만 연다. 조회 전용 API.
 app.add_middleware(
     CORSMiddleware,

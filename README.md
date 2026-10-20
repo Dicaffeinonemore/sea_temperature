@@ -18,22 +18,26 @@
 - 다른 화면에서 `app.html#register`(조건 수정), `app.html#login`(로그인)으로 들어오면 해당 화면이 바로 열립니다.
 - HTML 버전은 Streamlit 버전과 별개입니다. `app.py` 수정이 자동 반영되지는 않습니다. HTML의 `<style>`은 디자인, `<section>`은 화면 항목, `<script>`는 동작을 담당합니다.
 
-### 보험 정보 ↔ DB 연결 (`insurance.html` → 백엔드 → `insurance` 스키마)
+### 보험 정보 ↔ DB 연결 (`insurance.html` → 백엔드 → `insurance`·`gov24` 스키마)
 
-브라우저는 DB에 직접 접속할 수 없으므로 백엔드(FastAPI)가 DB를 읽어 전달합니다.
+브라우저는 DB에 직접 접속할 수 없으므로 백엔드(FastAPI)가 DB를 읽어 전달합니다. 보험 정보 화면의 데이터는 모두 DB에서 옵니다.
 
 ```
-insurance.html ─GET─▶ 백엔드 /api/v1/insurance/... ─SQL─▶ insurance_products / _coverages / _exclusions / _claim_rules
+insurance.html ─GET─▶ 백엔드 /api/v1/insurance/... ─SQL─▶ insurance 스키마 (products / coverages / exclusions / claim_rules)
+               ─GET─▶ 백엔드 /api/v1/support/...   ─SQL─▶ gov24 스키마 (gov24_service_list, 정부24 공공서비스)
 ```
 
-| API | 내용 |
-|---|---|
-| `GET /api/v1/insurance/products?species=굴&method=가두리` | 품종에 맞는 상품 목록. species는 양식장 등록 값 그대로(`조피볼락 (우럭)`이면 `조피볼락`·`우럭` 둘 다로 찾음). method가 육상이면 '육상' 상품을 앞에 둠 |
-| `GET /api/v1/insurance/products/{product_id}` | 상품 + 보장(coverages)·제외 조건(exclusions)·청구 규칙(claim_rules) |
+| 화면 위치 | API | 내용 |
+|---|---|---|
+| 내 품종 보험 카드 | `GET /api/v1/insurance/products?species=굴&method=가두리` | 품종에 맞는 상품 목록(첫 상품을 카드로). `조피볼락 (우럭)`이면 `조피볼락`·`우럭` 둘 다로 찾고, 수산물 보험을 시설물·종자 보험보다 앞에, 양식 방식이 맞는 상품을 앞에 둠. `기타`는 빈 목록 |
+| 카드·목록 펼치기 | `GET /api/v1/insurance/products/{product_id}` | 상품 + 보장(coverages)·제외 조건(exclusions)·청구 규칙(claim_rules) |
+| 전체 상품 목록 | `GET /api/v1/insurance/overview` | 전체 상품과 위험별 보장 방식 `risks.hot/cold/redtide.status` = `base`(기본 보장) / `opt`(선택 특약) / `excl`(기본 보장, 빼는 특약 있음) / `none` |
+| 지원제도 탭 | `GET /api/v1/support/services?region=통영시` | 해양수산부·경상남도·해당 시·군 소관의 양식·어업 관련 정부24 서비스. 양식 → 우리 시·군 → 재해·보험 순 |
 
-- 화면은 목록의 첫 상품을 "내 품종 보험" 카드로 보여 줍니다. 보장 중 risk_types·이름에 고수온/이상수온이 있으면 고수온 보장으로 표시하고, `is_optional`이면 "선택 특약 가입 시"로 씁니다.
-- 목록이 비면 "확인된 상품 정보가 아직 없어요"로 안내합니다(실패로 단정하지 않음). 서버 오류·15초 초과는 "다시 시도" 버튼을 보여 줍니다.
-- 백엔드 주소는 `insurance.html` 스크립트의 `API_BASE`(기본 `http://127.0.0.1:8000`)입니다. 비워 두면 약관 확인 상품 5개로 만든 예시(화면에 "예시 응답")를 씁니다.
+- 고수온 판단: 보장의 risk_types·이름에 고수온/이상수온(저수온은 저수온/이상수온, 적조는 적조)이 있는지. `effect`가 `납입제도`인 항목(보험료 분납 등)은 보장에서 빼고, `보장제외`는 "가입 시 제외"로 표시합니다.
+- 목록이 비면 "확인된 상품 정보가 아직 없어요"로 안내합니다(실패로 단정하지 않음). 서버 오류·15초 초과는 "다시 시도" 버튼, 서버에 연결되지 않으면 예시 목록과 "⚠️ 서버에 연결하지 못해…" 안내를 보여 줍니다.
+- 백엔드 주소는 `insurance.html` 스크립트의 `API_BASE`(기본 `http://127.0.0.1:8000`)입니다. 비워 두면 예시 데이터만 씁니다.
+- 데이터 확인 필요: 멍게는 DB에서 이상수온이 **선택 특약**인데, 이전 화면 예시는 주계약 보장으로 적혀 있었습니다. 약관 원문으로 확인해 주세요.
 - 문구는 보험금 지급을 단정하지 않습니다("보상됩니다" 대신 "약관 조건 확인 필요").
 
 ### 백엔드 실행
