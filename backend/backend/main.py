@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import Depends, FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,7 +9,10 @@ from psycopg import Connection, Error
 from psycopg.errors import UniqueViolation
 
 from backend.api import router as api_router
+from backend.config import get_settings
 from backend.db import get_db
+from backend.insurance import router as insurance_router
+from backend.support import router as support_router
 from backend.routes import router
 from backend.customer_api import router as customer_router
 from backend.config import get_settings
