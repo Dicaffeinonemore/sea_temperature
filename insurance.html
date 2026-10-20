@@ -144,7 +144,7 @@
   <div class="dim" id="dim"></div>
   <nav class="menu" id="menu" aria-label="전체 메뉴" aria-hidden="true">
     <div class="menu-top"><b>메뉴</b><button class="icon-btn" id="menuClose" aria-label="메뉴 닫기">✕</button></div>
-    <a href="app.html#home"><span class="mi">🏠</span><span>홈<small>오늘의 수온</small></span></a>
+    <a href="home.html"><span class="mi">🏠</span><span>홈<small>오늘의 수온</small></span></a>
     <a href="response.html"><span class="mi">📋</span>대응 요령</a>
     <a href="#" class="on" aria-current="page"><span class="mi">🛡️</span>보험 정보</a>
     <a href="#"><span class="mi">👤</span>내 정보</a>
@@ -179,7 +179,7 @@
 
   <nav class="tabbar" aria-label="하단 메뉴">
     <a href="response.html"><span class="ti">📋</span>대응 요령</a>
-    <a href="app.html#home"><span class="ti">🏠</span>홈</a>
+    <a href="home.html"><span class="ti">🏠</span>홈</a>
     <a href="#" class="on" aria-current="page"><span class="ti">🛡️</span>보험 정보</a>
   </nav>
 </div>
@@ -448,7 +448,7 @@ function setMenu(open){
 }
 $('#menuBtn').onclick=()=>setMenu(true);
 $('#menuClose').onclick=()=>setMenu(false);
-$('#logoutBtn').onclick=()=>{location.href='app.html'}; // 인증 연결 전까지는 시작 화면으로 이동만 합니다.
+$('#logoutBtn').onclick=()=>{try{sessionStorage.removeItem('farm');}catch{}location.href='app.html';}; // 인증 연결 전까지는 양식장 정보만 지웁니다.
 $('#dim').onclick=()=>setMenu(false);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')setMenu(false)});
 renderCats();render();
