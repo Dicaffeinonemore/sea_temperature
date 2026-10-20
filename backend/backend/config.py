@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     db_sslmode: Literal["disable", "allow", "prefer", "require", "verify-ca", "verify-full"] = "prefer"
     db_connect_timeout: int = Field(default=5, ge=1, le=30)
     db_statement_timeout_ms: int = Field(default=15000, ge=1)
+    # 로컬 주소(localhost/127.0.0.1)는 항상 허용. 그 밖의 앱 주소는 .env에 JSON 목록으로 추가.
+    # 예: CORS_ORIGINS=["https://my-app.example.com"]
+    cors_origins: list[str] = []
 
     def connection_kwargs(self) -> dict:
         if self.database_url.get_secret_value():
