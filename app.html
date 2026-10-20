@@ -2,56 +2,93 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>우리 바다 안심도우미</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
-/* 화면 모양은 이 style 영역에서 수정합니다. */
-:root{--navy:#0b2a5b;--blue:#1f5fd6;--line:#d9e1ec;--muted:#6b7a90}
-*{box-sizing:border-box}body{margin:0;background:#eef2f7;font-family:system-ui,-apple-system,"Malgun Gothic",sans-serif;color:var(--navy);line-height:1.6}
-main{max-width:420px;margin:auto;min-height:100svh;background:white;box-shadow:0 0 24px #0b2a5b14}
-.screen{padding:24px 20px 32px}[hidden]{display:none!important}h1{font-size:2rem;line-height:1.3;margin:12px 0 24px}h2{font-size:1.15rem;margin:24px 0 12px}p{margin:12px 0}small,.caption{font-size:.8rem;color:var(--muted)}
-button,input,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:12px;padding:11px 14px;background:white;color:var(--navy);min-height:46px}button:hover{background:#eef4ff;border-color:#0059ff}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #93b9ff;outline-offset:2px}.primary{width:100%;border-color:#0059ff;color:#050505;font-weight:700;margin-top:20px}.back{border:0;padding-left:0}.full{width:100%}
-label,legend{font-weight:600;display:block;margin-bottom:8px}input,select{width:100%;min-width:0;padding:12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:#172b4d;min-height:48px}.field{margin:20px 0}fieldset{border:0;padding:0;margin:20px 0}.segments{display:flex;gap:8px}.segments label{position:relative;flex:1;margin:0;text-align:center;font-size:.9rem}.segments input{position:absolute;opacity:0;width:1px;height:1px;min-height:0}.segments span{display:block;padding:10px 4px;border:1px solid var(--line);border-radius:8px;cursor:pointer}.segments input:checked+span{color:#0059ff;background:#edf4ff;border-color:#0059ff}.segments input:focus-visible+span{outline:3px solid #93b9ff}
-.hero{position:relative;min-height:max(560px,100svh);overflow:hidden;padding:0}.hero>svg{position:absolute;inset:0;width:100%;height:100%}.hero-copy{position:relative;padding:56px 28px}.hero h1{font-size:2.1rem;margin:0 0 20px}.hero-copy p{color:#334a6b}.start-button{position:absolute;bottom:60px;left:28px;width:calc(100% - 56px);background:#fdfdfe}
-.summary,.temperature-card{border:1px solid var(--line);padding:16px;border-radius:12px}.summary{background:#f7f9fc}.summary dl{display:grid;grid-template-columns:90px 1fr;gap:8px;margin:0}.summary dt{color:var(--muted)}.summary dd{margin:0;overflow-wrap:anywhere}.heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.heading h1{font-size:1.45rem;margin:8px 0}.demo-label{padding:10px 12px;background:#edf4ff;border-radius:8px;color:#2859a0;font-size:.8rem}.tabs{display:flex;gap:6px;margin:20px 0 16px}.tabs button{flex:1;padding:8px 4px;font-size:.85rem;border-radius:8px}.tabs [aria-selected="true"]{background:var(--blue);color:#fff;border-color:var(--blue)}.temperature-row{display:flex;align-items:center;justify-content:space-between;gap:8px}.temperature{font-size:2.6rem;font-weight:800;color:#101828}.temperature small{font-size:1rem;color:#101828}.risk-badge{padding:7px;background:#fff0ee;color:#bf3730;border-radius:8px;font-size:.8rem;font-weight:700}.temperature-card p{font-size:.85rem;color:var(--muted);margin-bottom:0}.risk-chart{width:100%;height:auto;font-size:11px;fill:var(--muted)}table{border-collapse:collapse;width:100%;margin:16px 0}th,td{padding:12px;border:1px solid var(--line);text-align:left}th{background:#edf4ff}.error{color:#b42318}
-dialog{position:fixed;inset:0 0 0 auto;margin:0;width:min(320px,88vw);max-width:none;height:100dvh;max-height:none;border:0;border-left:1px solid var(--line);padding:24px;background:white;color:var(--navy);box-shadow:-12px 0 40px #0b2a5b33}dialog::backdrop{background:#0b2a5b55}dialog nav{display:grid;gap:10px}dialog nav button{text-align:left}dialog h2{margin-top:20px}hr{border:0;border-top:1px solid var(--line);margin:20px 0}
+  /* 시작·양식장 등록·로그인·가입 화면. 색·폰트는 home.html, insurance.html, response.html과 같은 값을 씁니다. */
+  :root{
+    --blue:#1f5fd6; --blue-d:#174bb0; --blue-l:#eaf1ff; --blue-ll:#f5f8ff;
+    --green:#16a34a; --green-d:#15803d; --green-l:#e9f8ef; --amber:#b45309; --amber-l:#fff4e0;
+    --red:#dc2626; --red-l:#fdecec;
+    --ink:#111827; --sub:#374151; --mute:#6b7280; --line:#e5e7eb; --bg:#eef2f8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  [hidden]{display:none!important}
+  body{font-family:'Noto Sans KR',system-ui,sans-serif;background:var(--bg);color:var(--ink);margin:0}
+  .screen{background:#fff;max-width:480px;margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;position:relative;overflow:hidden}
+  .page{flex:1;min-height:0;display:flex;flex-direction:column}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top)) 18px 6px}
+  .top h2{font-size:22px;font-weight:800}
+  .top h2:focus{outline:none}
+  .icon-btn{background:none;border:0;font-size:24px;color:var(--ink);cursor:pointer;width:40px;height:40px}
+  .scroll{flex:1;overflow-y:auto;padding:4px 16px 20px}
+  .scroll::-webkit-scrollbar{width:0}
+
+  /* 시작 화면 */
+  /* 시작 화면 배경 사진(start_bg.jpg): 위쪽 어두운 그라데이션은 제목 가독성용 */
+  .hero{position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(5,25,50,.55) 0%,rgba(5,25,50,.33) 30%,rgba(5,25,50,0) 50%),url("start_bg.jpg") center/cover no-repeat #1b5a8a}
+  .hero-copy{position:relative;padding:calc(96px + env(safe-area-inset-top)) 32px 0}
+  .hero h1{font-size:44px;font-weight:800;line-height:1.25;letter-spacing:-.02em;margin-bottom:20px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.35)}
+  .hero-copy p{font-size:20px;font-weight:500;line-height:1.6;color:#e3eaf2;text-shadow:0 2px 8px rgba(0,0,0,.35)}
+  .hero .btn{position:absolute;bottom:calc(48px + env(safe-area-inset-bottom));left:28px;width:calc(100% - 56px);background:#fff;color:var(--ink);box-shadow:0 6px 18px rgba(11,42,91,.25)}
+
+  /* 버튼 */
+  .btn{display:flex;width:100%;justify-content:center;align-items:center;gap:6px;border-radius:14px;padding:15px;font:inherit;font-size:17px;font-weight:800;cursor:pointer;text-decoration:none;border:0}
+  .btn.pri{background:var(--blue);color:#fff;margin-top:18px}
+  .btn.pri:hover{background:var(--blue-d)}
+  .btn.sec{background:#fff;color:var(--blue);border:1px solid #c9d8f7;margin-top:10px}
+  .btn:focus-visible{outline:3px solid #93b4f5;outline-offset:2px}
+
+  /* 입력 */
+  .lead{font-size:15.5px;color:var(--sub);line-height:1.6;margin-bottom:6px}
+  .field{margin:18px 0}
+  fieldset{border:0;margin:18px 0}
+  label,legend{display:block;font-size:16px;font-weight:700;margin-bottom:8px}
+  input,select{width:100%;min-width:0;height:52px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;font-size:17px;color:var(--ink)}
+  input:focus-visible,select:focus-visible{outline:3px solid #93b4f5;outline-offset:1px;border-color:var(--blue)}
+  .segments{display:flex;gap:8px}
+  .segments label{position:relative;flex:1;margin:0;text-align:center;font-weight:600}
+  .segments input{position:absolute;opacity:0;width:1px;height:1px}
+  .segments span{display:block;padding:13px 4px;border:1px solid var(--line);border-radius:12px;font-size:16px;color:var(--sub);cursor:pointer}
+  .segments input:checked+span{color:var(--blue);background:var(--blue-ll);border-color:var(--blue);font-weight:800}
+  .segments input:focus-visible+span{outline:3px solid #93b4f5;outline-offset:2px}
+  .note{font-size:13.5px;color:var(--mute);margin-top:12px;line-height:1.6}
+  .error{font-size:15px;color:var(--red);font-weight:600;line-height:1.5}
+  .error:empty{display:none}
+  .status{font-size:15px;color:var(--amber);font-weight:600;line-height:1.5;margin-top:8px}
+  .status:empty{display:none}
+
+  /* 안내 상자 */
+  .demo{font-size:14px;font-weight:600;color:var(--amber);background:var(--amber-l);border-radius:10px;padding:10px 12px;margin-bottom:14px;line-height:1.5}
+  .summary{background:var(--blue-ll);border:1px solid #d7e3fb;border-radius:12px;padding:14px;margin:14px 0 4px}
+  .summary dl{display:grid;grid-template-columns:84px 1fr;gap:8px;font-size:15.5px}
+  .summary dt{color:var(--mute)}
+  .summary dd{font-weight:700;overflow-wrap:anywhere}
+
 </style>
 </head>
 <body>
-<main id="app">
-<!-- 화면 항목은 각 section 안에서 추가하거나 옮길 수 있습니다. -->
-<section id="start" class="screen hero" aria-label="시작 화면">
-<svg viewBox="0 0 360 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-  <defs>
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#cfe7f7"/><stop offset="1" stop-color="#f1f8fd"/>
-    </linearGradient>
-    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#6aa9d0"/><stop offset="1" stop-color="#1b5a8a"/>
-    </linearGradient>
-  </defs>
-  <rect width="360" height="330" fill="url(#sky)"/>
-  <path d="M0 330V268Q55 232 105 255Q160 214 225 250Q285 222 360 258V330Z" fill="#8db4c8"/>
-  <path d="M0 330V292Q85 266 160 288Q240 270 360 294V330Z" fill="#5d8ea6"/>
-  <rect y="328" width="360" height="272" fill="url(#sea)"/>
-  <path d="M286 104q7-6 13 0q6-6 13 0M250 132q5-4 9 0q4-4 9 0" fill="none" stroke="#5b7f95" stroke-width="2"/>
-  <g fill="#2a6f9e" stroke="#e6f2fa" stroke-width="2">
-    <ellipse cx="58" cy="352" rx="24" ry="5"/><ellipse cx="130" cy="350" rx="24" ry="5"/>
-    <ellipse cx="205" cy="353" rx="24" ry="5"/><ellipse cx="280" cy="351" rx="24" ry="5"/>
-    <ellipse cx="40" cy="388" rx="34" ry="8"/><ellipse cx="135" cy="390" rx="34" ry="8"/>
-    <ellipse cx="232" cy="388" rx="34" ry="8"/><ellipse cx="328" cy="391" rx="34" ry="8"/>
-    <ellipse cx="80" cy="440" rx="48" ry="12"/><ellipse cx="210" cy="442" rx="48" ry="12"/>
-    <ellipse cx="335" cy="440" rx="48" ry="12"/>
-  </g>
-  <g fill="none" stroke="#bcdcef" stroke-width="1.2" opacity=".8">
-    <ellipse cx="40" cy="388" rx="27" ry="6"/><ellipse cx="135" cy="390" rx="27" ry="6"/>
-    <ellipse cx="232" cy="388" rx="27" ry="6"/><ellipse cx="80" cy="440" rx="39" ry="9"/>
-    <ellipse cx="210" cy="442" rx="39" ry="9"/><ellipse cx="335" cy="440" rx="39" ry="9"/>
-  </g>
-</svg>
+<div class="screen" id="app">
+<!-- 화면 항목은 각 section(.page) 안에서 추가하거나 옮길 수 있습니다. -->
+<section id="start" class="page hero" aria-label="시작 화면">
 <div class="hero-copy"><h1>우리 바다<br>안심도우미</h1><p>기후위험 진단부터<br>보험·지원까지,<br>양식어가의 든든한 파트너</p></div>
-<button class="primary start-button" data-go="register">시작하기 →</button>
+<button class="btn" data-go="register">시작하기 →</button>
 </section>
+
+<section id="register" class="page" hidden>
+  <div class="top"><button class="icon-btn" data-go="start" aria-label="처음으로">‹</button><h2 tabindex="-1">내 양식장 등록</h2><span class="icon-btn" aria-hidden="true"></span></div>
+  <div class="scroll">
+    <p class="lead">양식장 정보를 알려주시면 지역·품종에 맞는 수온과 보험 정보를 보여드려요.</p>
+    <form id="farm-form">
+      <div class="field"><label for="region">양식 지역</label><select id="region" name="region" required><option value="">지역을 선택하세요</option></select></div>
+      <div class="field"><label for="species">양식 품종</label><select id="species" name="species" required><option value="">품종을 선택하세요</option></select></div>
+      <fieldset><legend>양식 방식</legend><div class="segments"><label><input type="radio" name="method" value="가두리" required><span>가두리</span></label><label><input type="radio" name="method" value="육상"><span>육상</span></label></div></fieldset>
+      <fieldset><legend>보험 가입 상태</legend><div class="segments"><label><input type="radio" name="insurance" value="미가입" required><span>미가입</span></label><label><input type="radio" name="insurance" value="가입"><span>가입</span></label><label><input type="radio" name="insurance" value="잘 모름"><span>잘 모름</span></label></div></fieldset>
+      <button class="btn pri" type="submit">등록하기</button>
+    </form>
+    <p class="note">기본 지역 목록으로 바로 등록할 수 있습니다.<br>※ 양식장 정보는 이 브라우저 탭에만 보관되며, 탭을 닫거나 로그아웃하면 지워집니다.</p>
+  </div>
 <section id="register" class="screen" hidden>
 <button class="back" data-go="start">‹ 처음으로</button><h1 tabindex="-1">내 양식장 등록</h1>
 <form id="farm-form">
@@ -63,49 +100,50 @@ dialog{position:fixed;inset:0 0 0 auto;margin:0;width:min(320px,88vw);max-width:
 <button class="primary" type="submit">등록하기</button></form>
 <p class="caption">기본 지역 목록으로 바로 등록할 수 있습니다.</p><p class="caption">※ 입력 정보는 현재 화면 체험에만 사용되며 새로고침하면 초기화됩니다.</p>
 </section>
-<section id="login" class="screen" hidden>
-<button class="back" data-go="risk">‹ 비회원으로 계속 이용</button><h1 tabindex="-1">로그인</h1>
-<p class="caption">가입한 전화번호로 로그인해 주세요.</p>
-<p class="demo-label">로그인 기능은 준비 중입니다. 지금은 비회원으로 모든 조회 화면을 이용할 수 있습니다.</p>
-<form id="login-form">
-<div class="field"><label for="login-phone">전화번호</label><input id="login-phone" type="tel" autocomplete="username" placeholder="010-1234-5678" maxlength="20" required></div>
-<div class="field"><label for="login-password">비밀번호</label><input id="login-password" type="password" autocomplete="current-password" maxlength="128" required></div>
-<p id="login-message" role="status"></p><button class="primary" type="submit">로그인</button></form>
-<p class="caption">아직 계정이 없으신가요?</p><button class="full" data-go="signup">회원가입</button>
+
+<section id="login" class="page" hidden>
+  <div class="top"><button class="icon-btn" data-go="home" aria-label="비회원으로 계속 이용">‹</button><h2 tabindex="-1">로그인</h2><span class="icon-btn" aria-hidden="true"></span></div>
+  <div class="scroll">
+    <p class="lead">가입한 전화번호로 로그인해 주세요.</p>
+    <p class="demo">로그인 기능은 준비 중입니다. 지금은 비회원으로 모든 조회 화면을 이용할 수 있습니다.</p>
+    <form id="login-form">
+      <div class="field"><label for="login-phone">전화번호</label><input id="login-phone" type="tel" autocomplete="username" placeholder="010-1234-5678" maxlength="20" required></div>
+      <div class="field"><label for="login-password">비밀번호</label><input id="login-password" type="password" autocomplete="current-password" maxlength="128" required></div>
+      <p id="login-message" class="status" role="status"></p>
+      <button class="btn pri" type="submit">로그인</button>
+    </form>
+    <button class="btn sec" data-go="signup">회원가입</button>
+    <button class="btn sec" data-go="home">비회원으로 계속 이용</button>
+  </div>
 </section>
-<section id="signup" class="screen" hidden>
-<button class="back" data-go="login">‹ 로그인으로 돌아가기</button><h1 tabindex="-1">가입 정보 입력</h1>
-<div class="summary"><dl id="farm-summary"></dl></div>
-<p class="caption">화면 체험용 가입입니다. 실제 계정은 생성되지 않으며 비밀번호는 저장하지 않습니다.</p>
-<form id="signup-form" autocomplete="off">
-<div class="field"><label for="name">이름</label><input id="name" name="name" placeholder="이름을 입력하세요" maxlength="50" required></div>
-<div class="field"><label for="birth">생년월일</label><input id="birth" name="birth" type="date" min="1900-01-01" required></div>
-<div class="field"><label for="phone">전화번호</label><input id="phone" name="phone" type="tel" placeholder="010-1234-5678" maxlength="20" required></div>
-<div class="field"><label for="password">비밀번호 설정</label><input id="password" name="password" type="password" autocomplete="new-password" placeholder="8자 이상 입력하세요" minlength="8" maxlength="128" required></div>
-<p id="signup-error" class="error" role="alert"></p><button class="primary" type="submit">가입완료</button></form>
+
+<section id="signup" class="page" hidden>
+  <div class="top"><button class="icon-btn" data-go="login" aria-label="로그인으로 돌아가기">‹</button><h2 tabindex="-1">가입 정보 입력</h2><span class="icon-btn" aria-hidden="true"></span></div>
+  <div class="scroll">
+    <div class="summary"><dl id="farm-summary"></dl></div>
+    <p class="note">화면 체험용 가입입니다. 실제 계정은 생성되지 않으며 비밀번호는 저장하지 않습니다.</p>
+    <form id="signup-form" autocomplete="off">
+      <div class="field"><label for="name">이름</label><input id="name" name="name" placeholder="이름을 입력하세요" maxlength="50" required></div>
+      <div class="field"><label for="birth">생년월일</label><input id="birth" name="birth" type="date" min="1900-01-01" required></div>
+      <div class="field"><label for="phone">전화번호</label><input id="phone" name="phone" type="tel" placeholder="010-1234-5678" maxlength="20" required></div>
+      <div class="field"><label for="password">비밀번호 설정</label><input id="password" name="password" type="password" autocomplete="new-password" placeholder="8자 이상 입력하세요" minlength="8" maxlength="128" required></div>
+      <p id="signup-error" class="error" role="alert"></p>
+      <button class="btn pri" type="submit">가입완료</button>
+    </form>
+  </div>
 </section>
-<section id="risk" class="screen" hidden>
-<button class="back" data-go="login">로그인</button>
-<div class="heading"><h1 tabindex="-1">오늘의 위험정보</h1><button data-menu aria-label="사이드바 메뉴 열기" aria-haspopup="dialog">☰</button></div>
-<p id="farm-caption" class="caption"></p><div class="demo-label">미리보기 · 실제 관측·예측·특보가 아닌 예시 데이터</div><p class="caption">예시 기준: 2025년 8월 20일 10:00</p>
-<div class="tabs" role="tablist" aria-label="위험정보 종류">
-<button id="tab-current" role="tab" aria-selected="true" aria-controls="current" data-tab="current">현재 상황</button><button id="tab-forecast" role="tab" aria-selected="false" aria-controls="forecast" data-tab="forecast" tabindex="-1">예측 추이</button><button id="tab-alerts" role="tab" aria-selected="false" aria-controls="alerts" data-tab="alerts" tabindex="-1">특보 정보</button>
+
 </div>
-<div id="current" role="tabpanel" aria-labelledby="tab-current"><div class="temperature-card"><strong>현재 수온</strong><div class="temperature-row"><span class="temperature">28.4<small>°C</small></span><span class="risk-badge">♨ 주의 단계</span></div><p>최근 1주 평균 대비 +1.8°C<br>선택 지역 관측소 기준 (예시)</p></div><h2>최근 7일 수온 추이</h2><svg id="chart" class="risk-chart" viewBox="0 0 338 210" role="img" aria-label="예시 수온: 8월 14일 22도에서 20일 28.4도로 상승"></svg><p class="caption">🟥 고수온 주의 구간 (예시)</p></div>
-<div id="forecast" role="tabpanel" aria-labelledby="tab-forecast" hidden><h2>앞으로의 수온 변화</h2><p class="caption">화면 구성용 가상 예측입니다.</p><table><thead><tr><th scope="col">날짜</th><th scope="col">예상 수온</th></tr></thead><tbody><tr><td>8/21</td><td>28.6°C</td></tr><tr><td>8/22</td><td>28.9°C</td></tr><tr><td>8/23</td><td>29.1°C</td></tr></tbody></table></div>
-<div id="alerts" role="tabpanel" aria-labelledby="tab-alerts" hidden><div class="demo-label">고수온 주의 알림 (예시)</div><p>실제 특보는 아직 연결되지 않았습니다. 추후 공식 발표와 발표 시각을 표시합니다.</p></div>
-<button class="primary" data-go="response">대비 행동 보기 →</button>
-</section>
-<section id="placeholder" class="screen" hidden><div class="heading"><h1 id="placeholder-title" tabindex="-1"></h1><button data-menu aria-label="사이드바 메뉴 열기" aria-haspopup="dialog">☰</button></div><p class="demo-label">준비 중인 화면입니다.</p><p>이 메뉴의 상세 내용은 다음 단계에서 추가할 예정입니다.</p><button class="full" data-go="risk">오늘의 위험정보로 돌아가기</button></section>
-</main>
-<dialog id="menu" aria-labelledby="menu-title"><button class="full" id="close-menu">✕ 메뉴 닫기</button><h2 id="menu-title">우리 바다 안심도우미</h2><p id="menu-name"></p><p id="menu-region" class="caption"></p><hr><nav aria-label="주 메뉴"><button data-go="risk">오늘의 위험정보</button><button data-go="register">내 양식장 정보 수정</button><button data-go="response">맞춤형 대응 안내</button><button data-go="insurance">보험 정보 비교</button><button data-go="consult">상담 및 다음 단계</button><hr><button data-go="start">시작 화면으로</button></nav></dialog>
 <noscript>이 앱의 화면 이동을 사용하려면 브라우저에서 JavaScript를 켜 주세요.</noscript>
 <script>
 // 화면 동작은 이 script 영역에서 수정합니다. 외부 서버/라이브러리는 사용하지 않습니다.
 const $ = id => document.getElementById(id);
-const state = {farm:null,profile:null}; // 현재 탭 메모리만 사용하며 파일/저장소에 기록하지 않습니다.
-const titles = {response:'맞춤형 대응 안내',insurance:'보험 정보 비교',consult:'상담 및 다음 단계'};
-for(const [id,values] of Object.entries({region:['거제시','고성군','남해군','사천시','창원시(진해구)','통영시','하동군'],species:['조피볼락 (우럭)','넙치 (광어)','참돔','돌돔','감성돔','숭어','가숭어','볼락','점농어','말쥐치','참쥐치','능성어','방어','굴','멍게','미더덕','오만둥이','전복','기타']})){
+const state = {farm:null,profile:null}; // 이름·전화번호·비밀번호는 메모리에만 두고 저장하지 않습니다.
+// 양식장 정보(지역·품종·방식·보험)만 sessionStorage에 두어 home·insurance·response 화면에서도 씁니다. 탭을 닫으면 사라집니다.
+const FARM_KEY='farm';
+function saveFarm(){try{if(state.farm)sessionStorage.setItem(FARM_KEY,JSON.stringify(state.farm));else sessionStorage.removeItem(FARM_KEY);}catch{}}
+try{state.farm=JSON.parse(sessionStorage.getItem(FARM_KEY))||null;}catch{state.farm=null;}
+for(const [id,values] of Object.entries({region:['거제시','고성군','남해군','사천시','창원시(진해구)','통영시','하동군'],species:['조피볼락 (우럭)','넙치 (광어)','참돔','돌돔','감성돔','숭어','굴','멍게','전복','기타']})){
   values.forEach(value=>$(id).add(new Option(value,value)));
 }
 $('region').setCustomValidity('지역을 선택해주십시오');
@@ -127,15 +165,14 @@ document.querySelectorAll('[name="abalone_kind"]').forEach(button=>button.addEve
   document.querySelectorAll('[name="method"]').forEach(input=>input.checked=input.value===method);
 }));
 function go(page){
+  if(page==='home'){location.href='home.html';return;} // 오늘의 수온은 home.html
   if(!['start','register'].includes(page)&&!state.farm)page='register';
-  if($('menu').open)$('menu').close();
   $('password').value='';
   $('login-password').value='';
   $('login-message').textContent='';
-  document.querySelectorAll('.screen').forEach(s=>s.hidden=true);
-  const screen=$(titles[page]?'placeholder':page);
+  document.querySelectorAll('.page').forEach(s=>s.hidden=true);
+  const screen=$(page);
   screen.hidden=false;
-  if(titles[page])$('placeholder-title').textContent=titles[page];
   if(page==='signup'){
     $('farm-summary').replaceChildren();
     for(const [key,label] of Object.entries({region:'양식 지역',species:'양식 품종',abalone_kind:'전복 구분',method:'양식 방식',insurance:'보험 가입'})){
@@ -144,14 +181,11 @@ function go(page){
       dt.textContent=label;dd.textContent=state.farm[key];$('farm-summary').append(dt,dd);
     }
   }
-  if(page==='risk')$('farm-caption').textContent=`${state.farm.region} · ${state.farm.species}${state.farm.abalone_kind?'('+state.farm.abalone_kind+')':''} · ${state.farm.method}`;
-  window.scrollTo(0,0);screen.querySelector('h1')?.focus({preventScroll:true});
+  screen.querySelector('.scroll')?.scrollTo(0,0);screen.querySelector('h2')?.focus({preventScroll:true});
 }
-document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
+document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',event=>{event.preventDefault();go(b.dataset.go);}));
 $('farm-form').addEventListener('submit',event=>{
-  event.preventDefault();state.farm=Object.fromEntries(new FormData(event.target));
-  if(state.farm.species==='전복')state.farm.method={'육상':'육상','해상':'가두리'}[state.farm.abalone_kind];
-  go('risk');
+  event.preventDefault();state.farm=Object.fromEntries(new FormData(event.target));saveFarm();go('home');
 });
 $('login-form').addEventListener('submit',event=>{
   event.preventDefault();$('login-password').value='';
@@ -164,25 +198,11 @@ $('signup-form').addEventListener('submit',event=>{
   if(!/^0[0-9]{8,10}$/.test(phone))errors.push('전화번호를 확인해 주세요. 숫자 9~11자리로 입력해 주세요.');
   if($('password').value.length<8||!$('password').value.trim())errors.push('비밀번호를 8자 이상 입력해 주세요.');
   $('signup-error').textContent=errors.join(' ');if(errors.length)return;
-  state.profile={name,birth:$('birth').value,phone};event.target.reset();go('risk');
+  state.profile={name,birth:$('birth').value,phone};event.target.reset();go('home');
 });
-document.querySelectorAll('[data-menu]').forEach(b=>b.addEventListener('click',()=>{
-  $('menu-name').textContent='비회원으로 이용 중';$('menu-region').textContent=state.farm.region;$('menu').showModal();
-}));
-$('close-menu').addEventListener('click',()=>$('menu').close());
-$('menu').addEventListener('click',event=>{if(event.target===$('menu')){const r=$('menu').getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right)$('menu').close();}});
-const tabs=[...document.querySelectorAll('[data-tab]')];
-function selectTab(tab){tabs.forEach(b=>{const active=b===tab;b.setAttribute('aria-selected',String(active));b.tabIndex=active?0:-1;$(b.dataset.tab).hidden=!active;});}
-tabs.forEach((tab,i)=>{tab.addEventListener('click',()=>selectTab(tab));tab.addEventListener('keydown',event=>{
-  let n;if(event.key==='ArrowRight')n=(i+1)%tabs.length;else if(event.key==='ArrowLeft')n=(i+tabs.length-1)%tabs.length;else if(event.key==='Home')n=0;else if(event.key==='End')n=tabs.length-1;else return;
-  event.preventDefault();selectTab(tabs[n]);tabs[n].focus();
-});});
-const points=[22,22.8,23.5,24.6,25.5,26.2,28.4].map((v,i)=>[38+i*45,168-(v-20)*12]);
-const line=points.map(p=>p.join(',')).join(' ');
-$('chart').innerHTML='<text x="8" y="20">°C</text><rect x="38" y="48" width="270" height="48" fill="#fff0ef"/>'+
-  [20,22,24,26,28,30].map(v=>`<line x1="38" y1="${168-(v-20)*12}" x2="308" y2="${168-(v-20)*12}" stroke="#e2e8f0"/><text x="8" y="${172-(v-20)*12}">${v}</text>`).join('')+
-  `<polygon points="38,168 ${line} 308,168" fill="#1677ff" opacity=".08"/><polyline points="${line}" fill="none" stroke="#1677ff" stroke-width="3"/>`+
-  points.map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="4" fill="white" stroke="#1677ff" stroke-width="2"/><text x="${x}" y="192" text-anchor="middle">8/${14+i}</text>`).join('');
+// 다른 화면에서 app.html#register(조건 수정), app.html#login(로그인)으로 들어오면 해당 화면을 엽니다.
+const entry=location.hash.slice(1);
+if(['register','login'].includes(entry))go(entry);
 </script>
 </body>
 </html>

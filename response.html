@@ -29,6 +29,10 @@
   .menu a.on .mi{background:var(--blue-l)}
   .menu a.on::after{content:"현재";margin-left:auto;font-size:13px;font-weight:700;background:var(--blue);color:#fff;border-radius:99px;padding:3px 9px}
   .menu a:focus-visible,.icon-btn:focus-visible{outline:3px solid #93b4f5;outline-offset:2px}
+  .menu a small{display:block;font-size:13.5px;font-weight:500;color:var(--mute);margin-top:2px}
+  .menu-foot{margin-top:auto;display:flex;justify-content:flex-end;padding-top:14px;border-top:1px solid var(--line)}
+  .logout{font:inherit;font-size:15px;font-weight:700;color:var(--sub);background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 16px;cursor:pointer}
+  .logout:focus-visible{outline:3px solid #93b4f5;outline-offset:2px}
   .top{display:flex;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top)) 18px 6px}
   .top h2{font-size:22px;font-weight:800}
   .icon-btn{background:none;border:0;font-size:24px;color:var(--ink);cursor:pointer;width:40px;height:40px}
@@ -116,11 +120,12 @@
   <div class="dim" id="dim"></div>
   <nav class="menu" id="menu" aria-label="전체 메뉴" aria-hidden="true">
     <div class="menu-top"><b>메뉴</b><button class="icon-btn" id="menuClose" aria-label="메뉴 닫기">✕</button></div>
-    <a href="#"><span class="mi">🏠</span>홈</a>
-    <a href="#"><span class="mi">🌡️</span>오늘의 수온</a>
+    <a href="home.html"><span class="mi">🏠</span><span>홈<small>오늘의 수온</small></span></a>
     <a href="#" class="on" aria-current="page"><span class="mi">📋</span>대응 요령</a>
     <a href="insurance.html"><span class="mi">🛡️</span>보험 정보</a>
     <a href="#"><span class="mi">👤</span>내 정보</a>
+    <a href="#"><span class="mi">⚙️</span>설정</a>
+    <div class="menu-foot"><button type="button" class="logout" id="logoutBtn">로그아웃</button></div>
   </nav>
 
   <div class="scroll">
@@ -158,7 +163,7 @@
 
   <nav class="tabbar" aria-label="하단 메뉴">
     <a href="#" class="on" aria-current="page"><span class="ti">📋</span>대응 요령</a>
-    <a href="#"><span class="ti">🏠</span>홈</a>
+    <a href="home.html"><span class="ti">🏠</span>홈</a>
     <a href="insurance.html"><span class="ti">🛡️</span>보험 정보</a>
   </nav>
 </div>
@@ -261,6 +266,7 @@ function setMenu(open){
 }
 $('#menuBtn').onclick=()=>setMenu(true);
 $('#menuClose').onclick=()=>setMenu(false);
+$('#logoutBtn').onclick=()=>{try{sessionStorage.removeItem('farm');}catch{}location.href='app.html';}; // 인증 연결 전까지는 양식장 정보만 지웁니다.
 $('#dim').onclick=()=>setMenu(false);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')setMenu(false)});
 render();
