@@ -61,6 +61,27 @@
   .my-list{list-style:disc;padding-left:18px;display:flex;flex-direction:column;gap:4px}
   .my-rest summary{font-size:14px;font-weight:700;color:var(--blue);cursor:pointer;padding-top:4px}
   .ben p.pre{white-space:pre-line}
+  [hidden]{display:none!important}
+  /* 상세 섹션 버튼 → 누르면 아래에서 올라오는 상세 창 */
+  .sec-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .sec-btn{display:flex;align-items:center;gap:8px;min-width:0;padding:11px 10px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;font-size:15px;font-weight:700;color:var(--ink);cursor:pointer;text-align:left;line-height:1.3;word-break:keep-all}
+  .sec-btn .bi{flex:none;width:30px;height:30px;border-radius:8px;background:var(--green-l);display:grid;place-items:center;font-size:16px}
+  .sec-btn::after{content:"›";margin-left:auto;padding-left:4px;color:var(--mute);font-size:20px;font-weight:400}
+  .sec-btn:hover{border-color:#c9d8f7;background:var(--blue-ll)}
+  .sec-btn:focus-visible,.sheet .icon-btn:focus-visible{outline:3px solid #93b4f5;outline-offset:2px}
+  .sheet-dim{position:absolute;inset:0;background:rgba(17,24,39,.4);z-index:8}
+  .sheet{position:absolute;left:0;right:0;bottom:0;max-height:82%;background:#fff;border-radius:20px 20px 0 0;z-index:9;display:flex;flex-direction:column;box-shadow:0 -8px 24px rgba(17,24,39,.18);animation:sheetUp .2s ease-out}
+  @keyframes sheetUp{from{transform:translateY(24px);opacity:.6}}
+  @media (prefers-reduced-motion:reduce){.sheet{animation:none}}
+  .sheet-h{display:flex;align-items:center;gap:10px;padding:14px 12px 10px 16px;border-bottom:1px solid var(--line)}
+  .sheet-h .bi{flex:none;width:38px;height:38px;border-radius:10px;background:var(--green-l);display:grid;place-items:center;font-size:20px}
+  .sheet-h h3{flex:1;min-width:0;font-size:19px;font-weight:800;line-height:1.3}
+  .sheet-h h3 small{display:block;font-size:13.5px;color:var(--mute);font-weight:500}
+  .sheet-b{overflow-y:auto;padding:14px 16px calc(22px + env(safe-area-inset-bottom))}
+  .sheet-b p{font-size:16px;color:var(--sub);line-height:1.7}
+  .sheet-b h4{font-size:15.5px;font-weight:800;margin:14px 0 6px}
+  .sheet-b h4:first-child{margin-top:0}
+  .sheet-b .my-list{gap:8px;font-size:16px;color:var(--sub);line-height:1.65}
   .sm-note{font-size:14px;color:var(--mute);margin-bottom:4px}
   .my-state{border:1px dashed #c9d8f7;border-radius:16px;padding:16px 14px;margin-bottom:16px;font-size:15.5px;color:var(--sub);line-height:1.6;background:var(--blue-ll)}
   .my-state.err{border-color:#f3b4b4;background:#fffafa}
@@ -152,6 +173,11 @@
   </div>
 
   <div class="dim" id="dim"></div>
+  <div class="sheet-dim" id="sheetDim" hidden></div>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
+    <div class="sheet-h"><span class="bi" id="sheetIc" aria-hidden="true"></span><h3 id="sheetTitle"></h3><button class="icon-btn" id="sheetClose" aria-label="닫기">✕</button></div>
+    <div class="sheet-b" id="sheetBody"></div>
+  </div>
   <nav class="menu" id="menu" aria-label="전체 메뉴" aria-hidden="true">
     <div class="menu-top"><b>메뉴</b><button class="icon-btn" id="menuClose" aria-label="메뉴 닫기">✕</button></div>
     <a href="home.html"><span class="mi">🏠</span><span>홈<small>오늘의 수온</small></span></a>
@@ -179,7 +205,6 @@
 
     <div class="bar">
       <b id="cnt"></b>
-      <button class="toggle" id="mineOnly" aria-pressed="false">내 품종만</button>
     </div>
 
     <div id="list"></div>
@@ -439,27 +464,24 @@ function toCard(d){
     },
   };
 }
-async function requestInsurance(species,method){
-  if(!API_BASE)return {...mockResponse(species,method),mock:true};
-  const q=new URLSearchParams({species});
-  if(method==='가두리'||method==='육상')q.set('method',method);
-  const list=await getJSON(`${API_BASE}/api/v1/insurance/products?${q}`);
-  if(!Array.isArray(list)||!list.length)return {status:404,mock:false};
-  const detail=await getJSON(`${API_BASE}/api/v1/insurance/products/${encodeURIComponent(list[0].product_id)}`);
-  return {status:200,body:toCard(detail),others:list.slice(1),mock:false};
-}
-
+let myIds=null; // 내 조건(품종·방식)에 맞는 DB 상품 id (백엔드가 정한 우선순위 순)
 async function loadMySummary(){
-  if(!farm){myResult={state:'nofarm'};renderMy();return;}
-  myResult={state:'loading'};renderMy();
+  if(!farm){myResult={state:'nofarm'};myIds=null;markMine();renderMy();render();return;}
+  myResult={state:'loading'};renderMy();render();
   try{
-    const r=await requestInsurance(farm.species,farm.method);
-    if(r.status===400||r.status===404||(r.status<300&&!r.body?.summary))myResult={state:'none',mock:r.mock};
-    else if(r.status>=300)throw new Error('HTTP '+r.status);
-    else myResult={state:'ok',data:r.body,mock:r.mock,others:r.others||[]};
-  }catch(e){myResult={state:'error'};}
-  markMine();
-  renderMy();render();
+    if(!API_BASE){
+      const r=mockResponse(farm.species,farm.method);
+      myResult=r.status===200?{state:'ok',mock:true,name:r.body.product_name}:{state:'none',mock:true};
+      myIds=null;
+    }else{
+      const q=new URLSearchParams({species:farm.species});
+      if(farm.method==='가두리'||farm.method==='육상')q.set('method',farm.method);
+      const list=await getJSON(`${API_BASE}/api/v1/insurance/products?${q}`);
+      myIds=(Array.isArray(list)?list:[]).map(x=>x.product_id);
+      myResult={state:myIds.length?'ok':'none',mock:false};
+    }
+  }catch(e){myResult={state:'error'};myIds=null;}
+  markMine();renderMy();render();
 }
 
 function renderMy(){
@@ -470,26 +492,13 @@ function renderMy(){
   if(myResult.state==='nofarm'){
     box.innerHTML=`<div class="my-state">양식장 정보가 없어요. <a href="app.html#register">양식장을 등록</a>하면 내 품종에 맞는 보험을 먼저 보여드려요.</div>`;return;}
   if(myResult.state==='loading'){
-    box.innerHTML=`<div class="my-state">⏳ ${sp} 보험 정보를 불러오는 중…</div>`;return;}
+    box.innerHTML=`<div class="my-state">⏳ ${sp} 보험 상품을 찾는 중…</div>`;return;}
   if(myResult.state==='none'){
-    box.innerHTML=`<div class="my-state">${sp}에 맞는 확인된 상품 정보가 아직 없어요. 아래 전체 목록을 보시거나 수협 공제상담(1588-4119)에 확인해 주세요.${myResult.mock?' <span class="bd ex">예시 응답</span>':''}</div>`;return;}
+    box.innerHTML=`<div class="my-state">${sp}에 맞는 확인된 보험 상품 정보가 아직 없어요. 조건을 바꿔 보시거나 수협 공제상담(1588-4119)에 확인해 주세요.${myResult.mock?' <span class="bd ex">예시 응답</span>':''}</div>`;return;}
   if(myResult.state==='error'){
     box.innerHTML=`<div class="my-state err">보험 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.<br><button class="retry" id="retryBtn">다시 시도</button></div>`;
     $('#retryBtn').onclick=loadMySummary;return;}
-  const d=myResult.data, sm=d.summary||{}, dt=d.details||{};
-  const hotShort=String(sm.hot_coverage||'').split(' · ')[0];
-  // 기존 상품 목록과 같은 모양: 머리줄(아이콘·배지·상품명·화살표) → 누르면 상세
-  const body=myOpen?(sm.hot_coverage?`<div class="hit">🌡️ <span><b>고수온</b> 피해: ${esc(sm.hot_coverage)}</span></div>`:'')+detailBody(d,myResult.others):'';
-  box.innerHTML=`<div class="acc mine my-acc ${myOpen?'open':''}">
-    <button class="acc-h" aria-expanded="${myOpen}">
-      <span class="acc-ic">🛡️</span>
-      <span class="acc-t"><span class="badges"><span class="bd mine">내 품종 · ${sp}</span>${myResult.mock?'<span class="bd ex">예시 응답</span>':'<span class="bd ok">DB 연결</span>'}</span>
-        <b>${esc(d.product_name)}</b>${hotShort?`<small>🌡️ 고수온: ${esc(hotShort)}</small>`:''}</span>
-      <span class="chev" aria-hidden="true"></span>
-    </button>
-    <div class="acc-b">${body}</div>
-  </div>`;
-  box.querySelector('.acc-h').onclick=()=>{myOpen=!myOpen;renderMy();};
+  box.innerHTML=''; // 내 조건 상품은 아래 목록에 나온다
 }
 const C=id=>CATS.find(x=>x.id===id);
 
@@ -500,19 +509,37 @@ function listHtml(v){
 }
 const val=v=>Array.isArray(v)?(v.length?listHtml(v):''):(v?`<p>${esc(v)}</p>`:'');
 const ben=(ic,title,body)=>body?`<div class="ben"><span class="bi">${ic}</span><div style="flex:1"><h5>${title}</h5>${body}</div></div>`:'';
-function detailBody(card,others){
+const SECTIONS=[
+  ['coverage','🛡️','보상하는 재해'],['subsidy','🏛️','보험료 정부 지원'],['eligibility','👤','가입 대상'],['deductible','📌','자기부담금'],
+  ['period','📅','가입 시기 · 보험기간'],['exclusions','🚫','보상하지 않는 손해'],['claim','📝','보험금 청구 규칙'],['checks','⚠️','확인할 사항'],
+];
+const has=v=>Array.isArray(v)?v.length>0:!!v;
+const hasSection=(dt,k)=>k==='coverage'?has(dt.coverage)||has(dt.riders):has(dt[k]);
+const fullVal=v=>Array.isArray(v)?`<ul class="my-list">${v.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:`<p>${esc(v)}</p>`;
+function sectionHtml(dt,k){
+  if(k==='coverage')return (has(dt.coverage)?'<h4>기본 보장</h4>'+fullVal(dt.coverage):'')+(has(dt.riders)?'<h4>특약</h4>'+fullVal(dt.riders):'');
+  return fullVal(dt[k]);
+}
+// 펼친 상품: 요약 + 섹션 버튼(누르면 상세 창) + 상담
+function detailButtons(card,pid){
   const dt=card.details||{};
-  return `
-    ${ben('🛡️','보상하는 재해',(val(dt.coverage)?'<p class="sm">기본 보장</p>'+val(dt.coverage):'')+(val(dt.riders)?'<p class="sm" style="margin-top:6px">특약</p>'+val(dt.riders):''))}
-    ${ben('🏛️','보험료 정부 지원',val(dt.subsidy))}
-    ${ben('👤','가입 대상',val(dt.eligibility))}
-    ${ben('📌','자기부담금',val(dt.deductible))}
-    ${ben('📅','가입 시기 · 보험기간',val(dt.period))}
-    ${ben('🚫','보상하지 않는 손해',val(dt.exclusions))}
-    ${ben('📝','보험금 청구 규칙',val(dt.claim))}
-    ${ben('⚠️','확인할 사항',val(dt.checks))}
-    ${others?.length?`<p class="sm-note">같은 품종 상품 ${others.length}개 더: ${others.map(o=>esc(o.product_name)).join(', ')}</p>`:''}
+  return `<div class="sec-grid">${SECTIONS.filter(([k])=>hasSection(dt,k)).map(([k,ic,t])=>
+      `<button class="sec-btn" data-sec="${k}" data-pid="${pid}" aria-haspopup="dialog"><span class="bi" aria-hidden="true">${ic}</span>${t}</button>`).join('')}</div>
     <div class="acc-cta"><a class="p" href="tel:1588-4119">상담 신청하기</a><a class="s" href="${SUHYUP_URL}" target="_blank" rel="noopener">공시실에서 보기 ↗</a></div>`;
+}
+let sheetReturn=null;
+function openSheet(card,k){
+  const [,ic,title]=SECTIONS.find(x=>x[0]===k);
+  $('#sheetIc').textContent=ic;
+  $('#sheetTitle').innerHTML=`${title}<small>${esc(card.product_name)}</small>`;
+  $('#sheetBody').innerHTML=sectionHtml(card.details||{},k);
+  $('#sheetBody').scrollTop=0;
+  sheetReturn=document.activeElement;
+  $('#sheetDim').hidden=false;$('#sheet').hidden=false;$('#sheetClose').focus();
+}
+function closeSheet(){
+  if($('#sheet').hidden)return;
+  $('#sheetDim').hidden=true;$('#sheet').hidden=true;sheetReturn?.focus();
 }
 
 /* ===== 전체 상품 목록: DB insurance 스키마 (GET /api/v1/insurance/overview) ===== */
@@ -549,11 +576,11 @@ async function openDbDetail(id){
   catch(e){detailCache[id]='error';}
   if(openId===id)renderIns();
 }
-// 내 품종 상품에 '내 품종 대상' 표시: DB 목록은 상품 id로, 예시 목록은 이름으로 비교
+// 내 조건 상품 표시: DB 목록은 상품 id로, 예시 목록은 예시 응답의 상품명으로 비교
 function markMine(){
-  const card=myResult?.state==='ok'?myResult.data:null;
   const core=n=>String(n||'').replace(/양식수산물재해보험|양식보험|[\s()]/g,'');
-  P.forEach(p=>{p.mine=!!card&&(p.db?p.id===card.product_id:core(p.name)===core(card.product_name));});
+  const mockName=myResult?.state==='ok'&&myResult.mock?core(myResult.name):null;
+  P.forEach(p=>{p.mine=p.db?!!myIds?.includes(p.id):!!mockName&&core(p.name)===mockName;});
 }
 
 /* ===== 지원제도: DB gov24 스키마 (GET /api/v1/support/services?region=) ===== */
@@ -616,7 +643,8 @@ function insBody(p){
     const c=detailCache[p.id];
     if(!c||c==='loading')return `${hitLine(p)}<p class="empty">⏳ 상세 내용을 불러오는 중…</p>`;
     if(c==='error')return `${hitLine(p)}<div class="my-state err">상세 내용을 불러오지 못했어요.<br><button class="retry" data-retry="${p.id}">다시 시도</button></div>`;
-    return hitLine(p)+detailBody(c);
+    const hot=c.summary?.hot_coverage;
+    return (hitLine(p)||(hot?`<div class="hit">🌡️ <span><b>고수온</b> 피해: ${esc(hot)}</span></div>`:''))+detailButtons(c,p.id);
   }
   if(p.verified){
     return `${hitLine(p)}
@@ -652,21 +680,23 @@ function supBody(s){
 }
 
 function renderIns(){
-  const arr=P.filter(p=>(cat==='all'||p.risks.includes(cat))&&(!mineOnly||p.mine))
-             .sort((a,b)=>(b.mine-a.mine)||(b.verified-a.verified));
+  if(listSource==='loading'||myResult?.state==='loading'){$('#cnt').innerHTML='내 조건에 맞는 보험';$('#list').innerHTML='<p class="empty">⏳ 보험 상품을 불러오는 중…</p>';return;}
+  // 내 조건(품종·방식)에 맞는 상품만, 백엔드가 정한 순서대로
+  const order=p=>p.db&&myIds?myIds.indexOf(p.id):0;
+  const mine=P.filter(p=>p.mine).sort((a,b)=>order(a)-order(b));
+  const arr=mine.filter(p=>cat==='all'||p.risks.includes(cat));
   if(!arr.some(p=>p.id===openId)) openId=-1;
-  $('#cnt').innerHTML=cat==='all'?`판매 중 상품 <em>${arr.length}</em>개`:`${C(cat).label} 보장 상품 <em>${arr.length}</em>개`;
-  if(listSource==='loading'){$('#cnt').innerHTML='보험 상품';$('#list').innerHTML='<p class="empty">⏳ 보험 상품을 불러오는 중…</p>';return;}
+  $('#cnt').innerHTML=cat==='all'?`내 조건에 맞는 보험 <em>${arr.length}</em>개`:`내 조건 · ${C(cat).label} 보장 <em>${arr.length}</em>개`;
   $('#list').innerHTML=arr.length?arr.map(p=>`
     <div class="acc ${p.mine?'mine':''} ${p.id===openId?'open':''}" data-id="${p.id}">
       <button class="acc-h" aria-expanded="${p.id===openId}">
         <span class="acc-ic">${p.g.ic}</span>
-        <span class="acc-t"><span class="badges">${p.mine?'<span class="bd mine">내 품종 대상</span>':''}${p.db?'<span class="bd ok">DB 연결</span>':p.verified?'<span class="bd ok">약관 확인</span>':'<span class="bd ex">예시</span>'}</span>
+        <span class="acc-t"><span class="badges">${p.db?'<span class="bd ok">DB 연결</span>':p.verified?'<span class="bd ok">약관 확인</span>':'<span class="bd ex">예시</span>'}</span>
           <b>${esc(p.name)}</b><small>${p.g.label}${p.db?(p.version?' · '+esc(p.version):''):' · 판매개시 '+p.start}</small></span>
         <span class="chev" aria-hidden="true"></span>
       </button>
       <div class="acc-b">${p.id===openId?insBody(p):''}</div>
-    </div>`).join(''):'<p class="empty">조건에 맞는 상품이 없습니다.</p>';
+    </div>`).join(''):(mine.length?`<p class="empty">내 조건 상품 ${mine.length}개 중 ${C(cat).label} 보장 상품은 없어요.<br>'전체'를 눌러 확인해 보세요.</p>`:'');
   $('#list').querySelectorAll('.acc-h').forEach(h=>h.onclick=()=>{
     const id=+h.parentElement.dataset.id; openId=(openId===id)?-1:id; renderIns();
     const p=P.find(x=>x.id===openId); if(p?.db)openDbDetail(p.id);
@@ -724,11 +754,9 @@ function renderSupDb(){
   $('#foot').innerHTML='출처: 정부24 공공서비스 목록 (DB gov24 스키마)';
 }
 function render(){
-  $('#mineOnly').style.display=tab==='ins'?'':'none';
   $('#mySummary').hidden=tab!=='ins';
   tab==='ins'?renderIns():renderSup();
 }
-$('#mineOnly').onclick=e=>{mineOnly=!mineOnly;e.currentTarget.classList.toggle('on',mineOnly);e.currentTarget.setAttribute('aria-pressed',mineOnly);render();};
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   tab=t.dataset.tab;
   document.querySelectorAll('.tab').forEach(x=>{x.classList.toggle('on',x===t);x.setAttribute('aria-selected',x===t)});
@@ -743,7 +771,13 @@ $('#menuBtn').onclick=()=>setMenu(true);
 $('#menuClose').onclick=()=>setMenu(false);
 $('#logoutBtn').onclick=()=>{try{sessionStorage.removeItem('farm');}catch{}location.href='app.html';}; // 인증 연결 전까지는 양식장 정보만 지웁니다.
 $('#dim').onclick=()=>setMenu(false);
-document.addEventListener('keydown',e=>{if(e.key==='Escape')setMenu(false)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('#sheet').hidden)closeSheet();else setMenu(false);}});
+$('#list').addEventListener('click',e=>{
+  const b=e.target.closest('.sec-btn'); if(!b)return;
+  const c=detailCache[+b.dataset.pid]; if(c&&typeof c==='object')openSheet(c,b.dataset.sec);
+});
+$('#sheetClose').onclick=closeSheet;
+$('#sheetDim').onclick=closeSheet;
 $('#condText').innerHTML=farm
   ?`<b>${esc(farm.region)}</b> · <b>${esc(speciesName(farm.species))}</b> · ${esc(farm.method)} · ${esc(farm.insurance)}`
   :'양식장 정보 없음';
