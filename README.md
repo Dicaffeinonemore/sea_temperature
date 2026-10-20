@@ -13,10 +13,43 @@
 | `start_bg.jpg` | 시작 화면 배경 사진 | – |
 
 - 시작 → 양식장 등록 → 홈(오늘의 수온)으로 이동하고, 하단 탭바와 ☰ 사이드 메뉴로 대응 요령·보험 정보를 오갑니다. 홈 좌측 상단의 로그인 → 회원가입으로 가입 화면에 진입합니다.
-- 지역 목록과 수온·보험·대응 정보는 내장된 예시이며 API에 연결하지 않습니다.
+- 지역 목록과 수온·대응 정보는 내장된 예시입니다. 보험 정보 화면의 "내 품종 보험" 카드는 백엔드를 통해 DB `insurance` 스키마에 연결됩니다(아래 참고).
 - 양식장 정보(지역·품종·방식·보험)는 브라우저 탭의 sessionStorage(`farm` 키)에 저장되어 모든 화면에서 읽을 수 있고, 탭을 닫거나 로그아웃하면 지워집니다. 홈에 들어왔는데 양식장 정보가 없으면 양식장 등록으로 이동합니다. 이름·생년월일·전화번호는 페이지 메모리에만 두며, 실제 계정은 생성하지 않고 비밀번호는 가입 완료 또는 화면 이동 시 지웁니다.
 - 다른 화면에서 `app.html#register`(조건 수정), `app.html#login`(로그인)으로 들어오면 해당 화면이 바로 열립니다.
 - HTML 버전은 Streamlit 버전과 별개입니다. `app.py` 수정이 자동 반영되지는 않습니다. HTML의 `<style>`은 디자인, `<section>`은 화면 항목, `<script>`는 동작을 담당합니다.
+
+### 보험 정보 ↔ DB 연결 (`insurance.html` → 백엔드 → `insurance` 스키마)
+
+브라우저는 DB에 직접 접속할 수 없으므로 백엔드(FastAPI)가 DB를 읽어 전달합니다.
+
+```
+insurance.html ─GET─▶ 백엔드 /api/v1/insurance/... ─SQL─▶ insurance_products / _coverages / _exclusions / _claim_rules
+```
+
+| API | 내용 |
+|---|---|
+| `GET /api/v1/insurance/products?species=굴&method=가두리` | 품종에 맞는 상품 목록. species는 양식장 등록 값 그대로(`조피볼락 (우럭)`이면 `조피볼락`·`우럭` 둘 다로 찾음). method가 육상이면 '육상' 상품을 앞에 둠 |
+| `GET /api/v1/insurance/products/{product_id}` | 상품 + 보장(coverages)·제외 조건(exclusions)·청구 규칙(claim_rules) |
+
+- 화면은 목록의 첫 상품을 "내 품종 보험" 카드로 보여 줍니다. 보장 중 risk_types·이름에 고수온/이상수온이 있으면 고수온 보장으로 표시하고, `is_optional`이면 "선택 특약 가입 시"로 씁니다.
+- 목록이 비면 "확인된 상품 정보가 아직 없어요"로 안내합니다(실패로 단정하지 않음). 서버 오류·15초 초과는 "다시 시도" 버튼을 보여 줍니다.
+- 백엔드 주소는 `insurance.html` 스크립트의 `API_BASE`(기본 `http://127.0.0.1:8000`)입니다. 비워 두면 약관 확인 상품 5개로 만든 예시(화면에 "예시 응답")를 씁니다.
+- 문구는 보험금 지급을 단정하지 않습니다("보상됩니다" 대신 "약관 조건 확인 필요").
+
+### 백엔드 실행
+
+1. `backend/backend/team.env.example`을 같은 폴더에 `.env`로 복사하고 `DB_USER`·`DB_PASSWORD`에 **본인 팀 계정**을 적습니다. `.env`는 깃허브에 올라가지 않습니다. 비밀번호를 단톡·캡처에 노출하지 마세요.
+2. 해당 계정에 `insurance` 스키마 조회 권한이 있어야 합니다(없으면 503). 권한은 스키마 소유자(nifs_team2)나 서버 관리자가 부여합니다.
+3. 프로젝트 최상위 폴더에서:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r backend\backend\requirements.txt
+cd backend
+..\.venv\Scripts\python.exe -m uvicorn backend.main:app --port 8000
+```
+
+4. `http://127.0.0.1:8000/docs`에서 API를 직접 눌러 볼 수 있습니다. 화면은 `python -m http.server 8765`로 열고 `http://localhost:8765/app.html`에서 시작합니다. localhost·127.0.0.1 주소는 CORS 허용되어 있고, 다른 주소는 `.env`의 `CORS_ORIGINS`에 추가합니다.
 
 ## 실행
 
