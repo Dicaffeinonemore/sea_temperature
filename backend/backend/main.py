@@ -1,11 +1,15 @@
 import logging
 
 from fastapi import Depends, FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from psycopg import Connection, Error
 
 from backend.api import router as api_router
+from backend.config import get_settings
 from backend.db import get_db
+from backend.insurance import router as insurance_router
+from backend.support import router as support_router
 from backend.routes import router
 
 logger = logging.getLogger(__name__)
@@ -16,6 +20,15 @@ app = FastAPI(
 )
 app.include_router(router)
 app.include_router(api_router)
+app.include_router(insurance_router)
+app.include_router(support_router)
+# HTML 화면(insurance.html 등)이 브라우저에서 직접 부르므로 허용할 주소만 연다. 조회 전용 API.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=get_settings().cors_origins,
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_methods=["GET"],
+)
 
 
 @app.exception_handler(Error)
