@@ -250,7 +250,11 @@
 <script>
 // 화면 동작은 이 script 영역에서 수정합니다. 외부 서버/라이브러리는 사용하지 않습니다.
 const $ = id => document.getElementById(id);
-const state = {farm:null,profile:null}; // 현재 탭 메모리만 사용하며 파일/저장소에 기록하지 않습니다.
+const state = {farm:null,profile:null}; // 이름·전화번호·비밀번호는 메모리에만 두고 저장하지 않습니다.
+// 양식장 정보(지역·품종·방식·보험)만 sessionStorage에 두어, 다른 화면에서 홈(app.html#home)으로 돌아와도 유지합니다. 탭을 닫으면 사라집니다.
+const FARM_KEY='farm';
+function saveFarm(){try{if(state.farm)sessionStorage.setItem(FARM_KEY,JSON.stringify(state.farm));else sessionStorage.removeItem(FARM_KEY);}catch{}}
+try{state.farm=JSON.parse(sessionStorage.getItem(FARM_KEY))||null;}catch{state.farm=null;}
 const titles = {me:'내 정보',settings:'설정'};
 for(const [id,values] of Object.entries({region:['거제시','고성군','남해군','사천시','창원시(진해구)','통영시','하동군'],species:['조피볼락 (우럭)','넙치 (광어)','참돔','돌돔','감성돔','숭어','굴','멍게','전복','기타']})){
   values.forEach(value=>$(id).add(new Option(value,value)));
@@ -289,7 +293,7 @@ function go(page){
 }
 document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',event=>{event.preventDefault();go(b.dataset.go);}));
 $('farm-form').addEventListener('submit',event=>{
-  event.preventDefault();state.farm=Object.fromEntries(new FormData(event.target));go('risk');
+  event.preventDefault();state.farm=Object.fromEntries(new FormData(event.target));saveFarm();go('risk');
 });
 $('login-form').addEventListener('submit',event=>{
   event.preventDefault();$('login-password').value='';
@@ -308,13 +312,14 @@ document.querySelectorAll('[data-menu]').forEach(b=>b.addEventListener('click',(
 $('menuClose').addEventListener('click',()=>setMenu(false));
 $('dim').addEventListener('click',()=>setMenu(false));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')setMenu(false)});
-$('logoutBtn').addEventListener('click',()=>{state.farm=null;state.profile=null;$('farm-form').reset();go('start');}); // 인증 연결 전까지는 입력 정보만 지웁니다.
+$('logoutBtn').addEventListener('click',()=>{state.farm=null;state.profile=null;saveFarm();$('farm-form').reset();go('start');}); // 인증 연결 전까지는 입력 정보만 지웁니다.
 const tabs=[...document.querySelectorAll('[data-tab]')];
 function selectTab(tab){tabs.forEach(b=>{const active=b===tab;b.setAttribute('aria-selected',String(active));b.tabIndex=active?0:-1;$(b.dataset.tab).hidden=!active;});}
 tabs.forEach((tab,i)=>{tab.addEventListener('click',()=>selectTab(tab));tab.addEventListener('keydown',event=>{
   let n;if(event.key==='ArrowRight')n=(i+1)%tabs.length;else if(event.key==='ArrowLeft')n=(i+tabs.length-1)%tabs.length;else if(event.key==='Home')n=0;else if(event.key==='End')n=tabs.length-1;else return;
   event.preventDefault();selectTab(tabs[n]);tabs[n].focus();
 });});
+if(location.hash==='#home')go('risk'); // 다른 화면의 홈 버튼: 양식장 정보가 있으면 오늘의 수온, 없으면 양식장 등록으로 갑니다.
 const points=[22,22.8,23.5,24.6,25.5,26.2,28.4].map((v,i)=>[38+i*45,168-(v-20)*12]);
 const line=points.map(p=>p.join(',')).join(' ');
 $('chart').innerHTML='<text x="8" y="20">°C</text><rect x="38" y="48" width="270" height="48" fill="#fdecec"/>'+
