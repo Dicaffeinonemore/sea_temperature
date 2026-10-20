@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     db_sslmode: Literal["disable", "allow", "prefer", "require", "verify-ca", "verify-full"] = "prefer"
     db_connect_timeout: int = Field(default=5, ge=1, le=30)
     db_statement_timeout_ms: int = Field(default=15000, ge=1)
+    session_cookie_secure: bool = False  # Set true behind HTTPS in production.
+    guest_session_days: int = Field(default=30, ge=1, le=365)
+    member_session_days: int = Field(default=7, ge=1, le=30)
+    cors_origins: list[str] = ["http://localhost:8501", "http://127.0.0.1:8501"]
 
     def connection_kwargs(self) -> dict:
         if self.database_url.get_secret_value():

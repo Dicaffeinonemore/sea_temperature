@@ -57,6 +57,7 @@ dialog{position:fixed;inset:0 0 0 auto;margin:0;width:min(320px,88vw);max-width:
 <form id="farm-form">
 <div class="field"><label for="region">양식 지역</label><select id="region" name="region" required><option value="">지역을 선택하세요</option></select></div>
 <div class="field"><label for="species">양식 품종</label><select id="species" name="species" required><option value="">품종을 선택하세요</option></select></div>
+<fieldset id="abalone-kind-field" hidden><legend>전복 구분</legend><div class="segments"><label><input type="radio" name="abalone_kind" value="육상" disabled><span>육상</span></label><label><input type="radio" name="abalone_kind" value="해상" disabled><span>해상</span></label></div></fieldset>
 <fieldset><legend>양식 방식</legend><div class="segments"><label><input type="radio" name="method" value="가두리" required><span>가두리</span></label><label><input type="radio" name="method" value="육상"><span>육상</span></label></div></fieldset>
 <fieldset><legend>보험 가입 상태</legend><div class="segments"><label><input type="radio" name="insurance" value="미가입" required><span>미가입</span></label><label><input type="radio" name="insurance" value="가입"><span>가입</span></label><label><input type="radio" name="insurance" value="잘 모름"><span>잘 모름</span></label></div></fieldset>
 <button class="primary" type="submit">등록하기</button></form>
@@ -104,12 +105,27 @@ dialog{position:fixed;inset:0 0 0 auto;margin:0;width:min(320px,88vw);max-width:
 const $ = id => document.getElementById(id);
 const state = {farm:null,profile:null}; // 현재 탭 메모리만 사용하며 파일/저장소에 기록하지 않습니다.
 const titles = {response:'맞춤형 대응 안내',insurance:'보험 정보 비교',consult:'상담 및 다음 단계'};
-for(const [id,values] of Object.entries({region:['거제시','고성군','남해군','사천시','창원시(진해구)','통영시','하동군'],species:['조피볼락 (우럭)','넙치 (광어)','참돔','돌돔','감성돔','숭어','굴','멍게','전복','기타']})){
+for(const [id,values] of Object.entries({region:['거제시','고성군','남해군','사천시','창원시(진해구)','통영시','하동군'],species:['조피볼락 (우럭)','넙치 (광어)','참돔','돌돔','감성돔','숭어','가숭어','볼락','점농어','말쥐치','참쥐치','능성어','방어','굴','멍게','미더덕','오만둥이','전복','기타']})){
   values.forEach(value=>$(id).add(new Option(value,value)));
 }
+$('region').setCustomValidity('지역을 선택해주십시오');
+$('region').addEventListener('change',()=>{
+  $('region').setCustomValidity($('region').value?'':'지역을 선택해주십시오');
+});
 const koreaDate = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
 const part = type => koreaDate.find(p=>p.type===type).value;
 $('birth').max = `${part('year')}-${part('month')}-${part('day')}`;
+$('species').addEventListener('change',()=>{
+  const abalone=$('species').value==='전복';
+  $('abalone-kind-field').hidden=!abalone;
+  document.querySelectorAll('[name="abalone_kind"]').forEach(input=>{
+    input.disabled=!abalone;input.required=abalone;input.checked=false;
+  });
+});
+document.querySelectorAll('[name="abalone_kind"]').forEach(button=>button.addEventListener('change',()=>{
+  const method={'육상':'육상','해상':'가두리'}[button.value];
+  document.querySelectorAll('[name="method"]').forEach(input=>input.checked=input.value===method);
+}));
 function go(page){
   if(!['start','register'].includes(page)&&!state.farm)page='register';
   if($('menu').open)$('menu').close();
@@ -122,17 +138,20 @@ function go(page){
   if(titles[page])$('placeholder-title').textContent=titles[page];
   if(page==='signup'){
     $('farm-summary').replaceChildren();
-    for(const [key,label] of Object.entries({region:'양식 지역',species:'양식 품종',method:'양식 방식',insurance:'보험 가입'})){
+    for(const [key,label] of Object.entries({region:'양식 지역',species:'양식 품종',abalone_kind:'전복 구분',method:'양식 방식',insurance:'보험 가입'})){
+      if(key==='abalone_kind'&&!state.farm[key])continue;
       const dt=document.createElement('dt'),dd=document.createElement('dd');
       dt.textContent=label;dd.textContent=state.farm[key];$('farm-summary').append(dt,dd);
     }
   }
-  if(page==='risk')$('farm-caption').textContent=`${state.farm.region} · ${state.farm.species} · ${state.farm.method}`;
+  if(page==='risk')$('farm-caption').textContent=`${state.farm.region} · ${state.farm.species}${state.farm.abalone_kind?'('+state.farm.abalone_kind+')':''} · ${state.farm.method}`;
   window.scrollTo(0,0);screen.querySelector('h1')?.focus({preventScroll:true});
 }
 document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
 $('farm-form').addEventListener('submit',event=>{
-  event.preventDefault();state.farm=Object.fromEntries(new FormData(event.target));go('risk');
+  event.preventDefault();state.farm=Object.fromEntries(new FormData(event.target));
+  if(state.farm.species==='전복')state.farm.method={'육상':'육상','해상':'가두리'}[state.farm.abalone_kind];
+  go('risk');
 });
 $('login-form').addEventListener('submit',event=>{
   event.preventDefault();$('login-password').value='';
