@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>수온 불러오기</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  /*
+    로딩 관련 화면 4개를 한 파일에 담았습니다. 주소 끝 값으로 화면을 고릅니다.
+      loading.html?state=loading  로딩 (기본값)
+      loading.html?state=nodata   해당 자료 없음
+      loading.html?state=fail     응답 실패
+      loading.html?state=input    입력값 오류
+    선택 값: &region=통영&species=참돔  → 화면의 [양식 지역]/[양식 품종] 자리에 들어갑니다.
+             &next=nodata|fail       → 로딩이 100%가 되면 그 화면으로 넘어갑니다 (없으면 로딩 반복).
+  */
+  :root{
+    --blue:#1e6fe8; --blue-d:#1759c0; --blue-l:#edf3fd; --line-b:#d3dff3;
+    --red:#d63a3f; --red-l:#fcebeb;
+    --navy:#14254f; --sub:#4b5563; --mute:#6b7280; --line:#e2e6ee; --track:#e4eaf3; --soft:#f4f6fa;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  [hidden]{display:none!important}
+  html,body{height:100%}
+  body{font-family:'Noto Sans KR',system-ui,sans-serif;background:#eef2f8;color:var(--navy)}
+  .screen{background:#fff;max-width:480px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;padding:calc(28px + env(safe-area-inset-top)) 24px calc(28px + env(safe-area-inset-bottom))}
+
+  .brand{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:800;color:var(--navy)}
+  .brand .logo{width:30px;height:30px;border-radius:9px;background:var(--blue);display:grid;place-items:center}
+
+  .state{flex:1;display:flex;flex-direction:column}
+  .body{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:24px 0}
+  .actions{display:flex;flex-direction:column;gap:10px}
+  .actions.row{flex-direction:row}
+  .actions.row .btn.pri{flex:0 0 46%}
+  .actions.row .btn.sec{flex:1}
+
+  .hero{width:min(240px,62vw);aspect-ratio:1;border-radius:50%;background:var(--blue-l);display:grid;place-items:center;margin-bottom:20px}
+  .hero.red{background:var(--red-l)}
+  .hero svg{width:82%;height:auto}
+  .chip{display:inline-block;padding:5px 13px;border-radius:999px;background:var(--blue-l);color:var(--blue);font-size:13px;font-weight:700;margin-bottom:16px}
+  .chip.red{background:var(--red-l);color:#b42328}
+  h1{font-size:22px;font-weight:800;line-height:1.4;letter-spacing:-.3px}
+  .desc{margin-top:12px;font-size:14px;line-height:1.7;color:var(--sub)}
+
+  .info{width:100%;margin-top:22px;border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;gap:8px;font-size:14px}
+  .info.soft{border:0;background:var(--soft)}
+  .info div{display:flex;justify-content:space-between;gap:10px}
+  .info dt{color:var(--mute)}
+  .info dd{color:var(--navy);font-weight:500}
+  .info.soft dd{font-weight:800}
+
+  .btn{display:flex;justify-content:center;align-items:center;border-radius:14px;padding:16px 12px;font:inherit;font-size:16px;font-weight:800;cursor:pointer;text-decoration:none;border:0;text-align:center}
+  .btn.pri{background:var(--blue);color:#fff}
+  .btn.pri:hover{background:var(--blue-d)}
+  .btn.sec{background:#fff;color:var(--blue);border:1px solid var(--line-b);font-weight:600}
+  .btn.sec:hover{background:var(--blue-l)}
+  .btn:focus-visible,select:focus-visible{outline:3px solid #93b4f5;outline-offset:2px}
+
+  /* 진행바 */
+  .progress{margin-top:auto}
+  .bar{height:10px;border-radius:999px;background:var(--track);overflow:hidden}
+  .bar i{display:block;height:100%;width:0;border-radius:999px;background:var(--blue);transition:background-color .3s}
+  .bar.err i{background:var(--red)}
+  .bar-meta{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:13.5px;color:var(--mute)}
+  .bar-meta b{font-size:17px;font-weight:800;color:var(--blue);font-variant-numeric:tabular-nums}
+  .bar.err + .bar-meta, .bar.err + .bar-meta b{color:var(--red)}
+
+  /* 로딩: 어종 카드 */
+  .card{width:100%;background:var(--blue-l);border-radius:24px;padding:24px 20px 22px;text-align:center}
+  .card .chip{background:#fff;margin-bottom:6px}
+  .card-fish{height:150px;display:grid;place-items:center}
+  .card-fish svg{width:200px;height:auto}
+  .card h2{font-size:19px;font-weight:800;margin-top:6px}
+  .card p{font-size:13.5px;color:var(--sub);line-height:1.7;margin-top:8px;min-height:46px}
+  .swap{transition:opacity .35s, transform .35s}
+  .swap.out{opacity:0;transform:translateX(-10px)}
+  .dots{display:flex;justify-content:center;gap:7px;margin-top:12px}
+  .dots i{width:8px;height:8px;border-radius:999px;background:#c9d6ee;transition:width .3s, background-color .3s}
+  .dots i.on{width:22px;background:var(--blue)}
+  .loading-title{margin-top:30px}
+
+  /* 입력 오류 폼 */
+  .form{width:100%;text-align:left;margin-top:24px;display:grid;gap:18px}
+  .field label{display:block;font-size:14px;font-weight:700;margin-bottom:8px}
+  .select{position:relative}
+  .select select{appearance:none;-webkit-appearance:none;width:100%;font:inherit;font-size:16px;color:var(--navy);background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 40px 14px 16px;cursor:pointer}
+  .select select:invalid{color:#9aa1ad}
+  .select::after{content:"";position:absolute;right:16px;top:50%;width:8px;height:8px;border-right:2px solid var(--navy);border-bottom:2px solid var(--navy);transform:translateY(-70%) rotate(45deg);pointer-events:none}
+  .field.err select{border-color:var(--red)}
+  .err-msg{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:13.5px;color:var(--red)}
+
+  /* 물고기 움직임 */
+  .bob{animation:bob 3s ease-in-out infinite}
+  .hero.bob{animation:none}
+  .hero.bob svg{animation:bob 3s ease-in-out infinite}
+  @keyframes bob{50%{transform:translateY(-6px)}}
+  .zz{animation:zz 2.4s ease-in-out infinite}
+  .zz.b{animation-delay:.6s}
+  @keyframes zz{0%,100%{opacity:.3;transform:translateY(4px)}50%{opacity:1;transform:translateY(-3px)}}
+  .tail{transform-box:fill-box;transform-origin:right center;animation:tail .9s ease-in-out infinite}
+  @keyframes tail{50%{transform:scaleY(.82)}}
+  .shake{animation:shake .4s}
+  @keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+
+  @media (prefers-reduced-motion: reduce){
+    .bob,.hero.bob svg,.zz,.tail{animation:none}
+    .swap,.bar i{transition:none}
+  }
+  @media (max-height:700px){
+    .hero{width:min(180px,48vw)}
+    .card-fish{height:110px}
+    .card-fish svg{width:160px}
+  }
+</style>
+</head>
+<body>
+<main class="screen">
+  <header class="brand">
+    <span class="logo" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v6M9 6h6"/><path d="M3 13c1.5-1.3 3-1.3 4.5 0s3 1.3 4.5 0 3-1.3 4.5 0 3 1.3 4.5 0"/><path d="M3 18c1.5-1.3 3-1.3 4.5 0s3 1.3 4.5 0 3-1.3 4.5 0 3 1.3 4.5 0"/></svg>
+    </span>
+    우리 바다 안심도우미
+  </header>
+
+  <!-- 1. 로딩 -->
+  <section class="state" data-state="loading" hidden>
+    <div class="body">
+      <div class="card" aria-live="off">
+        <span class="chip">남해안 양식 어종 이야기</span>
+        <div class="swap" id="card-swap">
+          <div class="card-fish bob" id="card-fish"></div>
+          <h2 id="card-name"></h2>
+          <p id="card-text"></p>
+        </div>
+        <div class="dots" id="card-dots"></div>
+      </div>
+      <h1 class="loading-title">선택한 해역의 수온 자료를<br>불러오고 있어요</h1>
+    </div>
+    <div class="progress">
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="수온 자료 불러오기 진행률" id="load-bar"><i></i></div>
+      <div class="bar-meta"><span id="load-label">해역 정보 확인 중</span><b id="load-pct">0%</b></div>
+    </div>
+  </section>
+
+  <!-- 2. 해당 자료 없음 -->
+  <section class="state" data-state="nodata" hidden>
+    <div class="body">
+      <div class="hero bob" id="nodata-fish"></div>
+      <span class="chip">넙치 (광어)</span>
+      <h1>해당 자료가 없어요</h1>
+      <p class="desc">선택한 지역·품종의 수온 자료가 아직 없어요.<br>다른 지역을 고르거나 공식 기관에서 확인해 주세요.</p>
+      <dl class="info">
+        <div><dt>선택한 지역</dt><dd data-fill="region">[양식 지역]</dd></div>
+        <div><dt>선택한 품종</dt><dd data-fill="species">[양식 품종]</dd></div>
+      </dl>
+    </div>
+    <div class="actions">
+      <a class="btn pri" href="?state=input">지역·품종 다시 선택</a>
+      <a class="btn sec" href="https://www.nifs.go.kr" target="_blank" rel="noopener">국립수산과학원에서 확인하기</a>
+    </div>
+  </section>
+
+  <!-- 3. 응답 실패 -->
+  <section class="state" data-state="fail" hidden>
+    <div class="body">
+      <div class="hero" id="fail-fish"></div>
+      <span class="chip">조피볼락 (우럭)</span>
+      <h1>수온 정보를 불러오지 못했어요</h1>
+      <p class="desc">관측 기관 응답이 늦어지고 있어요.<br>잠시 후 다시 시도하거나 마지막 자료를 확인해 주세요.</p>
+      <dl class="info soft">
+        <div><dt>마지막 정상 갱신</dt><dd data-fill="updated">[YYYY.MM.DD HH:MM]</dd></div>
+      </dl>
+    </div>
+    <div class="progress" style="margin-bottom:16px">
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="수온 자료 불러오기 진행률" id="fail-bar"><i></i></div>
+      <div class="bar-meta"><span id="fail-label">수온 관측 자료 불러오는 중</span><b id="fail-pct">0%</b></div>
+    </div>
+    <div class="actions row">
+      <a class="btn pri" href="?state=loading" data-keep>다시 시도</a>
+      <!-- 마지막 수온 화면(오늘의 수온) -->
+      <a class="btn sec" href="home.html">마지막 자료 보기</a>
+    </div>
+  </section>
+
+  <!-- 4. 입력값 오류 -->
+  <section class="state" data-state="input" hidden>
+    <div class="body">
+      <div class="hero red bob" id="input-fish"></div>
+      <span class="chip red" id="input-chip">참돔</span>
+      <h1>입력값을 다시 확인해 주세요</h1>
+      <p class="desc">빠진 항목이 있어 위험정보를 보여드릴 수 없어요.</p>
+      <form class="form" id="input-form" novalidate>
+        <div class="field" id="f-region">
+          <label for="region">양식 지역</label>
+          <div class="select">
+            <select id="region" required aria-describedby="region-err">
+              <option value="" disabled selected>지역을 선택하세요</option>
+              <option>통영</option><option>거제</option><option>남해</option><option>여수</option><option>완도</option><option>고흥</option>
+            </select>
+          </div>
+          <p class="err-msg" id="region-err" hidden>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 7v6M12 16.5v.5"/></svg>
+            양식 지역을 선택해 주세요.
+          </p>
+        </div>
+        <div class="field" id="f-species">
+          <label for="species">양식 품종</label>
+          <div class="select">
+            <select id="species" required aria-describedby="species-err">
+              <option value="" disabled>품종을 선택하세요</option>
+              <option selected>참돔</option><option>넙치</option><option>조피볼락</option><option>돌돔</option>
+            </select>
+          </div>
+          <p class="err-msg" id="species-err" hidden>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 7v6M12 16.5v.5"/></svg>
+            양식 품종을 선택해 주세요.
+          </p>
+        </div>
+      </form>
+    </div>
+    <div class="actions">
+      <button class="btn pri" type="submit" form="input-form">다시 확인하기</button>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const params = new URLSearchParams(location.search);
+  const STATES = ['loading', 'nodata', 'fail', 'input'];
+  const state = STATES.includes(params.get('state')) ? params.get('state') : 'loading';
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelector(`[data-state="${state}"]`).hidden = false;
+
+  // 주소로 받은 지역·품종을 화면에 채움
+  ['region', 'species', 'updated'].forEach(key => {
+    const v = params.get(key);
+    if (v) document.querySelectorAll(`[data-fill="${key}"]`).forEach(el => el.textContent = v);
+  });
+  // 다른 화면으로 갈 때 지역·품종 값을 이어서 넘김
+  document.querySelectorAll('a[href^="?state="]').forEach(a => {
+    const next = new URLSearchParams(a.getAttribute('href').slice(1));
+    ['region', 'species'].forEach(k => params.get(k) && next.set(k, params.get(k)));
+    a.href = '?' + next.toString();
+  });
+
+  /* ---------- 물고기 그림 ---------- */
+  // 같은 몸통 틀에 색과 표정만 바꿔서 그립니다.
+  function fish({ body, belly, fin, spots = [], spotColor, face = 'happy', extra = '' }) {
+    const eyes = {
+      happy: `<circle cx="232" cy="74" r="17" fill="#fff"/><circle cx="235" cy="76" r="10" fill="#1d2433"/><circle cx="239" cy="71" r="3.5" fill="#fff"/><path d="M286 88q8 6 0 14" stroke="#1d2433" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="246" cy="110" r="10" fill="#fff" opacity=".35"/>`,
+      sleep: `<path d="M212 76q14 10 28 0M244 92q14 10 28 0" stroke="#1d2433" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M278 118h16" stroke="#1d2433" stroke-width="5" stroke-linecap="round"/><circle cx="246" cy="126" r="9" fill="#e59a9a" opacity=".85"/>`,
+      dizzy: `<circle cx="236" cy="78" r="19" fill="#fff"/><path d="M227 69l18 18M245 69l-18 18" stroke="#1d2433" stroke-width="5" stroke-linecap="round"/><path d="M270 120q10-8 20 2" stroke="#1d2433" stroke-width="4" fill="none" stroke-linecap="round"/>`,
+      puzzled: `<path d="M214 52l30 4" stroke="#1d2433" stroke-width="5" stroke-linecap="round"/><circle cx="232" cy="76" r="15" fill="#fff"/><circle cx="232" cy="78" r="9" fill="#1d2433"/><path d="M282 108q8 2 12-4" stroke="#1d2433" stroke-width="4" fill="none" stroke-linecap="round"/>`,
+    }[face];
+    const sp = spots.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r || 5.5}" fill="${spotColor}"/>`).join('');
+    return `<svg viewBox="0 0 320 190" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path class="tail" d="M0 40l58 55-58 55q16-55 0-110z" fill="${fin}"/>
+      <path d="M108 38q58-44 132-6" fill="${fin}"/>
+      <ellipse cx="170" cy="96" rx="140" ry="76" fill="${body}"/>
+      <ellipse cx="160" cy="124" rx="108" ry="42" fill="${belly}"/>
+      ${sp}${eyes}${extra}
+    </svg>`;
+  }
+  // 넙치(광어)는 납작한 몸이라 따로 그림
+  function flatfish(face = 'happy') {
+    const eye = face === 'sleep'
+      ? `<path d="M212 62q14 10 28 0M246 80q14 10 28 0" stroke="#1d2433" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M276 112h16" stroke="#1d2433" stroke-width="5" stroke-linecap="round"/><circle cx="246" cy="118" r="9" fill="#e59a9a" opacity=".9"/>`
+      : `<circle cx="226" cy="66" r="13" fill="#fff"/><circle cx="228" cy="67" r="7.5" fill="#1d2433"/><circle cx="258" cy="80" r="13" fill="#fff"/><circle cx="260" cy="81" r="7.5" fill="#1d2433"/><path d="M282 108q8 6 0 12" stroke="#1d2433" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+    return `<svg viewBox="0 0 320 190" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path class="tail" d="M0 50l50 45-50 45q14-45 0-90z" fill="#8b6c4f"/>
+      <ellipse cx="174" cy="95" rx="140" ry="64" fill="#a98a6b"/>
+      <path d="M60 48q110-46 228 2M60 142q110 46 228-2" stroke="#8b6c4f" stroke-width="13" fill="none" stroke-linecap="round"/>
+      <circle cx="110" cy="86" r="9" fill="#8b6c4f"/><circle cx="160" cy="112" r="11" fill="#8b6c4f"/>
+      ${eye}
+    </svg>`;
+  }
+
+  const FISH = {
+    flounder: () => flatfish(),
+    seabream: (face = 'happy') => fish({ body: '#f08480', belly: '#f8b4ad', fin: '#de5f5c', spotColor: '#5aa0ee', spots: [[118, 72, 5.5], [146, 60, 5.5], [178, 76, 5.5], [130, 96, 5.5]], face }),
+    rockfish: (face = 'happy') => fish({ body: '#7b756d', belly: '#a39b8e', fin: '#57524c', spotColor: '#5e5850', spots: [[108, 82, 12], [148, 66, 9], [132, 118, 11]], face }),
+    stripedbeakfish: () => fish({ body: '#e9e4d6', belly: '#f6f2e8', fin: '#2c3445', spotColor: '#2c3445', extra: `<path d="M118 28v136M170 22v148M220 30v126" stroke="#2c3445" stroke-width="16" opacity=".85"/>`, face: 'happy' }),
+  };
+
+  /* ---------- 진행바 공통 ---------- */
+  function setBar(barId, pctId, v) {
+    const bar = document.getElementById(barId);
+    bar.querySelector('i').style.width = v + '%';
+    bar.setAttribute('aria-valuenow', Math.round(v));
+    document.getElementById(pctId).textContent = Math.round(v) + '%';
+  }
+  // from → to 까지 ms 동안 부드럽게 증가 (중간중간 잠깐 멈칫하도록 계단형 속도)
+  function runBar(barId, pctId, from, to, ms, onTick, onDone) {
+    if (reduced) { setBar(barId, pctId, to); onTick && onTick(to); onDone && onDone(); return; }
+    const start = performance.now();
+    (function frame(now) {
+      const t = Math.min(1, (now - start) / ms);
+      const eased = t + Math.sin(t * Math.PI * 6) * 0.025;   // 살짝 울퉁불퉁한 진행
+      const v = from + (to - from) * Math.max(0, Math.min(1, eased));
+      setBar(barId, pctId, v);
+      onTick && onTick(v);
+      t < 1 ? requestAnimationFrame(frame) : onDone && onDone();
+    })(start);
+  }
+
+  /* ---------- 1. 로딩 ---------- */
+  if (state === 'loading') {
+    const cards = [
+      { draw: FISH.flounder, name: '넙치 (광어)', text: '몸이 납작하고 두 눈이 왼쪽에 몰려 있어요. 우리나라에서 가장 많이 기르는 물고기예요.' },
+      { draw: FISH.seabream, name: '참돔', text: '붉은 몸빛에 파란 점이 있는 물고기예요. 남해안 가두리에서 많이 길러요.' },
+      { draw: FISH.rockfish, name: '조피볼락 (우럭)', text: '찬물을 좋아해서 여름 고수온에 특히 약해요. 수온을 자주 확인해 주세요.' },
+      { draw: FISH.stripedbeakfish, name: '돌돔', text: '검은 줄무늬가 또렷한 물고기예요. 따뜻한 바다에서 잘 자라요.' },
+    ];
+    const swap = document.getElementById('card-swap');
+    const dots = document.getElementById('card-dots');
+    dots.innerHTML = cards.map(() => '<i></i>').join('');
+    let idx = 1;
+    function showCard(i) {
+      document.getElementById('card-fish').innerHTML = cards[i].draw();
+      document.getElementById('card-name').textContent = cards[i].name;
+      document.getElementById('card-text').textContent = cards[i].text;
+      [...dots.children].forEach((d, j) => d.classList.toggle('on', j === i));
+    }
+    showCard(idx);
+    setInterval(() => {
+      swap.classList.add('out');
+      setTimeout(() => { idx = (idx + 1) % cards.length; showCard(idx); swap.classList.remove('out'); }, 350);
+    }, 2800);
+
+    const steps = [[0, '해역 정보 확인 중'], [25, '수온 관측 자료 불러오는 중'], [60, '고수온 위험도 계산 중'], [90, '거의 다 됐어요'], [100, '불러오기 완료']];
+    const label = document.getElementById('load-label');
+    const next = params.get('next');
+    const cycle = () => {
+      runBar('load-bar', 'load-pct', 0, 100, 9000,
+        v => { label.textContent = steps.filter(s => v >= s[0]).pop()[1]; },
+        () => setTimeout(() => {
+          if (next === 'nodata' || next === 'fail') {
+            const p = new URLSearchParams(location.search); p.set('state', next); p.delete('next');
+            location.search = p.toString();
+          } else cycle();                       // 다음 화면 지정이 없으면 데모로 반복
+        }, 1200));
+    };
+    cycle();
+  }
+
+  /* ---------- 2. 자료 없음 ---------- */
+  if (state === 'nodata') {
+    document.getElementById('nodata-fish').innerHTML = flatfish('sleep').replace('</svg>',
+      `<text class="zz" x="268" y="22" font-size="28" font-weight="800" fill="#7fa3dc" font-family="sans-serif">z</text>
+       <text class="zz b" x="290" y="2" font-size="20" font-weight="800" fill="#a9c2ea" font-family="sans-serif">z</text></svg>`)
+      .replace('viewBox="0 0 320 190"', 'viewBox="0 -20 320 210"');
+  }
+
+  /* ---------- 3. 응답 실패 ---------- */
+  if (state === 'fail') {
+    document.getElementById('fail-fish').innerHTML = FISH.rockfish('dizzy').replace('</svg>',
+      `<path d="M226 6q12-12 24 0t24 0" stroke="#7fa3dc" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="290" cy="2" r="5" fill="#a9c2ea"/></svg>`)
+      .replace('viewBox="0 0 320 190"', 'viewBox="0 -14 320 204"');
+    const bar = document.getElementById('fail-bar');
+    // 64%까지 차다가 응답이 끊기며 빨간색으로 멈춤
+    runBar('fail-bar', 'fail-pct', 0, 64, 3200, null, () => {
+      bar.classList.add('err');
+      document.getElementById('fail-label').textContent = '응답 없음 · 불러오기 중단';
+    });
+  }
+
+  /* ---------- 4. 입력값 오류 ---------- */
+  if (state === 'input') {
+    const qmark = `<text x="274" y="58" font-size="54" font-weight="800" fill="#d63a3f" font-family="sans-serif">?</text>`;
+    const draw = () => document.getElementById('input-fish').innerHTML =
+      FISH.seabream('puzzled').replace('</svg>', qmark + '</svg>').replace('viewBox="0 0 320 190"', 'viewBox="0 -10 320 200"');
+    draw();
+
+    const region = document.getElementById('region');
+    const species = document.getElementById('species');
+    if (params.get('region')) region.value = params.get('region');
+    if (params.get('species')) species.value = params.get('species');
+
+    const chip = document.getElementById('input-chip');
+    const sync = () => { chip.textContent = species.value || '품종 미선택'; };
+    sync();
+
+    function check(sel, fieldId, errId) {
+      const ok = !!sel.value;
+      document.getElementById(fieldId).classList.toggle('err', !ok);
+      document.getElementById(errId).hidden = ok;
+      sel.setAttribute('aria-invalid', String(!ok));
+      return ok;
+    }
+    // 처음 열렸을 때 빠진 항목을 바로 표시
+    check(region, 'f-region', 'region-err');
+    check(species, 'f-species', 'species-err');
+    region.addEventListener('change', () => check(region, 'f-region', 'region-err'));
+    species.addEventListener('change', () => { check(species, 'f-species', 'species-err'); sync(); });
+
+    document.getElementById('input-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const a = check(region, 'f-region', 'region-err');
+      const b = check(species, 'f-species', 'species-err');
+      if (a && b) {
+        location.search = new URLSearchParams({ state: 'loading', region: region.value, species: species.value }).toString();
+      } else {
+        const hero = document.getElementById('input-fish');
+        hero.classList.remove('shake'); void hero.offsetWidth; hero.classList.add('shake');
+        hero.addEventListener('animationend', () => hero.classList.remove('shake'), { once: true });
+        (a ? species : region).focus();
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>
