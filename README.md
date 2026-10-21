@@ -8,7 +8,8 @@
 |---|---|---|
 | `app.html` | 시작 · 양식장 등록 · 로그인 · 회원가입 | – |
 | `home.html` | 홈(오늘의 수온): 현재 상황 · 예측 추이 · 특보 | 앱-2 ↔ n8n-3 (`{"region": ...}`) |
-| `insurance.html` | 보험 정보 비교 · 지원제도 | 앱-1 ↔ n8n-1 (`{"species": ...}`) |
+| `insurance.html` | 보험 정보 비교 · 지원제도 | 백엔드 → DB `insurance`·`gov24` 스키마 |
+| `insurance_test.py` | 보험 화면 + 보험·지원제도 API를 한 번에 띄우는 서버 (`home_test.py`와 같은 방식). `python insurance_test.py` → http://127.0.0.1:8000/ | DB 접속은 `backend/backend/.env` 또는 `DATABASE_URL` |
 | `response.html` | 대응 요령 | 위험 단계·특보 데이터 |
 | `start_bg.jpg` | 시작 화면 배경 사진 | – |
 | `common.css`, `common.js` | **모든 화면 공통** 하단 바(홈·수온·대응 요령·보험·내 정보) | – |
