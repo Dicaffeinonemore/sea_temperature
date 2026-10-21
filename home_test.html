@@ -6,6 +6,7 @@
 <title>우리 양식장 - 우리 바다 안심도우미</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
 <style>
   :root {
     --bg: #f3f5fa;
@@ -159,22 +160,6 @@
   .api-status.error { background: var(--danger-soft); color: var(--danger); }
   .api-status small { display: block; margin-top: 2px; color: var(--text-muted); font-size: 12px; word-break: break-all; }
 
-  /* 하단 탭바 */
-  .tabbar {
-    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-    width: 100%; max-width: 420px;
-    background: var(--tabbar); border-top: 1px solid var(--border);
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px;
-    padding: 8px 8px calc(10px + env(safe-area-inset-bottom));
-  }
-  .tab {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 4px; min-height: 64px; border-radius: 12px;
-    color: var(--text-sub);
-    font-size: 13px; font-weight: 500; letter-spacing: -0.3px; white-space: nowrap;
-  }
-  .tab svg { width: 26px; height: 26px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  .tab.active { background: var(--tab-active-bg); color: var(--primary-text); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -232,28 +217,8 @@
     </section>
   </main>
 
-  <nav class="tabbar" aria-label="하단 메뉴">
-    <a href="#" class="tab active" aria-current="page">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M10 20v-5h4v5"/></svg>
-      <span>홈</span>
-    </a>
-    <a href="#" class="tab">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M3 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>
-      <span>수온</span>
-    </a>
-    <a href="#" class="tab">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>
-      <span>대응 요령</span>
-    </a>
-    <a href="#" class="tab">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6l-8-3Z"/></svg>
-      <span>보험</span>
-    </a>
-    <a href="#" class="tab">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
-      <span>내 정보</span>
-    </a>
-  </nav>
+  <nav id="tabbar" data-active="home"></nav>
+  <script src="common.js"></script>
 
 </div>
 

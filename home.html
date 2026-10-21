@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>오늘의 수온</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
 <style>
   /* 홈(오늘의 수온) 화면. 색·메뉴·탭바는 insurance.html, response.html과 같은 값을 씁니다. */
   :root{
@@ -79,14 +80,6 @@
   .alert-card{border:1px solid var(--line);border-radius:16px;padding:16px 14px}
   .alert-card p{font-size:16px;color:var(--sub);line-height:1.6}
 
-  /* 하단 탭바 */
-  .tabbar{display:flex;gap:4px;border-top:1px solid var(--line);background:#fff;padding:6px 10px calc(10px + env(safe-area-inset-bottom));flex:none}
-  .tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0 6px;border-radius:14px;
-            font-size:14.5px;font-weight:700;color:var(--mute);text-decoration:none}
-  .tabbar a .ti{font-size:25px;line-height:1;filter:grayscale(1);opacity:.55}
-  .tabbar a.on{color:var(--blue);background:var(--blue-ll)}
-  .tabbar a.on .ti{filter:none;opacity:1}
-  .tabbar a:focus-visible{outline:3px solid #93b4f5;outline-offset:2px}
 </style>
 </head>
 <body>
@@ -140,11 +133,8 @@
     <a class="btn pri" href="response.html">대응 요령 보기 →</a>
   </div>
 
-  <nav class="tabbar" aria-label="하단 메뉴">
-    <a href="response.html"><span class="ti">📋</span>대응 요령</a>
-    <a href="#" class="on" aria-current="page"><span class="ti">🏠</span>홈</a>
-    <a href="insurance.html"><span class="ti">🛡️</span>보험 정보</a>
-  </nav>
+  <nav id="tabbar" data-active="home"></nav>
+  <script src="common.js"></script>
 </div>
 
 <script>

@@ -11,6 +11,28 @@
 | `insurance.html` | 보험 정보 비교 · 지원제도 | 앱-1 ↔ n8n-1 (`{"species": ...}`) |
 | `response.html` | 대응 요령 | 위험 단계·특보 데이터 |
 | `start_bg.jpg` | 시작 화면 배경 사진 | – |
+| `common.css`, `common.js` | **모든 화면 공통** 하단 바(홈·수온·대응 요령·보험·내 정보) | – |
+
+### 공통 하단 바 쓰는 법 (새 화면을 만들 때 필수)
+
+하단 바는 화면마다 만들지 않고 `common.css`·`common.js` 한 곳에서 관리합니다. 각 화면에는 아래만 넣으세요.
+
+```html
+<head>
+  …
+  <link rel="stylesheet" href="common.css">
+</head>
+<body>
+  …
+  <nav id="tabbar" data-active="insurance"></nav>  <!-- 지금 화면의 탭 -->
+  <script src="common.js"></script>
+</body>
+```
+
+- `data-active`: `home` · `temp`(수온) · `response`(대응 요령) · `insurance`(보험) · `me`(내 정보) 중 하나. 그 탭이 선택 상태로 표시됩니다.
+- 화면 전체를 `.screen`(세로 flex) 안에 넣는 페이지는 `<nav id="tabbar">`를 `.screen`의 마지막 칸으로 두면 맨 아래에 붙습니다. 그 밖의 페이지는 화면 아래에 고정되므로 본문 아래 여백(약 104px)을 두세요.
+- 탭 이름·링크·아이콘은 `common.js`의 `TABS`에서만 고칩니다. 링크가 `null`인 탭(지금은 수온·내 정보)은 화면이 생기기 전까지 "준비 중" 안내만 보여 줍니다.
+- 디자인은 `home_test.html`(홈 화면 v2) 기준입니다. 각 화면에서 하단 바 스타일을 따로 덮어쓰지 마세요.
 
 - 시작 → 양식장 등록 → 홈(오늘의 수온)으로 이동하고, 하단 탭바와 ☰ 사이드 메뉴로 대응 요령·보험 정보를 오갑니다. 홈 좌측 상단의 로그인 → 회원가입으로 가입 화면에 진입합니다.
 - 지역 목록과 수온·대응 정보는 내장된 예시입니다. 보험 정보 화면의 "내 품종 보험" 카드는 백엔드를 통해 DB `insurance` 스키마에 연결됩니다(아래 참고).
