@@ -919,7 +919,7 @@ app.add_middleware(
 )
 
 
-HOME_HTML = Path(__file__).with_name("home_test.html")
+HOME_HTML = Path(__file__).with_name("home.html")
 
 
 @app.get("/", include_in_schema=False)
