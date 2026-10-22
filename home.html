@@ -3,143 +3,479 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>오늘의 수온</title>
+<title>우리 양식장 - 우리 바다 안심도우미</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="common.css">
 <style>
-  /* 홈(오늘의 수온) 화면. 색·메뉴·탭바는 insurance.html, response.html과 같은 값을 씁니다. */
-  :root{
-    --blue:#1f5fd6; --blue-d:#174bb0; --blue-l:#eaf1ff; --blue-ll:#f5f8ff;
-    --green:#16a34a; --green-d:#15803d; --green-l:#e9f8ef; --amber:#b45309; --amber-l:#fff4e0;
-    --red:#dc2626; --red-l:#fdecec;
-    --ink:#111827; --sub:#374151; --mute:#6b7280; --line:#e5e7eb; --bg:#eef2f8;
+  :root {
+    --bg: #f3f5fa;
+    --card: #ffffff;
+    --text: #15181f;
+    --text-sub: #4f5566;
+    --text-muted: #6f7586;
+    --primary: #2563eb;
+    --primary-text: #1f5ae0;
+    --primary-soft: #dfe8fd;
+    --border: #e3e7ef;
+
+    --ok: #1f7a3a;       --ok-soft: #e3f3e7;
+    --warn: #b45309;     --warn-soft: #fef3e2;
+    --danger: #c62828;   --danger-soft: #fde8e8;
+
+    --tabbar: #ffffff;
+    --tab-active-bg: #e8effd;
   }
-  *{box-sizing:border-box;margin:0;padding:0}
-  [hidden]{display:none!important}
-  body{font-family:'Noto Sans KR',system-ui,sans-serif;background:var(--bg);color:var(--ink);margin:0}
-  .screen{background:#fff;max-width:480px;margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;position:relative;overflow:hidden}
-  .icon-btn:focus-visible{outline:3px solid #93b4f5;outline-offset:2px}
-  .top{display:flex;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top)) 18px 6px}
-  .top h2{font-size:22px;font-weight:800}
-  .icon-btn{background:none;border:0;font-size:24px;color:var(--ink);cursor:pointer;width:40px;height:40px}
-  .text-btn{display:flex;align-items:center;min-width:40px;height:40px;font-size:15px;font-weight:700;color:var(--blue);text-decoration:none}
-  .scroll{flex:1;overflow-y:auto;padding:4px 16px 20px}
-  .scroll::-webkit-scrollbar{width:0}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #dde1ea; }
+  body {
+    font-family: "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    display: flex; justify-content: center;
+    min-height: 100vh;
+  }
+  a { color: inherit; text-decoration: none; }
+  button, select { font: inherit; cursor: pointer; }
 
-  .btn{display:flex;width:100%;justify-content:center;align-items:center;gap:6px;border-radius:14px;padding:15px;font:inherit;font-size:17px;font-weight:800;cursor:pointer;text-decoration:none;border:0}
-  .btn.pri{background:var(--blue);color:#fff;margin-top:18px}
-  .btn.pri:hover{background:var(--blue-d)}
-  .btn:focus-visible,.text-btn:focus-visible,.tab:focus-visible,.cond a:focus-visible{outline:3px solid #93b4f5;outline-offset:2px}
+  .app {
+    width: 100%; max-width: 420px; min-height: 100vh;
+    background: var(--bg);
+    padding-bottom: 104px;
+  }
 
-  .cond{background:var(--blue-ll);border:1px solid #d7e3fb;border-radius:12px;padding:12px;font-size:15px;color:var(--sub);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
-  .cond b{color:var(--ink)}
-  .cond a{color:var(--blue);font-weight:700;text-decoration:none;font-size:15px;white-space:nowrap}
-  .demo{font-size:14px;font-weight:600;color:var(--amber);background:var(--amber-l);border-radius:10px;padding:10px 12px;margin-bottom:14px;line-height:1.5}
-  .note{font-size:13.5px;color:var(--mute);margin-top:12px;line-height:1.6}
+  .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 20px 0;
+    font-size: 12px; font-weight: 500;
+  }
+  .header { padding: 20px 20px 14px; }
+  .header h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
 
-  /* 오늘의 수온 */
-  .tabs{display:flex;gap:8px;margin:0 0 14px}
-  .tab{flex:1;padding:12px 0;border-radius:12px;border:1px solid var(--line);background:#fff;font:inherit;font-size:16px;color:var(--mute);font-weight:600;cursor:pointer}
-  .tab[aria-selected="true"]{border-color:var(--blue);color:var(--blue);background:var(--blue-ll);font-weight:800}
-  .now-card{border-radius:18px;padding:16px;margin-bottom:18px;border:2px solid #f59e0b;background:#fffaf0}
-  .now-card .when{font-size:14.5px;color:var(--mute);font-weight:600}
-  .now-card .row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 10px}
-  .now-card .temp{font-size:44px;font-weight:800;line-height:1.1}
-  .now-card .temp small{font-size:20px;font-weight:700;margin-left:2px}
-  .badge{font-size:15px;font-weight:800;color:var(--amber);background:var(--amber-l);border:1px solid #f6d49a;border-radius:99px;padding:6px 12px;white-space:nowrap}
-  .now-card .data{display:flex;gap:8px}
-  .now-card .data div{flex:1;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
-  .now-card .data small{display:block;font-size:14px;color:var(--mute)}
-  .now-card .data b{font-size:19px;font-weight:800}
-  .sec{font-size:19px;font-weight:800;margin:4px 0 10px}
-  .chart-card{border:1px solid var(--line);border-radius:16px;padding:12px 10px 6px;margin-bottom:6px}
-  .risk-chart{width:100%;height:auto;font-size:11px;fill:var(--mute);font-family:inherit}
-  .legend{font-size:13.5px;color:var(--mute);margin:6px 0 14px}
-  table{border-collapse:separate;border-spacing:0;width:100%;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:6px}
-  th,td{padding:13px 14px;text-align:left;font-size:16px;border-bottom:1px solid var(--line)}
-  tr:last-child td{border-bottom:0}
-  th{background:var(--blue-ll);color:var(--sub);font-size:14.5px}
-  td:last-child{font-weight:800}
-  .alert-card{border:1px solid var(--line);border-radius:16px;padding:16px 14px}
-  .alert-card p{font-size:16px;color:var(--sub);line-height:1.6}
+  .content { padding: 0 20px; display: flex; flex-direction: column; gap: 12px; }
+  .card { background: var(--card); border-radius: 16px; padding: 18px 16px; }
+
+  /* 양식장 정보 */
+  .farm { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .farm-region { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+  .farm-sub { margin-top: 4px; font-size: 14px; color: var(--text-sub); }
+  .btn-edit {
+    flex-shrink: 0; min-height: 40px; padding: 0 16px;
+    border: 1px solid var(--border); border-radius: 10px;
+    background: #fff; color: var(--text);
+    font-size: 14px; font-weight: 600;
+  }
+
+  /* 수온 카드 (친근한 문장형) */
+  .sea { padding: 20px 16px 16px; }
+  .sea[data-level="normal"], .sea[data-level="unknown"] { background: #e9eef9; }
+  .sea[data-level="watch"] { background: #fff8e6; }
+  .sea[data-level="caution"] { background: var(--warn-soft); }
+  .sea[data-level="alert"] { background: var(--danger-soft); }
+
+  .sea-head { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 600; color: var(--text-sub); }
+  .sea-head svg { width: 20px; height: 20px; stroke: var(--primary-text); fill: none; stroke-width: 2; stroke-linecap: round; }
+  .sea-row { display: flex; align-items: center; gap: 10px; margin-top: 4px; flex-wrap: wrap; }
+  .sea-temp { font-size: 44px; font-weight: 800; letter-spacing: -1px; line-height: 1.15; }
+  .level {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 5px 11px; border-radius: 999px;
+    font-size: 15px; font-weight: 700;
+  }
+  .level svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .level.normal { background: var(--ok-soft); color: var(--ok); }
+  .level.watch { background: #fdecc8; color: #9a5b00; }
+  .level.unknown { background: #e3e7ef; color: var(--text-sub); }
+  .level.caution { background: #fde2b8; color: var(--warn); }
+  .level.alert { background: #f9caca; color: var(--danger); }
+
+  .sea-forecast { margin-top: 10px; font-size: 16px; font-weight: 600; line-height: 1.5; }
+  .sea-meta { margin-top: 4px; font-size: 13px; color: var(--text-muted); }
+  .sea-more {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 14px; padding-top: 14px; min-height: 44px;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+    font-size: 15px; font-weight: 600; color: var(--primary-text);
+  }
+
+  /* 보험 카드 */
+  .ins-q { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; line-height: 1.45; }
+  .ins-answer {
+    display: flex; gap: 10px;
+    margin-top: 12px; padding: 12px 14px;
+    border-radius: 12px;
+  }
+  .ins-answer.ok { background: var(--ok-soft); }
+  .ins-answer.warn { background: var(--warn-soft); }
+  .ins-answer.info { background: var(--primary-soft); }
+  .ins-answer-title { font-size: 15px; font-weight: 700; }
+  .ins-answer.ok .ins-answer-title { color: var(--ok); }
+  .ins-answer.warn .ins-answer-title { color: var(--warn); }
+  .ins-answer.info .ins-answer-title { color: var(--primary-text); }
+  .ins-answer-desc { margin-top: 2px; font-size: 14px; color: var(--text-sub); line-height: 1.5; }
+
+  .cover-list { list-style: none; margin-top: 14px; display: flex; flex-direction: column; gap: 12px; }
+  .cover-item { display: flex; gap: 10px; }
+  .ico {
+    flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; margin-top: 1px;
+  }
+  .ico svg { width: 14px; height: 14px; fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  .ico.ok { background: var(--ok); }
+  .ico.warn { background: #e8900c; }
+  .ico.no { background: var(--danger); }
+  .cover-title { font-size: 15px; font-weight: 700; }
+  .cover-items { margin-top: 2px; font-size: 14px; color: var(--text-sub); }
+  .cover-item.highlight .cover-items strong { color: var(--text); font-weight: 700; }
+
+  .section-title { margin-top: 12px; font-size: 18px; font-weight: 800; letter-spacing: -0.4px; }
+  .task-title { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+  .task-desc { margin-top: 4px; font-size: 14px; color: var(--text-sub); }
+
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; min-height: 52px; margin-top: 14px;
+    border: none; border-radius: 12px;
+    font-size: 16px; font-weight: 700;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-secondary { background: var(--primary-soft); color: var(--primary-text); }
+  .btn:active { filter: brightness(0.93); }
+
+  /* 개발용 미리보기 스위처 (실서비스에서는 제거) */
+  .dev {
+    margin: 0 20px 12px; padding: 10px 12px;
+    border: 1px dashed #a7b0c2; border-radius: 10px;
+    font-size: 12px; color: var(--text-muted);
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  }
+  .dev select { font-size: 12px; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--border); background: #fff; }
+
+  /* API 연결 상태 안내 (불러오는 중 / 실패 사유) */
+  .api-status {
+    margin: 0 20px 12px; padding: 12px 14px; border-radius: 12px;
+    font-size: 14px; line-height: 1.5;
+    background: var(--primary-soft); color: var(--primary-text);
+  }
+  .api-status.error { background: var(--danger-soft); color: var(--danger); }
+  .api-status small { display: block; margin-top: 2px; color: var(--text-muted); font-size: 12px; word-break: break-all; }
 
 </style>
 </head>
 <body>
+<div class="app">
 
-
-<div class="screen">
-  <div class="top">
-    <a class="text-btn" href="app.html#login">로그인</a>
-    <h2>오늘의 수온</h2>
-    <span class="icon-btn" aria-hidden="true"></span>
+  <div class="status-bar">
+    <span>10:00</span>
+    <span>통신 양호</span>
   </div>
 
+  <header class="header">
+    <h1>우리 양식장</h1>
+  </header>
 
-  <div class="scroll">
-    <div class="cond"><span id="farm-caption"></span><a href="app.html#register">조건 수정</a></div>
-    <p class="demo">미리보기 · 실제 관측·예측·특보가 아닌 예시 데이터입니다.</p>
-    <div class="tabs" role="tablist" aria-label="수온 정보 종류">
-      <button class="tab" id="tab-current" role="tab" aria-selected="true" aria-controls="current" data-tab="current">현재 상황</button>
-      <button class="tab" id="tab-forecast" role="tab" aria-selected="false" aria-controls="forecast" data-tab="forecast" tabindex="-1">예측 추이</button>
-      <button class="tab" id="tab-alerts" role="tab" aria-selected="false" aria-controls="alerts" data-tab="alerts" tabindex="-1">특보 정보</button>
-    </div>
-    <div id="current" role="tabpanel" aria-labelledby="tab-current">
-      <div class="now-card">
-        <p class="when">관측값 · 2025년 8월 20일 10:00 (예시)</p>
-        <div class="row"><span class="temp">28.4<small>°C</small></span><span class="badge">♨ 주의 단계</span></div>
-        <div class="data"><div><small>최근 1주 평균 대비</small><b>+1.8°C</b></div><div><small>기준</small><b>지역 관측소</b></div></div>
+  <!-- 개발용: 상태별 화면 미리보기. 실서비스에서는 이 블록 삭제 -->
+  <div class="dev">
+    미리보기
+    <select id="devLevel" aria-label="수온 단계">
+      <option value="caution">수온: 주의</option>
+      <option value="normal">수온: 정상</option>
+      <option value="watch">수온: 관심</option>
+      <option value="alert">수온: 경보(공식)</option>
+      <option value="unknown">수온: 정보 없음</option>
+    </select>
+    <select id="devIns" aria-label="보험 가입 상태">
+      <option value="insured_rider">보험: 가입 · 고수온은 특약</option>
+      <option value="insured_basic">보험: 가입 · 고수온 기본 보장</option>
+      <option value="insured_excluded">보험: 가입 · 고수온 미보장</option>
+      <option value="uninsured">보험: 미가입</option>
+      <option value="unknown">보험: 모름</option>
+    </select>
+  </div>
+
+  <main class="content">
+    <section class="card farm">
+      <div>
+        <div class="farm-region" id="farmRegion"></div>
+        <div class="farm-sub" id="farmSub"></div>
       </div>
-      <h3 class="sec">최근 7일 수온 추이</h3>
-      <div class="chart-card"><svg id="chart" class="risk-chart" viewBox="0 0 338 210" role="img" aria-label="예시 수온: 8월 14일 22도에서 20일 28.4도로 상승"></svg></div>
-      <p class="legend">🟥 고수온 주의 구간 (예시)</p>
-    </div>
-    <div id="forecast" role="tabpanel" aria-labelledby="tab-forecast" hidden>
-      <h3 class="sec">앞으로의 수온 변화</h3>
-      <table><thead><tr><th scope="col">날짜</th><th scope="col">예측 수온</th></tr></thead><tbody><tr><td>8/21</td><td>28.6°C</td></tr><tr><td>8/22</td><td>28.9°C</td></tr><tr><td>8/23</td><td>29.1°C</td></tr></tbody></table>
-      <p class="note">화면 구성용 가상 예측입니다.</p>
-    </div>
-    <div id="alerts" role="tabpanel" aria-labelledby="tab-alerts" hidden>
-      <p class="demo">고수온 주의 알림 (예시)</p>
-      <div class="alert-card"><p>실제 특보는 아직 연결되지 않았습니다. 추후 공식 발표와 발표 시각을 표시합니다.</p></div>
-    </div>
-    <a class="btn pri" href="response.html">대응 요령 보기 →</a>
-  </div>
+      <button type="button" class="btn-edit">변경</button>
+    </section>
+
+    <!-- 수온 카드 -->
+    <section class="card sea" id="seaCard" aria-label="오늘 바다 수온"></section>
+
+    <!-- 보험 카드: 가입 이력별로 내용이 바뀜 -->
+    <section class="card" id="insCard" aria-label="보험 보장 안내"></section>
+
+    <h2 class="section-title">오늘 할 일</h2>
+
+    <section class="card">
+      <div class="task-title">오늘의 양식장 관리</div>
+      <div class="task-desc" id="taskDesc"></div>
+      <a href="#" class="btn btn-primary">대응 요령 보기 <span aria-hidden="true">→</span></a>
+    </section>
+  </main>
 
   <nav id="tabbar" data-active="home"></nav>
   <script src="common.js"></script>
+
 </div>
 
 <script>
-/* ===== 양식장 정보: app.html에서 등록하면 sessionStorage에 저장됩니다 (지역·품종·방식·보험만) =====
-   수온 API(n8n-3) 연결 시 farm.region을 {"region": ...}으로 보내면 됩니다. */
-const FARM_KEY='farm';
-let farm=null;
-try{farm=JSON.parse(sessionStorage.getItem(FARM_KEY));}catch{}
-if(!farm)location.replace('app.html#register'); // 등록 전이면 양식장 등록으로 보냅니다.
+  /* =====================================================================
+     화면 데이터
+     - URL 에 ?customer=C-001 (선택: &farm=<farm_id>) 이 있으면 API 에서 받아 그림
+     - 없으면 아래 샘플 데이터로 그림 (개발용 미리보기)
+     ===================================================================== */
+  const API_BASE = 'http://localhost:8000';   // 로컬 테스트용 서버 주소 (운영 시 실제 API 주소로 변경)
 
-/* ===== 수온 데이터 (예시 · n8n-3 응답으로 교체 예정) ===== */
-const SAMPLE={dates:['8/14','8/15','8/16','8/17','8/18','8/19','8/20'],temps:[22,22.8,23.5,24.6,25.5,26.2,28.4]};
+  let data = {
+    farm: { farmId: '', region: '통영', regionFull: '통영시 산양읍', species: '조피볼락(우럭)', shortName: '우럭', method: '가두리' },
+    sea: {
+      level: 'caution',            // normal | watch | caution | alert | unknown
+      isOfficial: false,           // 공식 고수온 특보 여부
+      now: 26.4,
+      forecast: { trend: 'rise', days: 3, temp: 28, spanDays: 7, min: 26.6, max: 28 },
+      updatedAt: '10/20 06:00',
+      isForecast: true,
+      source: 'forecast',          // api | db | forecast | none
+      stationName: '통영 학림',
+      stationDistanceKm: 3.4
+    },
+    insurance: {
+      status: 'insured',           // insured | uninsured | unknown
+      productName: '양식수산물재해보험(조피볼락)',
+      highTemp: 'rider',           // basic | rider | excluded | unknown
+      riderName: '수온·염분·산소 특약',
+      coverage: { basic: ['태풍', '해일', '풍랑', '적조'], rider: ['고수온', '저수온', '저염분', '용존산소'], excluded: [] },
+      exclusions: ['질병에 의한 손해', '원인 불명의 폐사', '고의 또는 중대한 과실']
+    }
+  };
 
-const $=s=>document.querySelector(s);
-function renderChart(){
-  const points=SAMPLE.temps.map((v,i)=>[38+i*45,168-(v-20)*12]);
-  const line=points.map(p=>p.join(',')).join(' ');
-  $('#chart').innerHTML='<text x="8" y="20">°C</text><rect x="38" y="48" width="270" height="48" fill="#fdecec"/>'+
-    [20,22,24,26,28,30].map(v=>`<line x1="38" y1="${168-(v-20)*12}" x2="308" y2="${168-(v-20)*12}" stroke="#e5e7eb"/><text x="8" y="${172-(v-20)*12}">${v}</text>`).join('')+
-    `<polygon points="38,168 ${line} 308,168" fill="#1f5fd6" opacity=".08"/><polyline points="${line}" fill="none" stroke="#1f5fd6" stroke-width="3"/>`+
-    points.map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="4" fill="white" stroke="#1f5fd6" stroke-width="2"/><text x="${x}" y="192" text-anchor="middle">${SAMPLE.dates[i]}</text>`).join('');
-}
-if(farm)$('#farm-caption').textContent=`${farm.region} · ${farm.species} · ${farm.method}`;
+  const LEVEL = {
+    normal:  { label: '정상', icon: '<path d="m5 12 4.5 4.5L19 7"/>' },
+    watch:   { label: '관심', icon: '<path d="M12 8v5"/><path d="M12 17h.01"/>' },
+    caution: { label: '주의', icon: '<path d="M12 8v5"/><path d="M12 17h.01"/>' },
+    alert:   { label: '경보', icon: '<path d="M12 8v5"/><path d="M12 17h.01"/>' },
+    unknown: { label: '정보 없음', icon: '<path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6"/><path d="M12 17h.01"/>' }
+  };
 
-const tabs=[...document.querySelectorAll('[data-tab]')];
-function selectTab(tab){tabs.forEach(b=>{const active=b===tab;b.setAttribute('aria-selected',String(active));b.tabIndex=active?0:-1;document.getElementById(b.dataset.tab).hidden=!active;});}
-tabs.forEach((tab,i)=>{tab.addEventListener('click',()=>selectTab(tab));tab.addEventListener('keydown',event=>{
-  let n;if(event.key==='ArrowRight')n=(i+1)%tabs.length;else if(event.key==='ArrowLeft')n=(i+tabs.length-1)%tabs.length;else if(event.key==='Home')n=0;else if(event.key==='End')n=tabs.length-1;else return;
-  event.preventDefault();selectTab(tabs[n]);tabs[n].focus();
-});});
+  const ICON = {
+    ok:   '<svg viewBox="0 0 24 24"><path d="m5 12 4.5 4.5L19 7"/></svg>',
+    warn: '<svg viewBox="0 0 24 24"><path d="M12 6v8"/><path d="M12 18h.01"/></svg>',
+    no:   '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>'
+  };
 
-renderChart();
+  // API 값은 화면에 넣기 전에 이스케이프
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const join = arr => (arr || []).map(esc).join(' · ');
+
+  function renderFarm() {
+    const f = data.farm;
+    document.getElementById('farmRegion').textContent = f.regionFull;
+    document.getElementById('farmSub').textContent = `${f.species} · ${f.method}`;
+    document.getElementById('taskDesc').textContent = `${f.shortName}에 맞는 관리 방법을 확인하세요`;
+  }
+
+  // 7일 예측 흐름 → 한 문장
+  function forecastSentence(f) {
+    const t = v => Number(v).toFixed(1).replace(/\.0$/, '');
+    switch (f.trend) {
+      case 'rise': return `${f.days}일 뒤 ${t(f.temp)}℃까지 오를 것으로 예측돼요`;
+      case 'fall': return `${f.days}일 뒤 ${t(f.temp)}℃까지 내려갈 것으로 예측돼요`;
+      default:
+        return t(f.min) === t(f.max)
+          ? `앞으로 ${f.spanDays}일 동안 ${t(f.max)}℃ 안팎으로 비슷할 것으로 예측돼요`
+          : `앞으로 ${f.spanDays}일 동안 ${t(f.min)}~${t(f.max)}℃로 큰 변화 없을 것으로 예측돼요`;
+    }
+  }
+
+  function renderSea() {
+    const s = data.sea, lv = LEVEL[s.level] || LEVEL.unknown;
+    const card = document.getElementById('seaCard');
+    card.dataset.level = s.level;
+
+    const hasNow = typeof s.now === 'number';
+    let forecastText = '';
+    if (s.forecast && hasNow) {
+      forecastText = forecastSentence(s.forecast);
+    } else if (!hasNow) {
+      forecastText = '지금은 수온 정보를 받아오지 못했어요';
+    }
+
+    const meta = [];
+    if (s.isForecast) meta.push('예측값');
+    if (s.stationName && !s.isForecast) meta.push(`${esc(s.stationName)} 관측소${s.stationDistanceKm != null ? ` ${s.stationDistanceKm}km` : ''}`);
+    if (s.isOfficial) meta.push('공식 특보');
+    meta.push(`${esc(s.updatedAt)} 업데이트`);
+
+    card.innerHTML = `
+      <div class="sea-head">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M3 16c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>
+        ${esc(data.farm.region)} 바다 오늘
+      </div>
+      <div class="sea-row">
+        <span class="sea-temp">${hasNow ? s.now.toFixed(1) + '℃' : '--'}</span>
+        <span class="level ${s.level}">
+          <svg viewBox="0 0 24 24" aria-hidden="true">${lv.icon}</svg>${lv.label}
+        </span>
+      </div>
+      ${forecastText ? `<p class="sea-forecast">${forecastText}</p>` : ''}
+      <p class="sea-meta">(${meta.join(' · ')})</p>
+      <a href="#" class="sea-more">수온 자세히 <span aria-hidden="true">→</span></a>`;
+  }
+
+  function coverList(ins) {
+    const c = ins.coverage || {};
+    const rows = [];
+    if (c.basic?.length) rows.push(['ok', '기본 보험으로 보장돼요', c.basic]);
+    if (c.rider?.length) rows.push(['warn', '추가 가입(특약)해야 보장돼요', c.rider]);
+    const notCovered = c.excluded?.length ? c.excluded : (ins.exclusions || []);
+    if (notCovered.length) rows.push(['no', '보장 안 돼요', notCovered]);
+    if (!rows.length) return '';
+
+    return `<ul class="cover-list">${rows.map(([tone, title, items]) => `
+        <li class="cover-item${items.includes('고수온') ? ' highlight' : ''}">
+          <span class="ico ${tone}">${ICON[tone]}</span>
+          <div><div class="cover-title">${title}</div>
+          <div class="cover-items">${items.map(i => i === '고수온' ? '<strong>고수온</strong>' : esc(i)).join(' · ')}</div></div>
+        </li>`).join('')}
+      </ul>`;
+  }
+
+  function insuranceView(ins, name) {
+    if (ins.status === 'uninsured') {
+      return { q: `${name} 양식장, 고수온 피해에 대비하고 있나요?`, tone: 'info',
+               title: '아직 가입한 보험이 없어요',
+               desc: ins.highTemp === 'rider' ? '고수온은 기본 보험에 특약을 더해야 보장돼요' : '내 조건에 맞는 보험을 확인해 보세요',
+               list: '', btn: ['btn-secondary', '내 조건으로 보험 알아보기'] };
+    }
+    if (ins.status === 'unknown') {
+      return { q: `내 ${name} 보험, 고수온도 보장될까요?`, tone: 'info',
+               title: '가입 상태를 몰라도 확인할 수 있어요',
+               desc: '양식장 정보로 가입 여부와 보장 범위를 찾아드려요',
+               list: '', btn: ['btn-secondary', '내 보험 확인하기'] };
+    }
+    // insured
+    const q = `내 ${name} 보험으로 고수온 피해 보장될까요?`;
+    switch (ins.highTemp) {
+      case 'basic':
+        return { q, tone: 'ok', title: '네, 기본 보험으로 보장돼요',
+                 desc: '피해가 생기면 바로 신고하세요', list: coverList(ins),
+                 btn: ['btn-secondary', '피해 신고 방법 보기'] };
+      case 'rider':
+        return { q, tone: 'warn', title: '기본 보험만으로는 안 돼요',
+                 desc: ins.riderName ? `고수온은 '${esc(ins.riderName)}'에 추가 가입해야 보장돼요` : '고수온은 추가 가입(특약)을 해야 보장돼요',
+                 list: coverList(ins), btn: ['btn-primary', '내 특약 가입 확인하기'] };
+      case 'excluded':
+        return { q, tone: 'warn', title: '이 보험은 고수온을 보장하지 않아요',
+                 desc: '대응 요령을 미리 챙겨 피해를 줄이세요', list: coverList(ins),
+                 btn: ['btn-secondary', '보장 범위 자세히 보기'] };
+      default:
+        return { q, tone: 'info', title: '보장 범위를 확인해 보세요',
+                 desc: '가입한 상품 정보로 고수온 보장 여부를 알려드려요', list: coverList(ins),
+                 btn: ['btn-secondary', '내 보험 확인하기'] };
+    }
+  }
+
+  function renderInsurance() {
+    const v = insuranceView(data.insurance, esc(data.farm.shortName));
+    document.getElementById('insCard').innerHTML = `
+      <div class="ins-q">${v.q}</div>
+      <div class="ins-answer ${v.tone}">
+        <div>
+          <div class="ins-answer-title">${v.title}</div>
+          <div class="ins-answer-desc">${v.desc}</div>
+        </div>
+      </div>
+      ${v.list}
+      <a href="#" class="btn ${v.btn[0]}">${v.btn[1]} <span aria-hidden="true">→</span></a>`;
+  }
+
+  function render() { renderFarm(); renderSea(); renderInsurance(); }
+
+  /* ===== API 연결 ===== */
+  function setStatus(html, isError) {
+    let el = document.getElementById('apiStatus');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'apiStatus';
+      document.querySelector('.header').after(el);
+    }
+    el.className = 'api-status' + (isError ? ' error' : '');
+    el.innerHTML = html;
+  }
+  const clearStatus = () => document.getElementById('apiStatus')?.remove();
+
+  async function loadFromApi() {
+    const p = new URLSearchParams(location.search);
+    const customer = p.get('customer');
+    if (!customer) return false;
+    const farm = p.get('farm');
+    const url = `${API_BASE}/api/home/${encodeURIComponent(customer)}${farm ? `?farm_id=${encodeURIComponent(farm)}` : ''}`;
+
+    document.querySelector('.dev')?.remove();     // 고객을 지정했으면 미리보기 숨김
+    setStatus(`${esc(customer)} 데이터를 불러오는 중이에요…`);
+    const started = performance.now();
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 30000);
+    try {
+      const res = await fetch(url, { signal: ctrl.signal });
+      if (!res.ok) {
+        let detail = '';
+        try { detail = (await res.json()).detail; } catch { /* JSON 아님 */ }
+        const reason = res.status === 404 ? (detail || '고객/양식장 정보를 찾을 수 없어요')
+                     : res.status >= 500 ? '서버 오류예요. 서버 창의 오류 메시지를 확인해 주세요'
+                     : (detail || '요청이 거절됐어요');
+        throw new Error(`[${res.status}] ${typeof reason === 'string' ? reason : JSON.stringify(reason)}`);
+      }
+      data = await res.json();
+      console.info(`홈 데이터 수신 ${Math.round(performance.now() - started)}ms`, data);
+      clearStatus();
+      return true;
+    } catch (e) {
+      const msg = e.name === 'AbortError' ? '30초 안에 응답이 없어요 (서버 처리가 너무 오래 걸려요)'
+                : e instanceof TypeError ? '서버에 연결하지 못했어요 (서버가 켜져 있는지 확인해 주세요)'
+                : e.message;
+      console.warn('홈 데이터를 불러오지 못했어요', e);
+      setStatus(`데이터를 불러오지 못해 샘플 화면을 보여드려요<small>${esc(msg)} · ${esc(url)}</small>`, true);
+      return false;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  function safeRender() {
+    try {
+      render();
+    } catch (e) {
+      console.error('화면을 그리다 오류', e, data);
+      setStatus(`받은 데이터로 화면을 그리다 오류가 났어요<small>${esc(e.message)}</small>`, true);
+    }
+  }
+
+  /* ===== 개발용 미리보기 ===== */
+  const SEA_SAMPLE = {
+    normal:  { level: 'normal',  isOfficial: false, now: 21.8, forecast: { trend: 'flat', days: 7, temp: 22.0, spanDays: 7, min: 21.5, max: 22.0 }, updatedAt: '10/20 10:00', isForecast: false, source: 'api', stationName: '통영 학림', stationDistanceKm: 3.4 },
+    watch:   { level: 'watch',   isOfficial: false, now: 23.9, forecast: { trend: 'rise', days: 4, temp: 25.3, spanDays: 7, min: 24.1, max: 25.3 }, updatedAt: '10/20 10:00', isForecast: false, source: 'api', stationName: '통영 학림', stationDistanceKm: 3.4 },
+    caution: { level: 'caution', isOfficial: false, now: 26.4, forecast: { trend: 'rise', days: 3, temp: 28, spanDays: 7, min: 26.6, max: 28 },   updatedAt: '10/20 06:00', isForecast: true,  source: 'forecast' },
+    alert:   { level: 'alert',   isOfficial: true,  now: 28.3, forecast: { trend: 'rise', days: 3, temp: 29, spanDays: 7, min: 28.4, max: 29 },   updatedAt: '10/20 10:00', isForecast: false, source: 'api', stationName: '통영 학림', stationDistanceKm: 3.4 },
+    unknown: { level: 'unknown', isOfficial: false, now: null, forecast: null,                    updatedAt: '10/20 10:00', isForecast: false, source: 'none' }
+  };
+  const BASE_COVER = { basic: ['태풍', '해일', '풍랑', '적조'], rider: ['고수온', '저수온', '저염분', '용존산소'], excluded: [] };
+  const EXCL = ['질병에 의한 손해', '원인 불명의 폐사', '고의 또는 중대한 과실'];
+  const INS_SAMPLE = {
+    insured_rider:    { status: 'insured', highTemp: 'rider', riderName: '수온·염분·산소 특약', coverage: BASE_COVER, exclusions: EXCL },
+    insured_basic:    { status: 'insured', highTemp: 'basic', coverage: { basic: ['태풍', '해일', '풍랑', '적조', '고수온'], rider: [], excluded: [] }, exclusions: EXCL },
+    insured_excluded: { status: 'insured', highTemp: 'excluded', coverage: { basic: ['태풍', '해일', '풍랑', '적조'], rider: [], excluded: ['고수온'] }, exclusions: EXCL },
+    uninsured:        { status: 'uninsured', highTemp: 'rider', coverage: BASE_COVER, exclusions: [] },
+    unknown:          { status: 'unknown', highTemp: 'unknown', coverage: { basic: [], rider: [], excluded: [] }, exclusions: [] }
+  };
+  document.getElementById('devLevel')?.addEventListener('change', e => { data.sea = SEA_SAMPLE[e.target.value]; render(); });
+  document.getElementById('devIns')?.addEventListener('change', e => { data.insurance = INS_SAMPLE[e.target.value]; render(); });
+
+  loadFromApi().then(safeRender);
 </script>
 </body>
 </html>
