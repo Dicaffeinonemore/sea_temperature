@@ -8,6 +8,7 @@ import psycopg
 
 from backend.db import connect
 from backend.team import create_team_user, server_info
+from backend.species_catalog import seed_abalone_species, seed_default_species, seed_research_species
 
 
 def main():
@@ -15,6 +16,9 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("check-db")
     commands.add_parser("init-db")
+    commands.add_parser("seed-customer-species", help="Add missing default aquaculture species; preserve existing IDs")
+    commands.add_parser("seed-abalone-species", help="Add separate land/sea abalone catalogue entries without changing existing farms")
+    commands.add_parser("seed-research-species", help="Add species verified in the four supplied research PDFs")
     commands.add_parser("server-info", help="Print PostgreSQL configuration paths without secrets")
     user_parser = commands.add_parser("create-user", help="Create a team login; prompts privately for its password")
     user_parser.add_argument("username")
@@ -32,6 +36,16 @@ def main():
                 message = f"Created {args.username} ({access})."
             elif args.command == "server-info":
                 message = json.dumps(server_info(conn), ensure_ascii=True, indent=2)
+            elif args.command == "seed-customer-species":
+                conn.execute("LOCK TABLE customer_service.species IN EXCLUSIVE MODE")
+                seed_default_species(conn)
+                message = "Missing default species added. Existing species preserved."
+            elif args.command == "seed-abalone-species":
+                seed_abalone_species(conn)
+                message = "Land/sea abalone species added. Existing IDs and farm selections preserved."
+            elif args.command == "seed-research-species":
+                seed_research_species(conn)
+                message = "Research species added. Existing species IDs and customer selections preserved."
             elif args.command == "init-db":
                 schema = Path(__file__).resolve().parents[1] / "database" / "01_schema.sql"
                 # The SQL file owns its BEGIN/COMMIT; avoid nesting transactions.
