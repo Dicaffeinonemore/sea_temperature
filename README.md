@@ -6,10 +6,9 @@
 
 | 파일 | 화면 | 데이터 연결 (짝) |
 |---|---|---|
-| `home.html` | 홈(오늘의 수온): 현재 상황 · 예측 추이 · 특보 | 앱-2 ↔ n8n-3 (`{"region": ...}`) |
-| `insurance.html` | 보험 정보 비교 · 지원제도 | 백엔드 → DB `insurance`·`gov24` 스키마 |
-| `insurance_test.py` | 보험 화면 + 보험·지원제도 API를 한 번에 띄우는 서버 (`home_test.py`와 같은 방식). `python insurance_test.py` → http://127.0.0.1:8000/ | DB 접속은 `backend/backend/.env` 또는 `DATABASE_URL` |
-| `response.html` | 대응 요령 | 위험 단계·특보 데이터 |
+| `home.html` | 홈 (홈 화면 v2). 주소에 `?customer=C-001`이 있으면 `home_test.py` API에서 받아 그리고, 없으면 예시 데이터로 보여 줌 | `home_test.py` → `/api/home/{customer_id}` |
+| `home_test.py` | 홈 화면 + 홈 API를 한 번에 띄우는 서버. `http://localhost:8000/?customer=C-001` | DB 접속은 `DATABASE_URL` |
+| `backend/` | 보험·지원제도 API (FastAPI, 아래 참고). 지금은 이 API를 쓰는 화면이 없음 | DB `insurance`·`gov24` 스키마 |
 | `start_bg.jpg` | 시작 화면 배경 사진 (새 시작 화면에서 쓸 예정, 지금 쓰는 화면 없음) | – |
 | `common.css`, `common.js` | **모든 화면 공통** 하단 바(홈·수온·대응 요령·보험·내 정보) | – |
 
@@ -31,35 +30,30 @@
 
 - `data-active`: `home` · `temp`(수온) · `response`(대응 요령) · `insurance`(보험) · `me`(내 정보) 중 하나. 그 탭이 선택 상태로 표시됩니다.
 - 화면 전체를 `.screen`(세로 flex) 안에 넣는 페이지는 `<nav id="tabbar">`를 `.screen`의 마지막 칸으로 두면 맨 아래에 붙습니다. 그 밖의 페이지는 화면 아래에 고정되므로 본문 아래 여백(약 104px)을 두세요.
-- 탭 이름·링크·아이콘은 `common.js`의 `TABS`에서만 고칩니다. 링크가 `null`인 탭(지금은 수온·내 정보)은 화면이 생기기 전까지 "준비 중" 안내만 보여 줍니다.
-- 디자인은 `home_test.html`(홈 화면 v2) 기준입니다. 각 화면에서 하단 바 스타일을 따로 덮어쓰지 마세요.
+- 탭 이름·링크·아이콘은 `common.js`의 `TABS`에서만 고칩니다. 링크가 `null`인 탭(지금은 수온·내 정보)은 화면이 생기기 전까지 "준비 중" 안내만 보여 줍니다. 대응 요령·보험 탭은 이전 화면(`response.html`·`insurance.html`)을 삭제해서 새 화면을 만들 때까지 열리지 않습니다.
+- 디자인은 `home.html`(홈 화면 v2) 기준입니다. 각 화면에서 하단 바 스타일을 따로 덮어쓰지 마세요.
 
 - 하단 바(홈·수온·대응 요령·보험·내 정보)로 화면을 오갑니다. 사이드 메뉴(☰)는 없습니다. 시작·양식장 등록·로그인 화면은 새로 만들 때까지 없으므로 `home.html`을 바로 엽니다.
-- 지역 목록과 수온·대응 정보는 내장된 예시입니다. 보험 정보 화면의 "내 품종 보험" 카드는 백엔드를 통해 DB `insurance` 스키마에 연결됩니다(아래 참고).
-- 양식장 정보(지역·품종·방식·보험)는 브라우저 탭의 sessionStorage(`farm` 키)에 저장되어 모든 화면에서 읽을 수 있고, 탭을 닫거나 로그아웃하면 지워집니다. 홈에 들어왔는데 양식장 정보가 없으면 양식장 등록으로 이동합니다. 이름·생년월일·전화번호는 페이지 메모리에만 두며, 실제 계정은 생성하지 않고 비밀번호는 가입 완료 또는 화면 이동 시 지웁니다.
 - HTML 버전은 Streamlit 버전과 별개입니다. `app.py` 수정이 자동 반영되지는 않습니다. HTML의 `<style>`은 디자인, `<section>`은 화면 항목, `<script>`는 동작을 담당합니다.
 
-### 보험 정보 ↔ DB 연결 (`insurance.html` → 백엔드 → `insurance`·`gov24` 스키마)
+### 보험·지원제도 API (백엔드 → `insurance`·`gov24` 스키마)
 
-브라우저는 DB에 직접 접속할 수 없으므로 백엔드(FastAPI)가 DB를 읽어 전달합니다. 보험 정보 화면의 데이터는 모두 DB에서 옵니다.
+브라우저는 DB에 직접 접속할 수 없으므로 백엔드(FastAPI)가 DB를 읽어 전달합니다. 이 API를 쓰던 보험 정보 화면(`insurance.html`)은 삭제했고, 새 보험·지원 화면에서 다시 쓸 수 있습니다.
 
 ```
-insurance.html ─GET─▶ 백엔드 /api/v1/insurance/... ─SQL─▶ insurance 스키마 (products / coverages / exclusions / claim_rules)
-               ─GET─▶ 백엔드 /api/v1/support/...   ─SQL─▶ gov24 스키마 (gov24_service_list, 정부24 공공서비스)
+화면 ─GET─▶ 백엔드 /api/v1/insurance/... ─SQL─▶ insurance 스키마 (products / coverages / exclusions / claim_rules)
+     ─GET─▶ 백엔드 /api/v1/support/...   ─SQL─▶ gov24 스키마 (gov24_service_list, 정부24 공공서비스)
 ```
 
-| 화면 위치 | API | 내용 |
+| 용도 | API | 내용 |
 |---|---|---|
-| 내 품종 보험 카드 | `GET /api/v1/insurance/products?species=굴&method=가두리` | 품종에 맞는 상품 목록(첫 상품을 카드로). `조피볼락 (우럭)`이면 `조피볼락`·`우럭` 둘 다로 찾고, 수산물 보험을 시설물·종자 보험보다 앞에, 양식 방식이 맞는 상품을 앞에 둠. `기타`는 빈 목록 |
-| 카드·목록 펼치기 | `GET /api/v1/insurance/products/{product_id}` | 상품 + 보장(coverages)·제외 조건(exclusions)·청구 규칙(claim_rules) |
+| 내 품종 보험 | `GET /api/v1/insurance/products?species=굴&method=가두리` | 품종에 맞는 상품 목록(첫 상품을 카드로). `조피볼락 (우럭)`이면 `조피볼락`·`우럭` 둘 다로 찾고, 수산물 보험을 시설물·종자 보험보다 앞에, 양식 방식이 맞는 상품을 앞에 둠. `기타`는 빈 목록 |
+| 상품 자세히 | `GET /api/v1/insurance/products/{product_id}` | 상품 + 보장(coverages)·제외 조건(exclusions)·청구 규칙(claim_rules) |
 | 전체 상품 목록 | `GET /api/v1/insurance/overview` | 전체 상품과 위험별 보장 방식 `risks.hot/cold/redtide.status` = `base`(기본 보장) / `opt`(선택 특약) / `excl`(기본 보장, 빼는 특약 있음) / `none` |
-| 지원제도 탭 | `GET /api/v1/support/services?region=통영시` | 해양수산부·경상남도·해당 시·군 소관의 양식·어업 관련 정부24 서비스. 양식 → 우리 시·군 → 재해·보험 순 |
+| 지원제도 | `GET /api/v1/support/services?region=통영시` | 해양수산부·경상남도·해당 시·군 소관의 양식·어업 관련 정부24 서비스. 양식 → 우리 시·군 → 재해·보험 순 |
 
 - 고수온 판단: 보장의 risk_types·이름에 고수온/이상수온(저수온은 저수온/이상수온, 적조는 적조)이 있는지. `effect`가 `납입제도`인 항목(보험료 분납 등)은 보장에서 빼고, `보장제외`는 "가입 시 제외"로 표시합니다.
-- 목록이 비면 "확인된 상품 정보가 아직 없어요"로 안내합니다(실패로 단정하지 않음). 서버 오류·15초 초과는 "다시 시도" 버튼, 서버에 연결되지 않으면 예시 목록과 "⚠️ 서버에 연결하지 못해…" 안내를 보여 줍니다.
-- 백엔드 주소는 `insurance.html` 스크립트의 `API_BASE`(기본 `http://127.0.0.1:8000`)입니다. 비워 두면 예시 데이터만 씁니다.
 - 데이터 확인 필요: 멍게는 DB에서 이상수온이 **선택 특약**인데, 이전 화면 예시는 주계약 보장으로 적혀 있었습니다. 약관 원문으로 확인해 주세요.
-- 문구는 보험금 지급을 단정하지 않습니다("보상됩니다" 대신 "약관 조건 확인 필요").
 
 ### 백엔드 실행
 
