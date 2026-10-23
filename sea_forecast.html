@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>수온 예측 · 고수온 선제 상담 대시보드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{ color-scheme:light;
+    --bg:#f4f6f9; --panel:#fff; --line:#e1e5ec; --line-strong:#cdd3dd; --soft:#f7f8fa;
+    --text:#161a22; --sub:#4b5363; --muted:#6b7385;
+    --accent:#1f5ae0; --accent-soft:#e8effd;
+    --normal:#3d6b4f; --normal-soft:#e6f2ea;
+    --watch:#1d5fb8; --watch-soft:#e3eefb;
+    --warn:#a8500a; --warn-soft:#fdf0e1;
+    --alert:#b42318; --alert-soft:#fdeaea;
+    --om:#8a96a3; --th25:#d4a900; --th28:#e8740c;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Noto Sans KR",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  button,select,input,textarea{font:inherit;color:inherit}
+  button{cursor:pointer}
+  :focus-visible{outline:3px solid #93b4f5;outline-offset:2px}
+  td,th,.kpi b,.tp{font-variant-numeric:tabular-nums}
+
+  /* 상단 바 */
+  .top{background:var(--panel);border-bottom:1px solid var(--line)}
+  .top-in{max-width:1440px;margin:0 auto;padding:14px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px}
+  .top h1{font-size:19px;font-weight:700;letter-spacing:-.3px}
+  .demo{font-size:12px;font-weight:500;color:var(--warn);background:var(--warn-soft);border:1px solid #f3d3ad;border-radius:999px;padding:2px 10px}
+  .top-meta{margin-left:auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;color:var(--sub);font-size:14px}
+  .top-meta select{border:1px solid var(--line-strong);border-radius:8px;padding:5px 8px;background:#fff}
+  .ghost{border:1px solid var(--line-strong);background:#fff;border-radius:8px;padding:5px 10px;font-size:13px;color:var(--sub)}
+
+  /* 사이드바 + 본문 */
+  .shell{max-width:1440px;margin:0 auto;display:grid;grid-template-columns:196px minmax(0,1fr)}
+  .side{position:sticky;top:0;align-self:start;padding:18px 10px;display:flex;flex-direction:column;gap:4px}
+  .nav{display:flex;align-items:center;gap:10px;border:0;background:none;text-align:left;padding:10px 12px;border-radius:8px;font-size:15px;font-weight:500;color:var(--sub);white-space:nowrap}
+  .nav:hover{background:#e9edf3}
+  .nav[aria-current="page"]{background:var(--panel);color:var(--text);font-weight:700;box-shadow:inset 3px 0 0 var(--accent)}
+  .nav .ic{width:20px;text-align:center}
+  .nav .cnt{margin-left:auto;font-size:12px;font-weight:700;color:#fff;background:var(--alert);border-radius:999px;padding:0 7px}
+  .wrap{padding:0 20px 40px;min-width:0}
+  .page-h{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin:18px 0 12px}
+  .page-h h2{font-size:20px}
+  .page-h p{font-size:13px;color:var(--muted)}
+
+  /* 오늘 할 일 요약 */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 16px}
+  .kpi b{display:block;font-size:26px;font-weight:700;line-height:1.2}
+  .kpi span{font-size:13px;color:var(--sub)}
+  .kpi.hl{border-color:#b9cdf6;background:var(--accent-soft)}
+
+  .sec-h{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin:0 0 8px}
+  .sec-h h2,.sec-h h3{font-size:16px;font-weight:700}
+  .sec-h p{font-size:13px;color:var(--muted)}
+
+  /* 지역 위험 현황 */
+  .regions{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:18px}
+  .region{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;text-align:left;display:flex;flex-direction:column;gap:3px;transition:border-color .15s}
+  .region:hover{border-color:var(--line-strong)}
+  .region[aria-pressed="true"]{border:2px solid var(--accent);padding:9px 11px}
+  .region .nm{font-weight:700;font-size:15px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+  .region .tp{font-size:22px;font-weight:700;line-height:1.2}
+  .region .nx{font-size:12px;color:var(--sub)}
+  .days{display:flex;gap:2px;margin-top:2px}
+  .days i{flex:1;height:6px;border-radius:2px;background:#8fd1a5}
+  .days i.s1{background:#f2d046}.days i.s2{background:#e8740c}.days i.s3{background:#d9534a}
+
+  .badge{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:700;border-radius:6px;padding:1px 7px;white-space:nowrap}
+  .badge.s0{color:#1f5c36;background:#c3e8cf}
+  .badge.s1{color:#7a5a00;background:#fff1b8}
+  .badge.s2{color:#7a3300;background:#fbcf9c}
+  .badge.s3{color:var(--alert);background:var(--alert-soft)}
+
+  /* 홈 2단 */
+  .main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);min-width:0}
+  .panel-in{padding:14px 16px}
+  .list-h{padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+  .filters{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chip{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:3px 11px;font-size:13px;color:var(--sub)}
+  .chip[aria-pressed="true"]{background:var(--text);border-color:var(--text);color:#fff}
+  .tbl-wrap{overflow-x:auto}
+
+  table{width:100%;border-collapse:collapse}
+  th{font-size:12px;font-weight:500;color:var(--muted);text-align:left;padding:8px 10px;background:#fafbfc;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top;font-size:14px}
+  tbody tr.pick-row{cursor:pointer}
+  tbody tr.pick-row:hover{background:#f8fafd}
+  tbody tr[aria-selected="true"]{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+  tbody tr.done td{color:var(--muted)}
+  .rank{font-weight:700;font-size:16px;text-align:center;width:40px}
+  .who b{display:block}
+  .who small,.reason small{color:var(--muted);font-size:12px}
+  /* 보험 상태 색: 가입 초록 · 특약 없음 노랑 · 미가입 빨강 · 모름 검정 */
+  .ins{display:inline-block;font-size:12.5px;font-weight:700;border-radius:6px;padding:1px 8px;white-space:nowrap;border:1px solid transparent}
+  .ins-ok{background:#dcf3e3;color:#17663a;border-color:#a9dcb9}
+  .ins-gap{background:#fff4c2;color:#7a5a00;border-color:#f0d873}
+  .ins-none{background:#fde4e2;color:#b42318;border-color:#f5b5ae}
+  .ins-unk{background:#1d2330;color:#fff}
+  /* 계약(1어종 1계약) */
+  .ctr-line{display:flex;align-items:center;gap:6px;white-space:nowrap;margin:2px 0;font-size:13px}
+  .ctr-line small{font-size:11.5px}
+  .ctr-cards{display:flex;flex-direction:column;gap:8px}
+  .ctr-card{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--soft)}
+  .ctr-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;font-size:15px}
+  .ctr-no{width:20px;height:20px;border-radius:50%;background:var(--text);color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+  .ctr-q{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:14px}
+  .ctr-q input{width:90px;border:1px solid var(--line-strong);border-radius:6px;padding:3px 8px;text-align:right;background:#fff}
+  .ctr-total{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--accent-soft);font-size:14px}
+  .ctr-total b{font-size:18px}
+  /* 알림 종 */
+  .bell-wrap{position:relative}
+  .bell{position:relative;width:38px;height:38px;border-radius:50%;border:1px solid var(--line-strong);background:#fff;display:flex;align-items:center;justify-content:center;color:var(--text)}
+  .bell:hover{background:#f3f5f8}
+  .bell svg{width:20px;height:20px}
+  .bell-n{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:999px;background:var(--alert);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px;border:2px solid #fff}
+  .bell-panel{position:absolute;right:0;top:46px;width:360px;max-width:calc(100vw - 32px);background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(20,30,50,.16);z-index:50;overflow:hidden}
+  .bell-h{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);font-weight:700}
+  .bell-list{list-style:none;max-height:420px;overflow-y:auto}
+  .bell-list li{border-bottom:1px solid var(--line)}
+  .bell-list button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:auto 1fr;gap:2px 10px;width:100%;padding:11px 14px;cursor:pointer;font-size:14px}
+  .bell-list button:hover{background:#f8fafd}
+  .bell-list li.unread button{background:#f2f6ff}
+  .bell-list .ty{grid-row:span 2;font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;height:fit-content;margin-top:2px;white-space:nowrap}
+  .ty.join{background:#dcf3e3;color:#17663a}.ty.apply{background:#e3eefb;color:#1d5fb8}
+  .ty.reply{background:#fff4c2;color:#7a5a00}.ty.alert{background:#fde4e2;color:#b42318}
+  .bell-list small{color:var(--muted);font-size:12px}
+  .sale-open{color:var(--sub);font-weight:500}
+  .sale-soon{color:var(--warn);font-weight:700}
+  .sale-later{color:var(--muted)}
+  .sp-hit{color:var(--warn);font-weight:700}
+  .sp-none{color:var(--muted);font-size:13px}
+  .st{display:inline-block;font-size:12px;border-radius:6px;padding:1px 7px;background:#eef0f4;color:var(--sub);white-space:nowrap}
+  .st.todo{background:#fff;border:1px solid var(--line-strong);color:var(--text)}
+  .st.book{background:var(--watch-soft);color:var(--watch)}
+  .st.win{background:var(--normal-soft);color:var(--normal)}
+  .empty{padding:30px 16px;text-align:center;color:var(--muted)}
+  .score{font-size:11px;color:var(--muted);display:block;margin-top:2px}
+
+  /* 어가 브리핑 */
+  .b-head{padding:14px 16px;border-bottom:1px solid var(--line)}
+  .b-head h2{font-size:18px}
+  .b-head p{font-size:13px;color:var(--sub)}
+  .b-sec{padding:12px 16px;border-bottom:1px solid var(--line)}
+  .b-sec h3{font-size:13px;font-weight:700;color:var(--sub);margin-bottom:6px}
+  .risk-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:16px;font-weight:700}
+  .note{font-size:12px;color:var(--muted)}
+  .linkish{border:0;background:none;color:var(--accent);font-size:12px;font-weight:700;padding:0}
+  .facts{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px}
+  .facts dt{color:var(--muted)}
+  .ok{color:var(--normal);font-weight:700}
+  .ng{color:var(--alert);font-weight:700}
+  .calc{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;font-size:14px}
+  .calc input{width:110px;border:1px solid var(--line-strong);border-radius:6px;padding:4px 8px;text-align:right}
+  .calc .tot{border-top:1px solid var(--line);padding-top:6px;font-weight:700}
+  .acc{border-bottom:1px solid var(--line)}
+  .acc>summary{list-style:none;cursor:pointer;padding:11px 16px;display:flex;align-items:center;gap:10px;font-size:14px}
+  .acc>summary::-webkit-details-marker{display:none}
+  .acc>summary:hover{background:#f8fafd}
+  .acc>summary .t{font-weight:700;font-size:13px;color:var(--sub);white-space:nowrap}
+  .acc>summary .s{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .acc>summary .arw{color:var(--muted);transition:transform .15s}
+  .acc[open]>summary .arw{transform:rotate(180deg)}
+  .acc .body{padding:0 16px 14px}
+  .guide{font-weight:700;font-size:14px;margin-bottom:8px}
+  .checks{list-style:none;display:flex;flex-direction:column;gap:6px;font-size:14px;margin-bottom:10px}
+  .checks label{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+  .checks input{margin-top:5px;accent-color:var(--accent)}
+  .checks li.key span{font-weight:700}
+  .checks input:checked+span{color:var(--muted);text-decoration:line-through}
+  .script{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;white-space:pre-line}
+  .tpl-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  textarea{width:100%;border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;font-size:14px;resize:vertical;min-height:84px}
+  .sms-meta{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);margin-top:4px}
+  .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .btn{border-radius:8px;padding:10px 12px;font-weight:700;border:1px solid var(--line-strong);background:#fff;min-height:44px}
+  .btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.sm{min-height:0;padding:4px 10px;font-size:13px}
+  .record{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:14px}
+  .record label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--sub)}
+  .record select,.record input{border:1px solid var(--line-strong);border-radius:6px;padding:6px 8px;font-size:14px;background:#fff}
+  .record .full{grid-column:1/-1}
+  .links{font-size:13px;color:var(--sub);display:flex;flex-direction:column;gap:3px}
+
+  /* 수온 예측 */
+  .fc-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(260px,.7fr);gap:16px;align-items:start;margin-bottom:16px}
+  .fc-side{display:grid;gap:16px}
+  .reg-pick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:var(--sub);margin:2px 0 8px}
+  .legend i{display:inline-block;width:20px;border-top:3px solid var(--accent);vertical-align:middle;margin-right:6px}
+  .legend .om i{border-top:3px dashed var(--om)}
+  .legend .th i{border-top:2px dashed var(--th28)}
+  .chart{overflow-x:auto}
+  .chart svg{display:block;width:100%;min-width:560px;height:auto}
+  .g-line{stroke:#e8ecf1;stroke-width:1}
+  .g-txt{fill:var(--muted);font-size:11px}
+  .g-band{fill:#f4f6f9}
+  .g-head{font-size:11px;font-weight:700}
+  .g-head.r{fill:var(--accent)} .g-head.o{fill:var(--muted)}
+  .th25{stroke:var(--th25);stroke-width:1.6;stroke-dasharray:6 6}
+  .th28{stroke:var(--th28);stroke-width:1.6;stroke-dasharray:6 6}
+  .th25t{fill:#8a6d00;font-size:10px} .th28t{fill:#a8500a;font-size:10px}
+  .s-roms{stroke:var(--accent);fill:none;stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
+  .s-om{stroke:var(--om);fill:none;stroke-width:3;stroke-dasharray:7 5;stroke-linejoin:round}
+  .pt{stroke:#fff;stroke-width:2;cursor:pointer}
+  .pt.r{fill:var(--accent)} .pt.o{fill:var(--om)}
+  .pick{border:1px solid var(--line);border-radius:8px;background:var(--soft);padding:10px 12px;font-size:13px;margin-top:8px}
+  .mini{list-style:none;display:flex;flex-direction:column;gap:7px;font-size:14px}
+  .mini li{display:flex;justify-content:space-between;gap:10px}
+  .mini li span{color:var(--muted)}
+  .tables{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .tables h3{font-size:13px;margin-bottom:6px;color:var(--sub)}
+  td.num,th.num{text-align:right}
+
+  /* 고객 상담 현황 */
+  .search{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+  .search label{font-size:13px;color:var(--sub);font-weight:700}
+  .search input{flex:1;min-width:0;max-width:440px;border:1px solid var(--line-strong);border-radius:8px;padding:9px 12px;font-size:15px;background:#fff}
+  .stack{display:grid;gap:16px}
+  .hist-res{font-weight:700;white-space:nowrap}
+
+  .foot{margin-top:18px;font-size:12px;color:var(--muted);line-height:1.7}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1d2330;color:#fff;border-radius:8px;padding:10px 16px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw}
+  .toast.on{opacity:1}
+
+  /* ===== 보완판 추가 ===== */
+  .chg{display:none;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#7c3aed;color:#fff;font-size:11px;font-weight:700;line-height:1;vertical-align:middle;margin:0 4px;box-shadow:0 0 0 2px #fff}
+  body.show-chg .chg{display:inline-flex}
+  body.show-chg .chg-box{outline:2px dashed #a78bfa;outline-offset:2px;border-radius:8px}
+  .ghost[aria-pressed="true"]{background:#f3edff;border-color:#a78bfa;color:#5b21b6;font-weight:700}
+  .kpis{grid-template-columns:repeat(5,1fr)}
+  .alert-tag{font-size:12px;font-weight:700;border-radius:6px;padding:1px 6px;margin-top:3px;align-self:flex-start}
+  .alert-tag.on{background:var(--alert);color:#fff}
+  .alert-tag.off{background:#eef0f4;color:var(--sub)}
+  .alert-box{border-radius:8px;padding:8px 10px;font-size:13px;margin-top:8px}
+  .alert-box.on{background:var(--alert-soft);color:#7a1a12;border:1px solid #f5c2bd}
+  .alert-box.off{background:var(--normal-soft);color:#24533a;border:1px solid #c3e2cd}
+  .pts{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
+  .pts i{font-style:normal;font-size:11px;background:#f1f3f7;color:var(--sub);border-radius:4px;padding:0 5px;white-space:nowrap}
+  .pts i.minus{background:#fdeaea;color:var(--alert)}
+  .pts b{font-size:11px;color:var(--text);padding:0 2px}
+  .rule{margin-top:8px;font-size:13px}
+  .rule summary{cursor:pointer;color:var(--accent);font-weight:700;font-size:12px}
+  .rule table{margin-top:6px;border:1px solid var(--line)}
+  .rule td{padding:5px 8px;font-size:12px}
+  .bulk{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 16px;background:#fafbfc;border-bottom:1px solid var(--line);font-size:13px;color:var(--sub)}
+  .bulk .btn{min-height:0;padding:5px 12px;font-size:13px}
+  .bulk .btn:disabled{opacity:.45;cursor:not-allowed}
+  td.ck,th.ck{width:30px;padding-right:0}
+  td.ck input,th.ck input{width:16px;height:16px;accent-color:var(--accent)}
+  .tag-why{display:inline-block;font-size:11px;font-weight:700;border-radius:4px;padding:0 5px;margin-left:4px;background:#fff1b8;color:#7a5a00;white-space:nowrap}
+  .need{display:inline-block;font-size:11px;font-weight:700;border-radius:4px;padding:0 5px;margin-left:4px;background:#fff1b8;color:#7a5a00;white-space:nowrap}
+  .consent-y{color:var(--normal);font-weight:700}
+  .consent-n{color:var(--alert);font-weight:700}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .next{display:block;font-size:11px;color:var(--warn);margin-top:2px;white-space:nowrap}
+  .calc .src{grid-column:1/-1;font-size:11px;color:var(--muted);margin-top:-4px}
+  .main{grid-template-columns:minmax(0,1.75fr) minmax(340px,1fr)}
+  .who b,.who small,#rows td:nth-child(5){white-space:nowrap}
+  .who small{display:block}
+  #rows td{padding:9px 7px}
+  #rows td.reason{min-width:210px}
+  @media (max-width:1240px){.kpis{grid-template-columns:repeat(3,1fr)}}
+
+  /* ===== 홈 상단: 수온 그래프 · 해당 지역 수온 · 오늘 연락할 어가 ===== */
+  .home-top{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(190px,.6fr) minmax(250px,.75fr);gap:12px;margin:18px 0 16px;align-items:stretch}
+  .home-top>.panel{padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+  .home-top .sec-h{margin:0}
+  .home-top .reg-pick{margin:0;gap:5px}
+  .home-top .chip{padding:2px 9px;font-size:12.5px}
+  .chart.sm svg{min-width:420px}
+  .temp-now{display:flex;flex-direction:column;gap:6px}
+  .temp-now .rg{font-size:14px;font-weight:700;color:var(--sub)}
+  .temp-now .tp{font-size:34px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+  .temp-now .mini{gap:5px;font-size:13px}
+  .temp-now .alert-tag{margin-top:2px}
+  .temp-now .badge{align-self:flex-start}
+  .kpis.kpi-list{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0}
+  .kpi-list .kpi{padding:7px 10px}
+  .kpi-list .kpi b{font-size:20px}
+  .kpi-list .kpi span{font-size:12px;line-height:1.3;display:block}
+  .kpi-list .kpi.hl{grid-column:1/-1;display:flex;align-items:baseline;gap:10px}
+  .kpi-list .kpi.hl b{font-size:24px}
+
+  /* 일괄 안내 문자 */
+  .bp{display:flex;flex-direction:column;gap:10px}
+  .bp h4{font-size:13px;color:var(--sub)}
+  .bp-count{font-size:15px}
+  .bp-count b{font-size:20px}
+  .bp-picked{display:flex;flex-wrap:wrap;gap:5px}
+  .bp-picked button{border:1px solid var(--line-strong);background:var(--soft);border-radius:999px;padding:2px 9px;font-size:12.5px}
+  .bp-picked button.no{border-color:#f5b5ae;color:var(--alert);background:var(--alert-soft)}
+  .bp textarea[readonly]{background:var(--soft);color:var(--sub)}
+  .btn.full{width:100%}
+
+  /* 어가 상세 */
+  .detail-wrap{max-width:880px}
+  .page-h .ghost{align-self:center}
+  @media (max-width:1240px){.home-top{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.home-top>.fc-card{grid-column:1/-1}}
+  @media (max-width:640px){.home-top{grid-template-columns:1fr}}
+
+  @media (max-width:1240px){.regions{grid-template-columns:repeat(4,1fr)}}
+  @media (max-width:1100px){.main,.fc-grid{grid-template-columns:1fr}}
+  @media (max-width:900px){
+    .shell{grid-template-columns:1fr}
+    .side{position:static;flex-direction:row;overflow-x:auto;padding:10px 16px 0}
+    .nav[aria-current="page"]{box-shadow:inset 0 -3px 0 var(--accent)}
+    .tables{grid-template-columns:1fr}
+  }
+  @media (max-width:640px){
+    .wrap{padding:0 16px 32px}.top-in{padding:12px 16px}
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .regions{grid-template-columns:repeat(2,1fr)}
+    .col-sale,.col-st{display:none}
+    .actions,.record{grid-template-columns:1fr}
+  }
+  @media (prefers-reduced-motion:reduce){.acc>summary .arw,.region,.toast{transition:none}}
+  a.nav{text-decoration:none}
+  a.linkish{display:inline-block}
+  .notice{margin:12px 0 0;padding:10px 12px;border-radius:8px;font-size:14px;background:var(--warn-soft);color:#7a3d06;border:1px solid #f3d3ad;white-space:pre-line}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <h1>고수온 선제 상담 대시보드</h1>
+    <span class="demo" id="data-mode">불러오는 중</span>
+    <div class="top-meta">
+      <label>담당 <select id="office" aria-label="담당 지역"></select></label>
+      <span id="updated"></span>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="side" aria-label="화면 이동">
+    <a class="nav" href="consult_home.html"><span class="ic" aria-hidden="true">☎</span>상담 홈<span class="cnt" id="nav-left" hidden></span></a>
+    <a class="nav" href="farm_detail.html"><span class="ic" aria-hidden="true">☰</span>어가 상세</a>
+    <a class="nav" href="sea_forecast.html" aria-current="page"><span class="ic" aria-hidden="true">〰</span>수온 예측</a>
+    <a class="nav" href="consult_status.html"><span class="ic" aria-hidden="true">☷</span>고객 상담 현황</a>
+  </nav>
+
+  <main class="wrap">
+    <p class="notice" id="notice" role="alert" hidden></p>
+    <section id="page-forecast">
+      <div class="page-h"><h2>수온 예측</h2><p>담당 지역 기준 · 지역은 맨 위 '담당'에서 바꿔요 · 1~7일은 대응 판단, 8~21일은 흐름 참고만 해요</p></div>
+      <div class="fc-grid">
+        <section class="panel panel-in" aria-labelledby="h-fc">
+          <div class="sec-h"><h3 id="h-fc">21일 수온 추이</h3><p id="fc-sub"></p></div>
+          <div class="legend">
+            <span><i></i>ROMS 1~7일 · 대응 검토</span>
+            <span class="om"><i></i>ECMWF 보정 8~21일 · 참고만</span>
+            <span class="th"><i></i>기준선 25℃ · 28℃</span>
+          </div>
+          <div class="chart" id="fc-chart"><div class="empty">불러오는 중이에요…</div></div>
+          <div class="pick" id="fc-pick" aria-live="polite"></div>
+          <p class="note" style="margin-top:8px">ECMWF 보정값으로는 위험 단계·연락 대상·보험금 지급 여부를 판단하지 않아요. ROMS도 관측값이 아닌 모델 예측값이에요.</p>
+        </section>
+        <div class="fc-side">
+          <section class="panel panel-in" aria-labelledby="h-fcs">
+            <div class="sec-h"><h3 id="h-fcs">단기 예상 위험 요약</h3><p>선택 지역 · 앞으로 7일</p></div>
+            <ul class="mini" id="fc-summary"></ul>
+          </section>
+          <section class="panel panel-in" aria-labelledby="h-fcc">
+            <div class="sec-h"><h3 id="h-fcc">판정 참고 기준</h3></div>
+            <ul class="mini">
+              <li><span>관심 (예비특보 수준)</span><b>25℃ 도달 예상</b></li>
+              <li><span>주의 (주의보 수준)</span><b>28℃ 도달 예상</b></li>
+              <li><span>경보</span><b>28℃ 이상 3일 연속</b></li>
+            </ul>
+            <p class="note" style="margin-top:8px">예보값에 적용한 앱 자체 판정이에요. 수과원 공식 특보 기준과 같은지는 <span class="need">출처 확인 중</span><span class="chg">8</span> 공식 특보는 수과원 발표로 확인하세요.</p>
+            <div class="sec-h" style="margin-top:14px"><h3>어종별 견디는 한계 수온</h3></div>
+            <ul class="mini" id="fc-species"></ul>
+            <p class="note" style="margin-top:8px">국립수산과학원(2024.7.19) 자료. 그 밖의 어종은 자료를 확보하면 추가해요.</p>
+          </section>
+        </div>
+      </div>
+      <section class="panel panel-in" aria-labelledby="h-fct">
+        <div class="sec-h"><h3 id="h-fct">예측 상세 값</h3><p>날짜별 모델값 · 최고 / 평균 / 최저 수온</p></div>
+        <div class="tables" id="fc-tables"></div>
+      </section>
+    </section>
+    <p class="foot">
+      위험 단계는 예보값에 앱 기준(관심 25℃ · 주의 28℃ · 경보 28℃ 이상 3일)을 적용한 앱 자체 판정(참고)이며, 공식 특보나 보험금 지급 기준이 아닙니다. 수과원 공식 특보 기준과의 일치 여부는 확인 중입니다.
+      상담 홈 수온 칸의 '공식 특보'는 수과원 발표를 옮겨 적는 칸이며, 이 화면의 발령 내용은 가상 예시입니다.
+      1~7일은 국립해양조사원 ROMS 모델값, 8~21일은 ECMWF EC46 예측을 지역별로 보정한 참고값입니다(Weather data by Open-Meteo.com).      보장 내용·판매기간·분납 조건은 양식수산물재해보험 상품요약서·사업방법서(2026.5.13) 기준이고, 수온·어가·상담 기록은 모두 화면 설명을 위한 가상 예시입니다. 전화·문자는 실제로 발송되지 않습니다.
+    </p>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ===== 데이터 연결 =====
+   백엔드(FastAPI, 8000 포트)에서 데이터를 받아요. 연결이 안 되면 아래 가상 데이터(SAMPLE)를 쓰고 화면 위에 경고를 띄워요.
+   API 응답을 SAMPLE과 같은 모양으로 맞추면 화면 코드는 고치지 않아도 돼요.
+   지금 백엔드에 있는 경로는 /api/consult/logs (상담 결과 저장) 하나예요. '제안' 경로는 API를 만들면서 이름을 맞춰 주세요. */
+const API_BASE = (location.protocol === 'file:' ? 'http://127.0.0.1' : `${location.protocol}//${location.hostname}`) + ':8000';
+const ENDPOINTS = {
+  regions: '/api/dashboard/regions',  // 제안 · 지역별 21일 수온 예측 (상담 홈과 같음)
+};
+let mode = 'sample';   // 'db' = 서버 데이터 · 'sample' = 가상 데이터
+
+async function getJSON(path){
+  const res = await fetch(API_BASE + path);
+  if(!res.ok) throw new Error(`${path} HTTP ${res.status}`);
+  return res.json();
+}
+// 쓰기 요청은 백엔드 규칙상 X-CSRF-Protection: 1 헤더가 필요해요
+async function postJSON(path, body){
+  const res = await fetch(API_BASE + path, {method:'POST', headers:{'Content-Type':'application/json', 'X-CSRF-Protection':'1'}, body:JSON.stringify(body)});
+  if(!res.ok){
+    let msg = `HTTP ${res.status}`;
+    try{ const j = await res.json(); if(j.detail) msg += ' · ' + (typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail)); }catch(e){}
+    throw new Error(msg);
+  }
+  return res.json();
+}
+function addNotice(msg){
+  const n = document.getElementById('notice');
+  n.textContent = n.hidden ? msg : n.textContent + '\n' + msg;
+  n.hidden = false;
+}
+function setMode(ok, err){
+  mode = ok ? 'db' : 'sample';
+  document.getElementById('data-mode').textContent = ok ? 'DB 연결됨' : '가상 데이터 · 서버 연결 실패';
+  document.getElementById('updated').textContent = ok ? `${new Date().toLocaleString('ko-KR')} 조회` : '2026.10.22 (목) 06:00 기준';
+  if(!ok) addNotice(location.protocol === 'file:'
+    ? '⚠️ 파일로 열면 서버에 연결할 수 없어 가상 데이터를 보여 주고 있어요. sea_temperature 폴더에서 python -m http.server 8765 를 켜고 http://localhost:8765/sea_forecast.html 로 열어 주세요.'
+    : `⚠️ 서버에 연결하지 못해 가상 데이터를 보여 주고 있어요. 백엔드(8000 포트)가 켜져 있는지 확인해 주세요. (${err.message})`);
+}
+
+/* ===== 기본 값 ===== */
+let TODAY = {y:2026, m:10, d:22};   // 예측 기준일 · 서버 연결 시 regions 응답의 base_date로 바뀌어요
+const STAGE = ['정상','관심','주의','경보'];
+const STAGE_ICON = ['○','◐','▲','■'];
+const WEEK = ['일','월','화','수','목','금','토'];
+const dayOf = i => new Date(TODAY.y, TODAY.m - 1, TODAY.d + i);
+const md = i => { const d = dayOf(i); return `${d.getMonth()+1}/${d.getDate()}`; };
+const mdw = i => `${md(i)}(${WEEK[dayOf(i).getDay()]})`;
+const r1 = v => Math.round(v * 10) / 10;
+const pad = n => String(n).padStart(2, '0');
+const ymd = i => { const d = dayOf(i); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const TREND = {up:'↗ 상승', flat:'→ 유지', down:'↘ 하강'};
+// 국립수산과학원(2024.7.19) 품종별 생존 상한. 자료 없는 어종은 지역 기준을 그대로 씀.
+const SPECIES_LIMIT = {'조피볼락':28, '전복':28, '넙치':29, '강도다리':27};
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ===== 수온 예측 데이터 =====
+   API 응답 모양 (ENDPOINTS.regions):
+   { base_date:'YYYY-MM-DD',
+     regions:[{ id:'통영', trend:'up'|'flat'|'down', bias:{diff, own}, alert:{type, since} 또는 null,
+                series:[{ i:0~20, max, mean, min, src:'ROMS'(0~6일) | 'ECMWF'(7~20일) }] }] }
+   alert = 수과원 공식 특보. 아래 가상 값은 7일 일최고만 적고, 나머지는 계산으로 채운 예시예요. */
+const SAMPLE_REGION_SEED = [
+  {id:'통영', t:[27.6,27.8,27.9,28.1,28.0,27.7,27.4], trend:'flat', bias:{diff:-1.4, own:false}, alert:null},
+  {id:'거제', t:[26.9,27.1,27.3,27.4,27.2,27.0,26.8], trend:'flat', bias:{diff:-0.4, own:true},  alert:null},
+  {id:'고성', t:[27.2,27.3,27.5,27.6,27.4,27.1,26.9], trend:'flat', bias:{diff:-0.9, own:true},  alert:{type:'고수온 예비특보', since:'10/21'}},
+  {id:'남해', t:[25.8,25.9,26.0,26.1,25.9,25.7,25.5], trend:'down', bias:{diff:-2.0, own:true},  alert:null},
+  {id:'하동', t:[24.6,24.5,24.4,24.3,24.1,24.0,23.8], trend:'down', bias:{diff:-1.4, own:false}, alert:null},
+  {id:'창원', t:[25.1,25.3,25.4,25.4,25.2,25.0,24.9], trend:'down', bias:{diff:-1.4, own:false}, alert:null},
+  {id:'사천', t:[24.9,24.8,24.7,24.6,24.4,24.3,24.1], trend:'down', bias:{diff:-2.0, own:true},  alert:null},
+];
+function sampleSeries(t, trend){
+  const roms = t.map((max,i) => ({i, max, mean:r1(max-0.7), min:r1(max-1.3), src:'ROMS'}));
+  const om = [];
+  for(let k = 1; k <= 14; k++){
+    const drift = trend === 'up' ? 0.07*k : trend === 'down' ? -0.11*k : 0;
+    const max = r1(t[6] + drift + 0.15*Math.sin(k/2));
+    om.push({i:6+k, max, mean:r1(max-0.6), min:r1(max-1.1), src:'ECMWF'});
+  }
+  return roms.concat(om);
+}
+const SAMPLE_REGIONS = {base_date:'2026-10-22', regions:SAMPLE_REGION_SEED.map(({t, ...r}) => ({...r, series:sampleSeries(t, r.trend)}))};
+
+function stageOfDay(t, i, arr){
+  if(t >= 28){
+    const run = arr.slice(Math.max(0,i-2), i+1).filter(v => v >= 28).length;
+    return run >= 3 ? 3 : 2;
+  }
+  return t >= 25 ? 1 : 0;
+}
+let regionInfo = {};
+function applyRegions(data){
+  const [y, m, d] = data.base_date.split('-').map(Number);
+  TODAY = {y, m, d};
+  regionInfo = {};
+  data.regions.forEach(r => {
+    const series = r.series.slice().sort((a,b) => a.i - b.i);
+    const t = series.filter(p => p.src === 'ROMS').map(p => p.max);
+    const st = t.map((v,i,a) => stageOfDay(v,i,a));
+    const top = Math.max(...st), maxT = Math.max(...t);
+    regionInfo[r.id] = {...r, t, series, st, top, d:st.indexOf(top), maxT, dMax:t.indexOf(maxT)};
+  });
+}
+
+let toastT;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), 2600);
+}
+/* ===== 담당 지역 (화면끼리 이 브라우저에 기억) ===== */
+const OFFICE_KEY = 'heat-dashboard-office';
+function getOffice(){ try{ return localStorage.getItem(OFFICE_KEY) || '통영'; }catch(e){ return '통영'; } }
+function putOffice(id){ try{ localStorage.setItem(OFFICE_KEY, id); }catch(e){} }
+function fillOffice(current){
+  const sel = document.getElementById('office');
+  sel.innerHTML = Object.keys(regionInfo).map(id => `<option value="${esc(id)}">${esc(id)} 지역 담당</option>`).join('');
+  const id = regionInfo[current] ? current : Object.keys(regionInfo)[0];
+  sel.value = id;
+  return id;
+}
+/* ===== 21일 수온 그래프 ===== */
+// 21일 그래프 (홈은 still: 점 선택 없이 보기만)
+function chartSvg(I, pick, o = {}){
+  const fcRegion = I.id;
+  const pts = I.series, fcPick = pick;
+  const W = 900, H = o.h || 300, L = 46, R = 16, T = 28, B = 40, pW = W - L - R, pH = H - T - B;
+  const temps = pts.map(p => p.max).concat([25, 28]);
+  const lo = Math.floor(Math.min(...temps) - 0.5), hi = Math.ceil(Math.max(...temps) + 0.5);
+  const x = i => L + i / 20 * pW, y = v => T + (hi - v) / (hi - lo) * pH;
+  const step = hi - lo > 6 ? 2 : 1;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${fcRegion} 21일 수온 예측 그래프">`;
+  svg += `<rect class="g-band" x="${x(6.5)}" y="${T}" width="${W - R - x(6.5)}" height="${pH}"/>`;
+  svg += `<text class="g-head r" x="${x(3)}" y="16" text-anchor="middle">1~7일 · ROMS 대응 검토</text>`;
+  svg += `<text class="g-head o" x="${x(13.75)}" y="16" text-anchor="middle">8~21일 · ECMWF 보정 · 참고만</text>`;
+  for(let v = lo; v <= hi; v += step){
+    svg += `<line class="g-line" x1="${L}" y1="${y(v)}" x2="${W-R}" y2="${y(v)}"/><text class="g-txt" x="${L-8}" y="${y(v)+4}" text-anchor="end">${v}°</text>`;
+  }
+  [[25,'th25'],[28,'th28']].forEach(([v,c]) => {
+    svg += `<line class="${c}" x1="${L}" y1="${y(v)}" x2="${W-R}" y2="${y(v)}"/><text class="${c}t" x="${L+6}" y="${y(v)-5}" text-anchor="start" font-weight="700">${v === 25 ? '관심 25℃' : '주의 28℃'}</text>`;
+  });
+  for(let i = 0; i <= 20; i += 2) svg += `<text class="g-txt" x="${x(i)}" y="${H - B + 20}" text-anchor="middle">${md(i)}</text>`;
+  const line = arr => arr.map(p => `${x(p.i)},${y(p.max)}`).join(' ');
+  svg += `<polyline class="s-roms" points="${line(pts.filter(p => p.src==='ROMS'))}"/>`;
+  // 7일→8일 사이 끊김 없이 이어 그림
+  svg += `<polyline class="s-om" points="${line([pts[6]].concat(pts.filter(p => p.src==='ECMWF')))}"/>`;
+  pts.forEach(p => {
+    const on = p.i === fcPick;
+    svg += o.still
+      ? `<circle class="pt ${p.src==='ROMS'?'r':'o'}" style="cursor:default" cx="${x(p.i)}" cy="${y(p.max)}" r="3.5"><title>${mdw(p.i)} ${p.max.toFixed(1)}℃ · ${p.src}</title></circle>`
+      : `<circle class="pt ${p.src==='ROMS'?'r':'o'}" data-pt="${p.i}" tabindex="0" cx="${x(p.i)}" cy="${y(p.max)}" r="${on?7:4.5}"><title>${mdw(p.i)} ${p.max.toFixed(1)}℃ · ${p.src}</title></circle>`;
+  });
+  return svg + '</svg>';
+}
+
+/* ===== 화면 상태 ===== */
+let homeRegion = '통영', fcRegion = '통영', fcPick = 0;
+
+/* ===== 수온 예측 ===== */
+function renderForecast(){
+  const I = regionInfo[fcRegion];
+  document.getElementById('fc-sub').textContent = `${fcRegion}${fcRegion === homeRegion ? '' : ' (어가 지역)'} · ${md(0)}~${md(20)} · 일최고 수온`;
+
+  document.getElementById('fc-chart').innerHTML = chartSvg(I, fcPick);
+  renderForecastSide(I);
+}
+
+function renderForecastSide(I){
+  const pts = I.series;
+  const p = pts[fcPick];
+  document.getElementById('fc-pick').innerHTML = `<b>${mdw(p.i)} · 최고 ${p.max.toFixed(1)}℃</b> (평균 ${p.mean.toFixed(1)}℃ · 최저 ${p.min.toFixed(1)}℃)　<span class="note">${p.src==='ROMS'
+    ? `ROMS 모델값 · 대응 검토 · ${STAGE[I.st[p.i]]}`
+    : 'ECMWF 지역별 보정값 · 흐름 참고만'}</span> · 그래프의 점을 누르면 날짜별 값이 보여요`;
+
+  const first = I.top >= 1 ? `${mdw(I.d)} (D-${I.d})` : '없음';
+  document.getElementById('fc-summary').innerHTML = `
+    <li><span>예상 단계</span><span class="badge s${I.top}">${STAGE_ICON[I.top]} ${STAGE[I.top]}</span></li>
+    <li><span>오늘 최고 예측</span><b>${I.t[0].toFixed(1)}℃</b></li>
+    <li><span>7일 최고</span><b>${I.maxT.toFixed(1)}℃ · ${md(I.dMax)}</b></li>
+    <li><span>${STAGE[I.top]} 첫 예상일</span><b>${first}</b></li>
+    <li><span>2~3주 흐름</span><b>${TREND[I.trend]}</b></li>
+`;
+  document.getElementById('fc-species').innerHTML = Object.entries(SPECIES_LIMIT).map(([s,v]) => {
+    const reach = I.t.findIndex(t => t >= v);
+    return `<li><span>${s}</span><b>${v}℃ ${reach >= 0 ? `<span class="sp-hit">· ${fcRegion} D-${reach} 도달</span>` : ''}</b></li>`;
+  }).join('');
+
+  const table = (rows, stage) => `<div class="tbl-wrap"><table><thead><tr><th>날짜</th>${stage?'<th>단계</th>':''}<th class="num">최고℃</th><th class="num">평균℃</th><th class="num">최저℃</th></tr></thead><tbody>${
+    rows.map(r => `<tr><td>${mdw(r.i)}</td>${stage?`<td><span class="badge s${I.st[r.i]}">${STAGE[I.st[r.i]]}</span></td>`:''}<td class="num"><b>${r.max.toFixed(1)}</b></td><td class="num">${r.mean.toFixed(1)}</td><td class="num">${r.min.toFixed(1)}</td></tr>`).join('')
+  }</tbody></table></div>`;
+  document.getElementById('fc-tables').innerHTML =
+    `<div><h3>1~7일 · ROMS (대응 검토)</h3>${table(pts.filter(p => p.src==='ROMS'), true)}</div>
+     <div><h3>8~21일 · ECMWF 보정 (참고만)</h3>${table(pts.filter(p => p.src==='ECMWF'), false)}</div>`;
+}
+
+/* ===== 이벤트 ===== */
+document.getElementById('office').addEventListener('change', e => {
+  homeRegion = fcRegion = e.target.value; fcPick = 0; putOffice(homeRegion);
+  try{ history.replaceState(null, '', location.pathname); }catch(e){}
+  renderForecast();
+});
+const fcEl = document.getElementById('page-forecast');
+fcEl.addEventListener('click', e => {
+  const p = e.target.closest('[data-pt]');
+  if(p){ fcPick = +p.dataset.pt; renderForecast(); document.querySelector(`[data-pt="${fcPick}"]`)?.focus(); }
+});
+fcEl.addEventListener('keydown', e => {
+  const p = e.target.closest('[data-pt]');
+  if(p && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); fcPick = +p.dataset.pt; renderForecast(); document.querySelector(`[data-pt="${fcPick}"]`)?.focus(); }
+});
+
+/* ===== 시작 ===== */
+(async () => {
+  try{ applyRegions(await getJSON(ENDPOINTS.regions)); setMode(true); }
+  catch(e){ applyRegions(SAMPLE_REGIONS); setMode(false, e); }
+  homeRegion = fillOffice(getOffice());
+  const want = new URLSearchParams(location.search).get('region');
+  fcRegion = want && regionInfo[want] ? want : homeRegion;
+  renderForecast();
+})();
+</script>
+</body>
+</html>
