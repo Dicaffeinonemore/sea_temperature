@@ -62,11 +62,10 @@ def contracts_by_household(db: Connection, household_ids: list[int]) -> dict[int
 
 def list_customers(db: Connection, season: str) -> list[dict]:
     rows = db.execute(f"""
-        SELECT h.household_id, h.owner_name AS name, ct.phone_number, ct.sms_consent,
+        SELECT h.household_id, h.owner_name AS name, h.phone_number, h.sms_consent,
                {REGION_SHORT} AS region, COALESCE(cs.status, '미연락') AS status,
                lg.last_contact, COALESCE(lg.consult_count, 0) AS consult_count, q.risk_stage
         FROM customer_service.fishery_households h
-        LEFT JOIN customer_service.household_contacts ct ON ct.household_id = h.household_id
         LEFT JOIN public.sigungu_area_coordinates r ON r.region_id = h.region_code
         LEFT JOIN customer_service.consult_cases cs ON cs.household_id = h.household_id AND cs.season = %s
         LEFT JOIN (SELECT household_id, max(contacted_at AT TIME ZONE 'Asia/Seoul')::date AS last_contact,
@@ -78,7 +77,7 @@ def list_customers(db: Connection, season: str) -> list[dict]:
     """, (season,)).fetchall()
     contracts = contracts_by_household(db, [r["household_id"] for r in rows])
     return [{"code": str(r["household_id"]), "name": r["name"], "phone_masked": mask_phone(r["phone_number"]),
-             "sms_consent": bool(r["sms_consent"]), "region": r["region"],
+             "sms_consent": r["sms_consent"], "region": r["region"],
              "contracts": contracts.get(r["household_id"], []), "risk_stage": r["risk_stage"],
              "status": r["status"], "last_contact": r["last_contact"], "consult_count": r["consult_count"]}
             for r in rows]

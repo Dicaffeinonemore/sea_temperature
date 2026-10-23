@@ -16,7 +16,7 @@ from backend.tests.support import request
 DB_ENABLED = os.getenv("RUN_CUSTOMER_DB_TESTS") == "1"
 SEASON = "2026-고수온"
 TABLES = ("fish_species", "fishery_households", "household_species", "insurance_contracts", "insurance_targets",
-          "household_contacts", "contact_queue", "consult_cases", "consult_logs", "consult_log_items")
+          "contact_queue", "consult_cases", "consult_logs", "consult_log_items")
 
 
 class RewrittenConnection:
@@ -51,7 +51,6 @@ def consult_sandbox():
                 # LIKE does not copy foreign keys: restore the ones the queries rely on.
                 for table, columns, parent, parent_columns in (
                     ("household_species", "household_id", "fishery_households", "household_id"),
-                    ("household_contacts", "household_id", "fishery_households", "household_id"),
                     ("consult_cases", "household_id", "fishery_households", "household_id"),
                     ("consult_logs", "case_id, household_id", "consult_cases", "case_id, household_id"),
                     ("consult_log_items", "log_id", "consult_logs", "log_id"),
@@ -88,8 +87,9 @@ def seed(db):
                                                        (3, 301, 31, [HEAT_RIDER]), (4, 302, 31, [])):
         db.conn.execute(f"INSERT INTO {s}.insurance_targets (target_id, insurance_id, mapping_id, rider_details) "
                         "VALUES (%s,%s,%s,%s)", (target_id, insurance_id, mapping_id, json.dumps({"riders": riders})))
-    db.conn.execute(f"INSERT INTO {s}.household_contacts (household_id, phone_number, sms_consent, consent_at, "
-                    "consent_source) VALUES (1,'01012341203',true,now(),'서면'), (2,'01055550727',false,null,null)")
+    db.conn.execute(f"UPDATE {s}.fishery_households SET phone_number = '01000001203', sms_consent = true, "
+                    "sms_consent_at = now() WHERE household_id = 1")
+    db.conn.execute(f"UPDATE {s}.fishery_households SET phone_number = '01000000727' WHERE household_id = 2")
     db.conn.execute(f"INSERT INTO {s}.contact_queue (base_date, household_id, rank, score, risk_stage, list_reason) "
                     "VALUES ('2026-10-21',1,2,50,1,'위험 단계'), ('2026-10-22',1,1,70,2,'위험 단계'), "
                     "('2026-10-22',2,2,40,1,'판매 마감')")
@@ -116,6 +116,7 @@ class ConsultFlowTest(unittest.TestCase):
             seed(db)
             rows = {c["code"]: c for c in list_customers(db, SEASON)}
         self.assertEqual(rows["1"]["phone_masked"], "010-****-1203")
+        self.assertTrue(rows["1"]["sms_consent"])
         self.assertEqual(rows["1"]["region"], "통영")
         self.assertEqual(rows["1"]["risk_stage"], 2, "latest base_date wins")
         self.assertEqual([(k["species"], k["coverage"]) for k in rows["1"]["contracts"]],
@@ -124,6 +125,7 @@ class ConsultFlowTest(unittest.TestCase):
         self.assertFalse(rows["2"]["sms_consent"])
         self.assertEqual(rows["3"]["contracts"][0]["coverage"], "covered", "heat rider on the valid contract")
         self.assertIsNone(rows["3"]["phone_masked"])
+        self.assertFalse(rows["3"]["sms_consent"], "column default")
         self.assertIsNone(rows["3"]["risk_stage"], "farms n8n did not list have no stage")
         self.assertEqual({r["status"] for r in rows.values()}, {"미연락"})
 
