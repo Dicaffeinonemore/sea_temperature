@@ -15,6 +15,7 @@ from backend.insurance import router as insurance_router
 from backend.support import router as support_router
 from backend.routes import router
 from backend.customer_api import router as customer_router
+from backend.consult import router as consult_router
 from backend.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ app = FastAPI(
 app.include_router(router)
 app.include_router(api_router)
 app.include_router(customer_router)
+app.include_router(consult_router)
 app.add_middleware(CORSMiddleware, allow_origins=get_settings().cors_origins,
                    allow_credentials=True, allow_methods=["GET", "POST", "PATCH", "DELETE"],
                    allow_headers=["Authorization", "Content-Type", "X-CSRF-Protection"])
