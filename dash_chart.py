@@ -10,7 +10,9 @@
   신청주의_월별.svg / .png     월별 신청·주의 선 그래프
   - SVG는 피그마에 끌어다 놓으면 선·글자를 하나하나 고칠 수 있음 (글자가 글자로 남음)
   - PNG는 2배 해상도, 배경 투명
-  - 색은 home_test.html 기준 (신청 --primary, 주의 --warn). 아래 COLOR 에서만 바꾸세요.
+  - 모양은 '고수온 선제 상담 대시보드'(sea_forecast.html) 21일 수온 그래프 기준:
+    신청 --accent · 주의 --warn, 예측 구간은 회색 띠(.g-band) + 점선, 머리글 '실적 / 예측 · 참고만'.
+    색은 아래 COLOR 등에서만 바꾸세요.
 
 이 파일 하나만 추가하면 됩니다. 다른 파일은 고치지 않습니다.
 DB 접속은 insurance_test.py와 같습니다: backend/backend/.env 또는 환경변수 DATABASE_URL
@@ -39,9 +41,10 @@ sys.path.insert(0, str(ROOT / "backend"))       # backend 패키지(DB 접속)�
 
 METRICS = ("신청", "주의")
 
-# ── 그래프 스타일: home_test.html 의 :root 색과 맞춤. 색은 여기서만 바꿉니다 ──
-COLOR = {"신청": "#2563eb", "주의": "#b45309"}   # --primary / --warn
-TEXT, SUB, GRID = "#15181f", "#6f7586", "#e3e7ef"   # --text / --text-muted / --border
+# ── 그래프 스타일: 상담 대시보드(sea_forecast.html) :root 색과 맞춤. 색은 여기서만 바꿉니다 ──
+COLOR = {"신청": "#1f5ae0", "주의": "#a8500a"}   # --accent / --warn
+TEXT, SUB, MUTED = "#161a22", "#4b5363", "#6b7385"   # --text / --sub / --muted
+GRID, BAND, AXIS = "#e8ecf1", "#f4f6f9", "#cdd3dd"   # .g-line / .g-band(예측 구간) / --line-strong
 FONTS = ("Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", "AppleGothic", "NanumGothic", "Noto Sans CJK KR")
 
 
@@ -111,7 +114,7 @@ def _mpl():
 
     installed = {f.name for f in font_manager.fontManager.ttflist}
     font = next((f for f in FONTS if f in installed), None)
-    matplotlib.rcParams.update({"svg.fonttype": "none", "axes.unicode_minus": False, "font.size": 11})
+    matplotlib.rcParams.update({"svg.fonttype": "none", "axes.unicode_minus": False, "font.size": 11, "legend.fontsize": 12, "legend.labelcolor": SUB})
     if font:
         matplotlib.rcParams["font.family"] = font
     return Figure
@@ -120,23 +123,52 @@ def _mpl():
 def _style(ax, *, hide_y: bool = False):
     ax.spines[["top", "right"] + (["left"] if hide_y else [])].set_visible(False)
     for side in ("left", "bottom"):
-        ax.spines[side].set_color(SUB)
-    ax.tick_params(colors=SUB, length=0 if hide_y else 3.5)
+        ax.spines[side].set_color(AXIS)
+    ax.tick_params(colors=MUTED, labelsize=11, length=0)
+    ax.tick_params(axis="x", pad=8)
+    ax.tick_params(axis="y", pad=6)
     if hide_y:
         ax.tick_params(left=False, labelleft=False)
-    ax.grid(axis="y", color=GRID, linewidth=0.8)
+    ax.grid(axis="y", color=GRID, linewidth=1)
     ax.set_axisbelow(True)
 
 
+def _heads(ax, x_split: float, past_txt: str, fc_txt: str):
+    """sea_forecast.html 21일 그래프처럼: 예측 구간 회색 띠 + 위쪽 머리글 (실적 = accent, 예측 = muted)"""
+    left, right = ax.get_xlim()
+    ax.axvspan(x_split, right, color=BAND, zorder=0, linewidth=0)
+    ax.set_xlim(left, right)
+    kw = dict(xycoords=("data", "axes fraction"), xytext=(0, 6), textcoords="offset points",
+              ha="center", va="bottom", fontsize=11, fontweight="bold", annotation_clip=False)
+    ax.annotate(past_txt, ((left + x_split) / 2, 1), color=COLOR["신청"], **kw)
+    ax.annotate(fc_txt, ((x_split + right) / 2, 1), color=MUTED, **kw)
+
+
+def _header(fig, title: str, sub: str):
+    """.sec-h 처럼: 굵은 제목(16px) + 옆에 회색 설명(13px)"""
+    t = fig.text(0.012, 0.975, title, color=TEXT, fontsize=16, fontweight="bold", va="top")
+    fig.canvas.draw()   # 제목 너비를 알아야 설명을 옆에 붙일 수 있음
+    bb = t.get_window_extent().transformed(fig.transFigure.inverted())
+    fig.text(bb.x1 + 0.012, 0.968, sub, color=MUTED, fontsize=12, va="top")
+
+
+def _legend(fig, items):
+    """.legend 처럼: 선 모양 + 글자(12px, --sub), 제목 바로 아래 한 줄"""
+    from matplotlib.lines import Line2D
+    handles = [Line2D([], [], color=c, linewidth=lw, linestyle=ls) for _, c, ls, lw in items]
+    fig.legend(handles, [n for n, *_ in items], loc="upper left", bbox_to_anchor=(0.006, 0.9), ncol=len(items),
+               frameon=False, handlelength=1.8, columnspacing=1.6, fontsize=12)
+
+
 def yearly_figure(rows: list[dict]):
-    """신청·주의를 한 그래프에: 해마다 막대 두 개. 예측 해는 점선 빈 막대 + 예상 범위 선"""
+    """신청·주의를 한 그래프에: 해마다 막대 두 개. 예측 해는 회색 띠 위 점선 빈 막대 + 예상 범위 선"""
     Figure = _mpl()
     rows = [r for r in rows if r.get("metric") in METRICS]
     years = sorted({int(r["year"]) for r in rows})
     fc_year = max((int(r["year"]) for r in rows if r["kind"] == "예측"), default=None)
     by = {(r["metric"], int(r["year"])): r for r in rows}
 
-    fig = Figure(figsize=(10, 4.8), dpi=100)
+    fig = Figure(figsize=(10, 5), dpi=100)
     ax = fig.subplots()
     w, top_all = 0.36, 0.0
     for k, mt in enumerate(METRICS):
@@ -146,64 +178,73 @@ def yearly_figure(rows: list[dict]):
                 continue
             v, is_fc = float(r["value"]), r["kind"] == "예측"
             pos = i + (k - 0.5) * w
-            ax.bar(pos, v, w * 0.92, color="white" if is_fc else COLOR[mt], edgecolor=COLOR[mt],
-                   linewidth=1.5, linestyle="--" if is_fc else "-", label=mt if i == 0 else None)
+            ax.bar(pos, v, w * 0.9, color="white" if is_fc else COLOR[mt], edgecolor=COLOR[mt],
+                   linewidth=1.6, linestyle=(0, (4, 3)) if is_fc else "-", zorder=2)
             top = v
             lo, hi = r.get("low"), r.get("high")
             if is_fc and lo is not None and hi is not None and float(hi) > float(lo):
-                ax.errorbar(pos, v, yerr=[[v - float(lo)], [float(hi) - v]], color=COLOR[mt], capsize=5, linewidth=1.2)
+                ax.errorbar(pos, v, yerr=[[v - float(lo)], [float(hi) - v]], color=COLOR[mt], capsize=5, linewidth=1.3, zorder=3)
                 top = float(hi)
             ax.annotate(f"{round(v):,}", (pos, top), xytext=(0, 3), textcoords="offset points",
-                        ha="center", va="bottom", color=COLOR[mt], fontsize=10, fontweight="bold")
+                        ha="center", va="bottom", color=COLOR[mt], fontsize=11, fontweight="bold", zorder=4)
             top_all = max(top_all, top)
+
+    ax.set_xticks(range(len(years)), [f"{y}\n(예측)" if y == fc_year else str(y) for y in years])
+    ax.set_xlim(-0.6, len(years) - 0.4)
+    ax.set_ylim(0, (top_all or 1) * 1.15)
+    _style(ax, hide_y=True)
+    if fc_year is not None:
+        _heads(ax, years.index(fc_year) - 0.5, f"{years[0]}~{fc_year - 1} · 실적(가데이터)", "1년 후 · 예측 참고만")
 
     growth = []
     for mt in METRICS:
         cur, prev = by.get((mt, fc_year)), by.get((mt, (fc_year or 0) - 1))
         if cur and prev and float(prev["value"]):
             growth.append(f"{mt} {(float(cur['value']) / float(prev['value']) - 1) * 100:+.0f}%")
-    title = f"신청·주의 건수 추이와 {fc_year}년 예측" if fc_year else "신청·주의 건수 추이"
-    ax.set_title(title + (f"  ·  {' / '.join(growth)}" if growth else ""), loc="left", color=TEXT, fontsize=13, fontweight="bold")
-    ax.set_xticks(range(len(years)), [f"{y}\n(예측)" if y == fc_year else str(y) for y in years])
-    ax.set_ylim(0, (top_all or 1) * 1.2)
-    _style(ax, hide_y=True)
-    ax.legend(frameon=False, loc="upper left", ncol=2)
-    fig.text(0.01, 0.01, "※ 가데이터 기반 시연용 · 점선 막대 = 예측, 막대 위 선 = 예상 범위 (연간 증가율 기하평균)", color=SUB, fontsize=9)
-    fig.tight_layout(rect=(0, 0.05, 1, 1))
+    _header(fig, "연도별 신청·주의 건수", f"{fc_year}년 예상 " + " · ".join(growth) if growth else "")
+    _legend(fig, [("신청", COLOR["신청"], "-", 6), ("주의", COLOR["주의"], "-", 6),
+                  ("예측 (점선 · 범위)", MUTED, (0, (4, 3)), 1.6)])
+    fig.text(0.012, 0.015, "※ 가데이터 기반 시연용 · 예측은 연간 증가율 기하평균, 막대 위 선 = 예상 범위. 신청·주의 판단 기준이 아닌 참고값이에요.",
+             color=MUTED, fontsize=11)
+    fig.tight_layout(rect=(0, 0.05, 1, 0.84))
     return fig
 
 
 def monthly_figure(rows: list[dict]):
-    """신청·주의를 한 그래프에: 월별 선 두 개 (실선 = 과거·기준년, 점선 = 예측, 띠 = 예상 범위)"""
+    """신청·주의를 한 그래프에: 월별 선 두 개 (실선 = 실적, 회색 띠 위 점선 = 예측, 연한 띠 = 예상 범위)"""
     Figure = _mpl()
     rows = [r for r in rows if r.get("metric") in METRICS]
     labels = sorted({r["month"][:7] for r in rows})
     idx = {m: i for i, m in enumerate(labels)}
 
-    fig = Figure(figsize=(11, 4.8), dpi=100)
+    fig = Figure(figsize=(11, 5), dpi=100)
     ax = fig.subplots()
     for mt in METRICS:
         r = sorted((x for x in rows if x["metric"] == mt), key=lambda x: x["month"])
         past = [x for x in r if x["kind"] != "예측"]
         fc = [x for x in r if x["kind"] == "예측"]
-        ax.plot([idx[x["month"][:7]] for x in past], [float(x["value"]) for x in past], color=COLOR[mt], linewidth=2, label=mt)
+        ax.plot([idx[x["month"][:7]] for x in past], [float(x["value"]) for x in past],
+                color=COLOR[mt], linewidth=2.4, solid_joinstyle="round", solid_capstyle="round", zorder=3)
         if fc:
-            head = past[-1:]   # 과거 마지막 달과 예측 첫 달을 이어 줌
+            head = past[-1:]   # 실적 마지막 달과 예측 첫 달을 끊김 없이 이어 그림
             ax.plot([idx[x["month"][:7]] for x in head + fc], [float(x["value"]) for x in head + fc],
-                    color=COLOR[mt], linewidth=2, linestyle="--", label=f"{mt} (예측)")
+                    color=COLOR[mt], linewidth=2.4, linestyle=(0, (4, 3)), zorder=3)
             if all(x.get("low") is not None and x.get("high") is not None for x in fc):
                 ax.fill_between([idx[x["month"][:7]] for x in fc], [float(x["low"]) for x in fc],
-                                [float(x["high"]) for x in fc], color=COLOR[mt], alpha=0.12, linewidth=0)
+                                [float(x["high"]) for x in fc], color=COLOR[mt], alpha=0.12, linewidth=0, zorder=2)
 
+    ax.set_xticks(range(len(labels)), [m.replace("-", ".") if m.endswith(("-01", "-07")) else "" for m in labels])
+    ax.set_xlim(-0.5, len(labels) - 0.5)
+    ax.set_ylim(bottom=0)
+    ax.yaxis.set_major_formatter(lambda v, _: f"{v:.0f}건")
+    _style(ax)
     first_fc = min((idx[x["month"][:7]] for x in rows if x["kind"] == "예측"), default=None)
     if first_fc is not None:
-        ax.axvline(first_fc - 0.5, color=SUB, linewidth=0.8, linestyle=":")
-        ax.annotate("예측 →", (first_fc - 0.3, 1), xycoords=("data", "axes fraction"), color=SUB, fontsize=9, va="top")
-    ax.set_title("월별 신청·주의 건수", loc="left", color=TEXT, fontsize=13, fontweight="bold")
-    ax.set_xticks(range(len(labels)), [m if m.endswith(("-01", "-07")) else "" for m in labels], fontsize=9)
-    _style(ax)
-    ax.legend(frameon=False, loc="upper left", bbox_to_anchor=(0, 1.0), ncol=4, fontsize=9)
-    fig.tight_layout()
+        _heads(ax, first_fc - 0.5, "실적(가데이터)", "1년 후 · 예측 참고만")
+    _header(fig, "월별 신청·주의 건수", f"{labels[0].replace('-', '.')} ~ {labels[-1].replace('-', '.')} · 전체 지역 합계" if labels else "")
+    _legend(fig, [("신청", COLOR["신청"], "-", 3), ("주의", COLOR["주의"], "-", 3),
+                  ("예측 (점선 · 범위)", MUTED, (0, (4, 3)), 2)])
+    fig.tight_layout(rect=(0, 0, 1, 0.84))
     return fig
 
 
