@@ -1006,7 +1006,7 @@ showDash('연도별');
 const openDetail = id => { location.href = 'farm_detail.html?id=' + encodeURIComponent(id); };
 document.getElementById('office').addEventListener('change', e => {
   homeRegion = e.target.value; putOffice(homeRegion);
-  if(filter.region) filter.region = homeRegion;
+  filter.region = homeRegion;   // 담당을 바꾸면 연락 목록도 그 지역만 (✕로 전체 보기)
   renderHomeTemp(); renderFilters(); renderRows();
 });
 document.getElementById('filters').addEventListener('click', e => {
@@ -1070,6 +1070,7 @@ document.getElementById('reset').addEventListener('click', () => {
 (async () => {
   await loadFarms();
   homeRegion = fillOffice(getOffice());
+  filter.region = homeRegion;   // 처음부터 담당 지역 어가만
   try{ noti = mode === 'db' ? await getJSON(ENDPOINTS.noti) : structuredClone(SAMPLE_NOTI); }
   catch(e){ noti = []; addNotice(`⚠️ 알림을 불러오지 못했어요. (${e.message})`); }
   document.getElementById('reset').hidden = mode !== 'sample';
