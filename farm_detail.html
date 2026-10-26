@@ -1735,6 +1735,9 @@ detailEl.addEventListener('click', async e => {
   await loadFarms();
   if(!selected && sorted().length) selected = sorted()[0].id;
   renderHome();
+  initApi();
+  const startPage = ['home','detail','forecast','consult'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
+  showPage(startPage);
 })();
 </script>
 
