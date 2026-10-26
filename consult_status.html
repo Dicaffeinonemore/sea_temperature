@@ -123,10 +123,10 @@
 
 <div class="shell">
   <nav class="side" aria-label="화면 이동">
-    <button type="button" class="nav" data-later><span class="ic" aria-hidden="true">☎</span>상담 홈</button>
-    <button type="button" class="nav" data-later><span class="ic" aria-hidden="true">☰</span>어가 상세</button>
-    <button type="button" class="nav" data-later><span class="ic" aria-hidden="true">〰</span>수온 예측</button>
-    <button type="button" class="nav" aria-current="page"><span class="ic" aria-hidden="true">☷</span>고객 상담 현황</button>
+    <a class="nav" href="consult_home.html"><span class="ic" aria-hidden="true">☎</span>상담 홈</a>
+    <a class="nav" href="farm_detail.html"><span class="ic" aria-hidden="true">☰</span>어가 상세</a>
+    <a class="nav" href="sea_forecast.html"><span class="ic" aria-hidden="true">〰</span>수온 예측</a>
+    <a class="nav" href="consult_status.html" aria-current="page"><span class="ic" aria-hidden="true">☷</span>고객 상담 현황</a>
   </nav>
 
   <main class="wrap">
@@ -307,9 +307,6 @@ function toast(msg){
   clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('on'), 2600);
 }
 
-document.querySelector('.side').addEventListener('click', e => {
-  if(e.target.closest('[data-later]')) toast('이 화면은 아직 만들지 않았어요');
-});
 document.getElementById('q').addEventListener('input', e => { q = e.target.value.trim(); renderConsult(); });
 const consultEl = document.getElementById('page-consult');
 consultEl.addEventListener('click', e => {

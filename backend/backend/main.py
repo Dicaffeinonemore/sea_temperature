@@ -79,3 +79,4 @@ def database_health(db: Connection = Depends(get_db)):
     if missing:
         return JSONResponse(status_code=503, content={"status": "schema_missing", "missing": missing})
     return {"status": "ok", "database": "connected", "schema": "ready"}
+app.include_router(insurance_router)
