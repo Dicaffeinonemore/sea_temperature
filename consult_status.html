@@ -151,7 +151,7 @@
             </table>
           </div>
           <div class="empty" id="loading">불러오는 중이에요…</div>
-          <div class="empty" id="cust-empty" hidden>검색 결과가 없어요. 이름 한 글자나 전화번호 뒷자리로 찾아보세요.</div>
+          <div class="empty" id="cust-empty" hidden></div>
         </section>
         <section class="panel" aria-labelledby="h-hist">
           <div class="list-h">
@@ -229,6 +229,13 @@ const API = (location.protocol === 'file:' ? 'http://127.0.0.1' : `${location.pr
 let customers = [], history = [];
 let q = '', histFarm = null;
 
+// 담당 지역: 상담 홈·어가 상세·수온 예측 맨 위 '담당'에서 고른 값 (같은 이름으로 이 브라우저에 저장됨)
+const OFFICE_KEY = 'heat-dashboard-office';
+const OFFICES = ['통영','사천','거제','고성','남해','창원','하동'];
+function getOffice(){ try{ return localStorage.getItem(OFFICE_KEY) || '통영'; }catch(e){ return '통영'; } }
+let office = OFFICES.includes(getOffice()) ? getOffice() : '통영';
+const inRegion = c => c.region === office;   // 항상 담당 지역 고객만
+
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 function matchQ(c){
@@ -243,9 +250,13 @@ function ctrLines(c){
 }
 
 function renderConsult(){
-  const custs = customers.filter(matchQ);
+  const base = customers.filter(inRegion);
+  const custs = base.filter(matchQ);
   if(histFarm && !custs.some(c => c.code === histFarm)) histFarm = null;
-  document.getElementById('q-count').textContent = q ? `${custs.length}명` : `전체 ${customers.length}명`;
+  document.getElementById('q-count').textContent = q ? `${custs.length}명` : `${office} ${base.length}명`;
+  document.getElementById('cust-empty').textContent = base.length
+    ? '검색 결과가 없어요. 이름 한 글자나 전화번호 뒷자리로 찾아보세요.'
+    : `${office} 지역 고객이 없어요. 상담 홈 맨 위 '담당'에서 다른 지역을 골라 주세요.`;
   document.getElementById('cust-empty').hidden = custs.length > 0;
   document.getElementById('cust-rows').innerHTML = custs.map(c => `<tr class="pick-row" data-cust="${esc(c.code)}" tabindex="0" aria-selected="${histFarm===c.code}">
       <td class="who"><b>${esc(c.name)}</b><small>${esc(c.code)}</small></td>

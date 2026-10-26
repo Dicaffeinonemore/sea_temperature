@@ -980,19 +980,22 @@ document.getElementById('bell-list').addEventListener('click', e => {
 // 백엔드가 꺼져 있으면 dash_chart.py 가 만들어 둔 out/ 그림을 대신 보여 줘요.
 const DASH_KIND = {'연도별':'yearly', '월별':'monthly'};
 const dashImg = document.getElementById('dash-img');
-let dashKind = '연도별', dashFallback = false;
+let dashKind = '연도별', dashFallback = false, dashRegion = '전체';
+const dashUrl = region => `${API_BASE}/api/v1/dashboard/chart/${DASH_KIND[dashKind]}.svg?region=${encodeURIComponent(region)}`;
 function showDash(kind){
-  dashKind = kind; dashFallback = false;
-  dashImg.alt = `${kind} 신청·주의 건수와 1년 후 예측 그래프`;
-  dashImg.src = `${API_BASE}/api/v1/dashboard/chart/${DASH_KIND[kind]}.svg?region=${encodeURIComponent('전체')}`;
+  dashKind = kind; dashFallback = false; dashRegion = homeRegion;   // 담당 지역 그래프부터
+  dashImg.alt = `${homeRegion} ${kind} 신청·주의 건수와 1년 후 예측 그래프`;
+  dashImg.src = dashUrl(dashRegion);
 }
 dashImg.addEventListener('load', () => {
   dashImg.hidden = false; document.getElementById('dash-miss').hidden = true;
   document.getElementById('dash-src').textContent = dashFallback
     ? '⚠️ 서버에 연결하지 못해 저장해 둔 그림(out 폴더)을 보여 주고 있어요.'
-    : `DB에서 ${new Date().toLocaleString('ko-KR')}에 새로 그린 그래프예요.`;
+    : (dashRegion === '전체' ? `⚠️ ${homeRegion} 지역 그래프 데이터가 없어 전체 지역 그래프를 보여 줘요. ` : `${dashRegion} 지역 · `)
+      + `DB에서 ${new Date().toLocaleString('ko-KR')}에 새로 그린 그래프예요.`;
 });
 dashImg.addEventListener('error', () => {
+  if(!dashFallback && dashRegion !== '전체'){ dashRegion = '전체'; dashImg.src = dashUrl('전체'); return; }   // 담당 지역 데이터가 없으면 전체 지역으로
   if(!dashFallback){ dashFallback = true; dashImg.src = `out/신청주의_${dashKind}.svg`; return; }
   dashImg.hidden = true; document.getElementById('dash-src').textContent = ''; document.getElementById('dash-miss').hidden = false;
 });
@@ -1006,8 +1009,8 @@ showDash('연도별');
 const openDetail = id => { location.href = 'farm_detail.html?id=' + encodeURIComponent(id); };
 document.getElementById('office').addEventListener('change', e => {
   homeRegion = e.target.value; putOffice(homeRegion);
-  if(filter.region) filter.region = homeRegion;
-  renderHomeTemp(); renderFilters(); renderRows();
+  filter.region = homeRegion;   // 담당을 바꾸면 연락 목록도 그 지역만 (✕로 전체 보기)
+  renderHomeTemp(); renderFilters(); renderRows(); showDash(dashKind);
 });
 document.getElementById('filters').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
@@ -1070,6 +1073,8 @@ document.getElementById('reset').addEventListener('click', () => {
 (async () => {
   await loadFarms();
   homeRegion = fillOffice(getOffice());
+  filter.region = homeRegion;   // 처음부터 담당 지역 어가만
+  showDash(dashKind);           // 그래프도 저장된 담당 지역으로
   try{ noti = mode === 'db' ? await getJSON(ENDPOINTS.noti) : structuredClone(SAMPLE_NOTI); }
   catch(e){ noti = []; addNotice(`⚠️ 알림을 불러오지 못했어요. (${e.message})`); }
   document.getElementById('reset').hidden = mode !== 'sample';
