@@ -1610,7 +1610,12 @@ document.querySelector('.home-top').addEventListener('click', e => {
   if(g){ fcRegion = g.dataset.gotoFc; fcPick = 0; showPage('forecast'); }
 });
 // 맨 위 '담당' 지역을 바꾸면 홈 수온·수온 예측·지역 필터가 함께 바뀌어요
+// 담당 지역은 다른 화면(consult_home·sea_forecast)과 같은 이름으로 이 브라우저에 저장해 화면을 옮겨도 유지
+const OFFICE_KEY = 'heat-dashboard-office';
+function getOffice(){ try{ return localStorage.getItem(OFFICE_KEY) || '통영'; }catch(e){ return '통영'; } }
+function putOffice(id){ try{ localStorage.setItem(OFFICE_KEY, id); }catch(e){} }
 function setOffice(id){
+  putOffice(id);
   homeRegion = fcRegion = id; fcPick = 0;
   document.getElementById('office').value = id;
   if(filter.region) filter.region = id;
@@ -1782,6 +1787,8 @@ consultEl.addEventListener('keydown', e => {
 /* ===== 시작 ===== */
 (async () => {
   await loadFarms();
+  const savedOffice = getOffice();
+  if([...document.getElementById('office').options].some(o => o.value === savedOffice)) setOffice(savedOffice);
   if(!selected && sorted().length) selected = sorted()[0].id;
   renderHome();
   initApi();
