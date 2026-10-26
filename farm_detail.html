@@ -364,14 +364,12 @@
 
 <script>
 /* ===== 데이터 연결 =====
-   백엔드(FastAPI, 8000 포트)에서 데이터를 받아요. 연결이 안 되면 아래 가상 데이터(SAMPLE)를 쓰고 화면 위에 경고를 띄워요.
-   API 응답을 SAMPLE과 같은 모양으로 맞추면 화면 코드는 고치지 않아도 돼요.
-   지금 백엔드에 있는 경로는 /api/consult/logs (상담 결과 저장) 하나예요. '제안' 경로는 API를 만들면서 이름을 맞춰 주세요. */
+   백엔드(FastAPI, 8000 포트)에서 데이터를 받아요. 연결이 안 되면 아래 가상 데이터(SAMPLE)를 쓰고 화면 위에 경고를 띄워요. */
 const API_BASE = (location.protocol === 'file:' ? 'http://127.0.0.1' : `${location.protocol}//${location.hostname}`) + ':8000';
 const ENDPOINTS = {
-  regions: '/api/dashboard/regions',  // 제안 · 지역별 21일 수온 예측 (상담 홈과 같음)
-  farms:   '/api/dashboard/farms',    // 제안 · 연락 대상 어가 + 계약 (상담 홈과 같음, 다음 어가 순서에 씀)
-  logs:    '/api/consult/logs',       // 있음 · 상담 결과 저장 (POST)
+  regions: '/api/dashboard/regions',
+  farms:   '/api/consult/customers',
+  logs:    '/api/consult/logs',
 };
 let mode = 'sample';   // 'db' = 서버 데이터 · 'sample' = 가상 데이터
 
@@ -545,6 +543,30 @@ const SAMPLE_FARMS = [
 ];
 const withIds = list => list.map(f => ({household_id:null, ...f, items:f.items.map(c => ({mapping_id:null, ...c}))}));
 
+function toFarms(customers){
+  const statusKeys = Object.fromEntries(Object.entries(STATUS_DB).map(([key, value]) => [value, key]));
+  const coverageKeys = {none:'none', no_rider:'norider', covered:'full'};
+  return customers.map(customer => {
+    const householdId = Number(customer.code);
+    if(!Number.isSafeInteger(householdId) || householdId <= 0 || !statusKeys[customer.status]){
+      throw new Error('어가 번호 또는 상담 상태를 확인해 주세요.');
+    }
+    return {
+      id:String(householdId), household_id:householdId,
+      name:customer.name, region:customer.region,
+      phone:customer.phone_masked, consent:customer.sms_consent,
+      status:statusKeys[customer.status], next:null,
+      items:customer.contracts.map(contract => {
+        if(!Object.hasOwn(coverageKeys, contract.coverage)){
+          throw new Error('어가 보험 보장 상태를 확인해 주세요.');
+        }
+        return {species:contract.species, ins:coverageKeys[contract.coverage],
+                p:null, method:null, mapping_id:null, quote:null};
+      }),
+    };
+  });
+}
+
 // 가상 데이터일 때만 이 브라우저에 저장 (상담 홈 ↔ 어가 상세가 같은 값을 봐요)
 const KEY = 'heat-dashboard-split-v1';
 function loadLocal(){ try{ const s = localStorage.getItem(KEY); if(s) return JSON.parse(s); }catch(e){} return null; }
@@ -554,7 +576,7 @@ let farms = [];
 async function loadFarms(){
   try{
     const [rg, fm] = await Promise.all([getJSON(ENDPOINTS.regions), getJSON(ENDPOINTS.farms)]);
-    applyRegions(rg); farms = fm; setMode(true);
+    applyRegions(rg); farms = toFarms(fm); setMode(true);
   }catch(e){
     applyRegions(SAMPLE_REGIONS); farms = loadLocal() || withIds(structuredClone(SAMPLE_FARMS)); setMode(false, e);
   }
@@ -774,6 +796,65 @@ function renderBrief(){
   const box = document.getElementById('brief');
   const f = farms.find(x => x.id === selected);
   if(!f){ box.innerHTML = `<div class="empty">어가를 찾을 수 없어요${selected ? ` (${esc(selected)})` : ''}. <a class="linkish" href="consult_home.html">연락 목록에서 고르기 →</a></div>`; return; }
+  if(!f.items.length || f.items.some(x => !PRODUCTS[x.p])){
+    const I = regionInfo[f.region];
+    const contracts = f.items.map((x, i) => `
+      <div class="ctr-card">
+        <div class="ctr-h"><span class="ctr-no">${i+1}</span><b>${esc(x.species)}</b>
+          <span class="${INS[x.ins]?.cls || 'ins ins-unk'}" style="margin-left:auto">${INS[x.ins]?.label || '확인 필요'}</span>
+        </div>
+        <dl class="facts">
+          <dt>상품</dt><dd>상품명·양식 방식 확인 필요</dd>
+          <dt>고수온</dt><dd>보장 여부와 특약은 증권·약관 확인 필요</dd>
+        </dl>
+      </div>`).join('');
+    const checks = [
+      '보험 상품명과 양식 방식을 증권으로 확인',
+      '고수온 보장 여부와 특약 가입 내용을 확인',
+      '판매 기간·가입 조건은 수협에 확인',
+    ].map((text, i) => `<li><label><input type="checkbox" id="chk-${f.id}-${i}"><span>${text}</span></label></li>`).join('');
+    box.innerHTML = `
+      <div class="b-head">
+        <h2>${esc(f.name)} 어가 브리핑</h2>
+        <p>${f.id} · ${esc(f.region)} · ${esc(f.phone || '연락처 없음')} · 계약 ${f.items.length}건</p>
+        <p>연락·문자 수신 동의 ${f.consent ? '<span class="consent-y">○ 동의</span>' : '<span class="consent-n">× 미동의 · 문자 불가, 전화로 동의부터 받기</span>'}</p>
+      </div>
+      ${I ? `<div class="b-sec">
+        <div class="risk-line">오늘 ${I.t[0].toFixed(1)}℃ · 7일 최고 ${I.maxT.toFixed(1)}℃
+          <span class="badge s${I.top}">${STAGE_ICON[I.top]} ${STAGE[I.top]}</span></div>
+        <p class="note">${esc(f.region)} 지역 수온 예측 기준 · 공식 특보와 보험금 지급 기준은 수과원·약관 확인 필요</p>
+        <p class="note"><a class="linkish" href="sea_forecast.html?region=${encodeURIComponent(f.region)}">${esc(f.region)} 수온 예측 보기 →</a></p>
+      </div>` : '<div class="b-sec"><p class="note">지역 수온 예측을 불러오지 못했어요.</p></div>'}
+      <div class="b-sec">
+        <h3>계약별 보험 (1어종 1계약)</h3>
+        <div class="ctr-cards">${contracts}</div>
+        <p class="note">현재 고객 API는 상품명·양식 방식·특약 상세를 제공하지 않습니다. 보장 여부와 가입 조건은 보험 증권·약관과 수협을 통해 확인해 주세요.</p>
+      </div>
+      ${acc('check', '상담 시 확인 사항', `확인할 것 ${f.items.length + 2}개`, `
+        <p class="guide">보험 가입 여부와 보장 내용은 상품별 증권·약관을 확인한 뒤 안내하세요.</p>
+        <ul class="checks">${checks}</ul>
+        <div class="script">“${esc(f.name)}님, 가입하신 보험 상품과 고수온 보장·특약 여부를 증권으로 확인해 드리겠습니다. 판매 기간과 가입 조건도 수협에 확인하겠습니다.”</div>`)}
+      ${acc('sms', '문자', '상담 확인 안내', `
+        <textarea id="sms" aria-label="문자 내용">[○○수협] 보험 상품명과 고수온 보장·특약 여부를 증권으로 확인해 안내드리겠습니다. 상담: [수협 전화]</textarea>
+        <div class="sms-meta"><span>[○○수협]·[수협 전화]는 발송 때 실제 값으로 바뀌어요</span><span id="sms-len"></span></div>`)}
+      <div class="actions">
+        <button type="button" class="btn pri" data-act="call">📞 전화 연결</button>
+        <button type="button" class="btn" data-act="sms" ${f.consent ? '' : 'disabled title="수신 미동의"'}>✉️ 문자 보내기</button>
+      </div>
+      ${acc('record', '결과 기록', STATUS[f.status], `
+        <div class="record">
+          <label>통화 결과
+            <select id="r-status">
+              ${Object.entries(STATUS).filter(([key]) => key!=='todo').map(([key, value]) => `<option value="${key}" ${f.status===key?'selected':''}>${value}</option>`).join('')}
+            </select></label>
+          <label>다음 연락·상담일 <input id="r-next" type="date" min="${ymd(0)}"></label>
+          <label class="full">메모 <input id="r-memo" type="text" placeholder="상담 내용을 입력하세요"></label>
+          <button type="button" class="btn pri full" data-act="save">결과 저장 · 다음 어가로</button>
+        </div>`)}
+      `;
+    updateSmsLen();
+    return;
+  }
   const xs = items(f).sort(byUrgent), L0 = xs[0], I = regionInfo[f.region], st = fStage(f), sp = speciesRisk(L0);
   if(!tpl) tpl = defaultTpl(L0);
   // 확인 사항: 가장 급한 계약 기준 + 나머지 계약은 한 줄씩
@@ -910,7 +991,8 @@ briefEl.addEventListener('click', async e => {
   if(a.dataset.act === 'sms'){
     const status = f.status === 'todo' || f.status === 'absent' ? 'sms' : f.status;
     a.disabled = true;
-    try{ await recordLog(f, {status, channel:'문자', memo:TEMPLATES[tpl].label, next:f.next}); }
+    const memo = tpl && TEMPLATES[tpl] ? TEMPLATES[tpl].label : '상담 확인 안내';
+    try{ await recordLog(f, {status, channel:'문자', memo, next:f.next}); }
     catch(err){ a.disabled = false; toast('저장하지 못했어요 · ' + err.message); return; }
     f.status = status; save();
     toast('테스트 문자를 보냈다고 기록했어요 · 실제 발송 안 함');
@@ -939,7 +1021,9 @@ briefEl.addEventListener('click', async e => {
     f.status = status;
     if(nx) f.next = nx;
     save();
-    const nextFarm = sorted().find(x => ACTIVE.includes(x.status) && x.id !== f.id);
+    const nextFarm = f.items.some(x => !PRODUCTS[x.p])
+      ? farms.find(x => ACTIVE.includes(x.status) && x.id !== f.id)
+      : sorted().find(x => ACTIVE.includes(x.status) && x.id !== f.id);
     toast(`${f.name} 결과 저장` + (mode === 'db' ? ' · DB에 기록했어요' : ' · 가상 데이터라 이 브라우저에만 기록했어요'));
     if(nextFarm) select(nextFarm.id); else renderBrief();
   }
@@ -948,8 +1032,13 @@ briefEl.addEventListener('click', async e => {
 /* ===== 시작 ===== */
 (async () => {
   await loadFarms();
-  if(!selected && sorted().length) selected = sorted()[0].id;
-  renderBrief();
+if(!selected){
+  const initialFarm = mode === 'db'
+    ? farms.find(f => ACTIVE.includes(f.status)) || farms[0]
+    : sorted()[0];
+  if(initialFarm) selected = initialFarm.id;
+}
+renderBrief();
 })();
 </script>
 </body>
