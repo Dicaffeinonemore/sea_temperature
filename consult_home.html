@@ -370,8 +370,9 @@
             <button type="button" class="chip" data-dash="연도별" aria-pressed="true">연도별</button>
             <button type="button" class="chip" data-dash="월별" aria-pressed="false">월별</button>
           </div>
-          <img class="dash-img" id="dash-img" src="out/신청주의_연도별.svg" alt="연도별 신청·주의 건수와 1년 후 예측 그래프">
-          <p class="note" id="dash-miss" hidden>그래프 파일이 없어요. sea_temperature 폴더에서 python dash_chart.py --db 를 실행하면 out 폴더에 만들어져요.</p>
+          <img class="dash-img" id="dash-img" alt="연도별 신청·주의 건수와 1년 후 예측 그래프">
+          <p class="note" id="dash-src"></p>
+          <p class="note" id="dash-miss" hidden>그래프를 불러오지 못했어요. 백엔드(8000 포트)를 켜거나, sea_temperature 폴더에서 python dash_chart.py 를 실행해 out 폴더에 그림을 만들어 주세요.</p>
         </section>
         <section class="panel temp-now" id="home-temp" aria-label="선택 지역 수온"></section>
         <section class="panel" aria-labelledby="h-kpi">
@@ -910,19 +911,33 @@ document.getElementById('bell-list').addEventListener('click', e => {
 });
 
 /* ===== 이벤트 ===== */
-// 신청·주의 그래프: 그림 파일은 dash_chart.py --db 가 DB에서 만들어요 (브라우저는 DB에 직접 붙지 않음)
+// 신청·주의 그래프: 들어올 때마다 백엔드가 DB에서 새로 그린 그림을 받아요 (브라우저는 DB에 직접 붙지 않음).
+// 백엔드가 꺼져 있으면 dash_chart.py 가 만들어 둔 out/ 그림을 대신 보여 줘요.
+const DASH_KIND = {'연도별':'yearly', '월별':'monthly'};
 const dashImg = document.getElementById('dash-img');
-function dashMissing(miss){ dashImg.hidden = miss; document.getElementById('dash-miss').hidden = !miss; }
-dashImg.addEventListener('error', () => dashMissing(true));
-dashImg.addEventListener('load', () => dashMissing(false));
-if(dashImg.complete && !dashImg.naturalWidth) dashMissing(true);
+let dashKind = '연도별', dashFallback = false;
+function showDash(kind){
+  dashKind = kind; dashFallback = false;
+  dashImg.alt = `${kind} 신청·주의 건수와 1년 후 예측 그래프`;
+  dashImg.src = `${API_BASE}/api/v1/dashboard/chart/${DASH_KIND[kind]}.svg?region=${encodeURIComponent('전체')}`;
+}
+dashImg.addEventListener('load', () => {
+  dashImg.hidden = false; document.getElementById('dash-miss').hidden = true;
+  document.getElementById('dash-src').textContent = dashFallback
+    ? '⚠️ 서버에 연결하지 못해 저장해 둔 그림(out 폴더)을 보여 주고 있어요.'
+    : `DB에서 ${new Date().toLocaleString('ko-KR')}에 새로 그린 그래프예요.`;
+});
+dashImg.addEventListener('error', () => {
+  if(!dashFallback){ dashFallback = true; dashImg.src = `out/신청주의_${dashKind}.svg`; return; }
+  dashImg.hidden = true; document.getElementById('dash-src').textContent = ''; document.getElementById('dash-miss').hidden = false;
+});
 document.querySelector('.fc-card .reg-pick').addEventListener('click', e => {
   const b = e.target.closest('[data-dash]');
   if(!b) return;
   document.querySelectorAll('[data-dash]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-  dashImg.src = `out/신청주의_${b.dataset.dash}.svg`;
-  dashImg.alt = `${b.dataset.dash} 신청·주의 건수와 1년 후 예측 그래프`;
+  showDash(b.dataset.dash);
 });
+showDash('연도별');
 const openDetail = id => { location.href = 'farm_detail.html?id=' + encodeURIComponent(id); };
 document.getElementById('office').addEventListener('change', e => {
   homeRegion = e.target.value; putOffice(homeRegion);
