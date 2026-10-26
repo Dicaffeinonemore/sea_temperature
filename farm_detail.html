@@ -1561,6 +1561,7 @@ function toast(msg){
 }
 
 function showPage(p){
+  if(p === 'home'){ location.href = 'consult_home.html'; return; }   // 상담 홈은 막대그래프가 있는 consult_home.html로 이동
   page = p;
   document.querySelectorAll('[data-page-section]').forEach(s => s.hidden = s.dataset.pageSection !== p);
   document.querySelectorAll('.nav').forEach(b => { if(b.dataset.page === p) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
