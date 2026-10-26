@@ -30,20 +30,18 @@
   - 어종별 견디는 한계 수온(SPECIES_LIMIT)에 7일 안에 닿으면 그 어종 카드는 최소 '주의'.
 
 엔드포인트
-  GET  /                                        대시보드 HTML (같은 폴더의 DASHBOARD_HTML)
-  GET  /health
+  GET  /api/households/health                   보험금 계산 API 연결 상태 (기존 /health 는 백엔드 것과 겹쳐 이름 변경)
   GET  /api/households?q=&limit=                어가 목록 (상세 화면의 어가 선택용)
   GET  /api/households/{household_id}/detail    어가 상세 전체
   POST /api/households/{household_id}/consult-logs    상담 결과 기록
   POST /api/households/{household_id}/claim-estimate  고수온 피해 시 예상 보험금 (보험금 계산 API 위임)
 
-실행
-  pip install fastapi "uvicorn[standard]" "psycopg[binary]" psycopg_pool httpx pydantic
-  export DATABASE_URL="postgresql://postgres.<ref>:<pw>@<host>:6543/postgres"   # Supabase
-  # 보험금 계산 API 연결 (둘 중 하나)
-  export AQUA_CLAIM_API_DIR=./aqua-claim-api        # 압축 푼 폴더 → 같은 프로세스에서 바로 호출 (권장)
-  export AQUA_CLAIM_API_URL=http://localhost:8001   # 따로 띄운 API 를 HTTP 로 호출
-  uvicorn farm_detail:app --reload
+실행 (2026-10-26 sooui9: 기존 백엔드 8000에 라우터로 붙이도록 변경)
+  pip install psycopg_pool httpx
+  backend/backend/main.py 에서 이 파일의 router 를 등록해 기존 백엔드(8000)와 함께 실행
+  DB 접속은 기존 백엔드 설정(backend/backend/.env)을 그대로 씀
+  보험금 계산 API(aqua-claim-api)는 backend/aqua-claim-api 폴더에서 자동으로 찾음
+  화면 기본 주소, 대시보드 HTML 띄우기, CORS 는 기존 백엔드(main.py)가 맡음
 
 ※ TODO 표시는 실제 데이터를 보고 확정해야 하는 부분입니다.
 """
@@ -59,7 +57,6 @@ import re
 import sys
 import threading
 import time
-from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -67,12 +64,13 @@ from typing import Any, Literal, Optional
 from zoneinfo import ZoneInfo
 
 import httpx
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import JSONResponse
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
 from pydantic import BaseModel, Field
+
+from backend.config import get_settings
 
 log = logging.getLogger("household_detail_api")
 logging.basicConfig(level=logging.INFO)
@@ -83,14 +81,11 @@ KST = ZoneInfo("Asia/Seoul")
 # ---------------------------------------------------------------------------
 # 설정
 # ---------------------------------------------------------------------------
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/postgres")
 DB_POOL_MAX = int(os.getenv("DB_POOL_MAX", "5"))
 
 AQUA_CLAIM_API_DIR = os.getenv("AQUA_CLAIM_API_DIR", str(Path(__file__).with_name("aqua-claim-api")))
 AQUA_CLAIM_API_URL = os.getenv("AQUA_CLAIM_API_URL", "").rstrip("/")
 CLAIM_API_TIMEOUT_SEC = 10.0
-
-DASHBOARD_HTML = Path(os.getenv("DASHBOARD_HTML", str(Path(__file__).with_name("farm_detail.html"))))
 
 # 실시간 수온 (RISA) — home_test.py 와 같은 방식
 RISA_BASE_URL = os.getenv("RISA_BASE_URL", "https://www.nifs.go.kr/risa/")
@@ -157,9 +152,21 @@ pool: Optional[ConnectionPool] = None
 http = httpx.Client(timeout=RISA_TIMEOUT_SEC)
 
 
+_pool_lock = threading.Lock()
+
+
 def db() -> ConnectionPool:
+    """처음 요청 때 DB 연결 묶음을 만듦. 접속 정보는 기존 백엔드 설정(backend/backend/.env)."""
+    global pool
     if pool is None:
-        raise HTTPException(503, "DB 연결이 준비되지 않았어요 (DATABASE_URL 확인)")
+        with _pool_lock:
+            if pool is None:
+                p = ConnectionPool("", min_size=1, max_size=DB_POOL_MAX, open=True,
+                                   # Supabase pooler 는 prepared statement 미지원
+                                   kwargs={**get_settings().connection_kwargs(), "prepare_threshold": None})
+                claim_api.setup(p)
+                pool = p
+                log.info("DB pool ready")
     return pool
 
 
@@ -1530,43 +1537,19 @@ class ConsultLogIn(BaseModel):
 # ---------------------------------------------------------------------------
 # 7. API
 # ---------------------------------------------------------------------------
-@asynccontextmanager
-async def lifespan(_: FastAPI):
-    global pool
-    pool = ConnectionPool(DATABASE_URL, min_size=1, max_size=DB_POOL_MAX, open=True,
-                          kwargs={"prepare_threshold": None})   # Supabase pooler(6543) 는 prepared statement 미지원
-    claim_api.setup(pool)
-    log.info("DB pool ready")
-    try:
-        yield
-    finally:
-        claim_api.close()
-        http.close()
-        pool.close()
-
-
-app = FastAPI(title="고수온 선제 상담 - 어가 상세 API", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["*"],   # TODO: 운영 도메인으로 제한
-                   allow_methods=["GET", "POST"], allow_headers=["*"])
+router = APIRouter(tags=["어가 상세"])
 
 
 def ok(obj: Any) -> JSONResponse:
     return JSONResponse(content=to_json(obj))
 
 
-@app.get("/", include_in_schema=False)
-def dashboard():
-    if not DASHBOARD_HTML.exists():
-        return PlainTextResponse(f"{DASHBOARD_HTML.name} 이 없어요. {DASHBOARD_HTML.parent} 폴더에 두세요.", status_code=404)
-    return FileResponse(DASHBOARD_HTML, media_type="text/html; charset=utf-8")
-
-
-@app.get("/health")
+@router.get("/api/households/health")
 def health():
     return {"ok": True, "claim_api": claim_api.mode, "claim_api_detail": claim_api.status_detail}
 
 
-@app.get("/api/households")
+@router.get("/api/households")
 def list_households(q: Optional[str] = Query(None, description="어가명·대표자·면허번호·어종 일부"),
                     limit: int = Query(200, ge=1, le=1000)):
     """상세 화면의 어가 선택 목록. 보험 요약은 유효 계약에 걸린 어종 수 기준."""
@@ -1594,7 +1577,7 @@ def list_households(q: Optional[str] = Query(None, description="어가명·대�
                for r in rows])
 
 
-@app.get("/api/households/{household_id}/detail")
+@router.get("/api/households/{household_id}/detail")
 def household_detail(household_id: int):
     today = today_kst()
     hh = q_one(HOUSEHOLD_SQL, (household_id,))
@@ -1632,7 +1615,7 @@ def household_detail(household_id: int):
     })
 
 
-@app.post("/api/households/{household_id}/consult-logs")
+@router.post("/api/households/{household_id}/consult-logs")
 def add_consult_log(household_id: int, body: ConsultLogIn):
     """상담 결과 저장: consult_cases(시즌별 1건) 상태 갱신 + consult_logs + consult_log_items."""
     today = today_kst()
@@ -1687,7 +1670,7 @@ class EstimateIn(BaseModel):
     price_variant: Optional[str] = None
 
 
-@app.post("/api/households/{household_id}/claim-estimate")
+@router.post("/api/households/{household_id}/claim-estimate")
 def claim_estimate(household_id: int, body: EstimateIn):
     """보험금 계산 API(/claims/estimate)에 그대로 넘깁니다. 계약이 이 어가 것인지 먼저 확인."""
     row = q_one("""SELECT c.product_id FROM customer_service.insurance_contracts c
