@@ -137,7 +137,6 @@
         <label for="q">검색</label>
         <input id="q" type="search" placeholder="이름, 전화번호 뒷자리, 어종 (예: 김, 1203, 조피볼락)" autocomplete="off">
         <span class="note" id="q-count"></span>
-        <span id="reg-chip"></span>
       </div>
       <div class="stack">
         <section class="panel" aria-labelledby="h-cust">
@@ -235,8 +234,7 @@ const OFFICE_KEY = 'heat-dashboard-office';
 const OFFICES = ['통영','사천','거제','고성','남해','창원','하동'];
 function getOffice(){ try{ return localStorage.getItem(OFFICE_KEY) || '통영'; }catch(e){ return '통영'; } }
 let office = OFFICES.includes(getOffice()) ? getOffice() : '통영';
-let regionOnly = true;   // 담당 지역 고객만 (칩의 ✕로 전체 보기)
-const inRegion = c => !regionOnly || c.region === office;
+const inRegion = c => c.region === office;   // 항상 담당 지역 고객만
 
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -255,13 +253,10 @@ function renderConsult(){
   const base = customers.filter(inRegion);
   const custs = base.filter(matchQ);
   if(histFarm && !custs.some(c => c.code === histFarm)) histFarm = null;
-  document.getElementById('q-count').textContent = q ? `${custs.length}명` : regionOnly ? `${office} ${base.length}명` : `전체 ${customers.length}명`;
-  document.getElementById('reg-chip').innerHTML = regionOnly
-    ? `<button type="button" class="chip" data-reg-all aria-pressed="true">${esc(office)} ✕</button>`
-    : `<button type="button" class="chip" data-reg-only aria-pressed="false">${esc(office)} 고객만</button>`;
+  document.getElementById('q-count').textContent = q ? `${custs.length}명` : `${office} ${base.length}명`;
   document.getElementById('cust-empty').textContent = base.length
     ? '검색 결과가 없어요. 이름 한 글자나 전화번호 뒷자리로 찾아보세요.'
-    : `${office} 지역 고객이 없어요. ✕를 눌러 전체를 보거나, 상담 홈 맨 위 '담당'에서 다른 지역을 골라 주세요.`;
+    : `${office} 지역 고객이 없어요. 상담 홈 맨 위 '담당'에서 다른 지역을 골라 주세요.`;
   document.getElementById('cust-empty').hidden = custs.length > 0;
   document.getElementById('cust-rows').innerHTML = custs.map(c => `<tr class="pick-row" data-cust="${esc(c.code)}" tabindex="0" aria-selected="${histFarm===c.code}">
       <td class="who"><b>${esc(c.name)}</b><small>${esc(c.code)}</small></td>
@@ -324,12 +319,6 @@ function toast(msg){
 }
 
 document.getElementById('q').addEventListener('input', e => { q = e.target.value.trim(); renderConsult(); });
-document.getElementById('reg-chip').addEventListener('click', e => {
-  if(e.target.closest('[data-reg-all]')) regionOnly = false;
-  else if(e.target.closest('[data-reg-only]')) regionOnly = true;
-  else return;
-  histFarm = null; renderConsult();
-});
 const consultEl = document.getElementById('page-consult');
 consultEl.addEventListener('click', e => {
   const o = e.target.closest('[data-open]');
