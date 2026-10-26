@@ -310,7 +310,8 @@ function toast(msg){
 document.getElementById('q').addEventListener('input', e => { q = e.target.value.trim(); renderConsult(); });
 const consultEl = document.getElementById('page-consult');
 consultEl.addEventListener('click', e => {
-  if(e.target.closest('[data-open]')){ toast('어가 상세 화면은 아직 만들지 않았어요'); return; }
+  const o = e.target.closest('[data-open]');
+  if(o){ location.href = 'farm_detail.html?id=' + encodeURIComponent(o.dataset.open); return; }
   if(e.target.closest('[data-hist-all]')){ histFarm = null; renderConsult(); return; }
   const tr = e.target.closest('tr[data-cust]');
   if(tr){ histFarm = histFarm === tr.dataset.cust ? null : tr.dataset.cust; renderConsult(); }
