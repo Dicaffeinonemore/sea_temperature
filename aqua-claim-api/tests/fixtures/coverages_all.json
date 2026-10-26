@@ -1,0 +1,2755 @@
+[
+{
+"product_id": 3,
+"coverage_id": 34,
+"coverage_key": "C006",
+"contract_type": "특약",
+"name": "적조원인 수산물손해부담보 특별약관",
+"risk_types": [
+"적조"
+],
+"effect": "보장제외"
+},
+{
+"product_id": 18,
+"coverage_id": 146,
+"coverage_key": "C005",
+"contract_type": "주계약",
+"name": "대설 원인 수산물 손해",
+"risk_types": [
+"대설"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 33,
+"coverage_id": 241,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "육상수조식 넙치종자 양식시설물 태풍(강풍) 손해",
+"risk_types": [
+"태풍",
+"강풍"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 33,
+"coverage_id": 242,
+"coverage_key": "C002",
+"contract_type": "주계약",
+"name": "육상수조식 넙치종자 양식시설물 해일 손해",
+"risk_types": [
+"해일",
+"폭풍해일",
+"지진해일"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 33,
+"coverage_id": 243,
+"coverage_key": "C003",
+"contract_type": "주계약",
+"name": "육상수조식 넙치종자 양식시설물 호우 손해",
+"risk_types": [
+"호우"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 33,
+"coverage_id": 244,
+"coverage_key": "C004",
+"contract_type": "주계약",
+"name": "육상수조식 넙치종자 양식시설물 홍수 손해",
+"risk_types": [
+"홍수"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 33,
+"coverage_id": 245,
+"coverage_key": "C005",
+"contract_type": "주계약",
+"name": "육상수조식 넙치종자 양식시설물 대설 손해",
+"risk_types": [
+"대설"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 33,
+"coverage_id": 246,
+"coverage_key": "C006",
+"contract_type": "주계약",
+"name": "육상수조식 전복종자 양식시설물 태풍(강풍)·해일·호우·대설 손해",
+"risk_types": [
+"태풍",
+"강풍",
+"해일",
+"폭풍해일",
+"지진해일",
+"호우",
+"대설"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 33,
+"coverage_id": 247,
+"coverage_key": "C007",
+"contract_type": "특약",
+"name": "화재원인 시설물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 33,
+"coverage_id": 248,
+"coverage_key": "C008",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 3,
+"coverage_id": 29,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "양식수산물재해보험 주계약",
+"risk_types": [
+"태풍",
+"해일(폭풍해일/지진해일)",
+"풍랑",
+"적조"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 3,
+"coverage_id": 30,
+"coverage_key": "C002",
+"contract_type": "특약",
+"name": "고수온원인 수산물손해담보 특별약관",
+"risk_types": [
+"고수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 2,
+"coverage_id": 26,
+"coverage_key": "C008",
+"contract_type": "특약",
+"name": "화재원인 시설물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 3,
+"coverage_id": 31,
+"coverage_key": "C003",
+"contract_type": "특약",
+"name": "저수온원인 수산물손해담보 특별약관",
+"risk_types": [
+"저수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 3,
+"coverage_id": 32,
+"coverage_key": "C004",
+"contract_type": "특약",
+"name": "이상수질원인 수산물손해담보 특별약관",
+"risk_types": [
+"이상수질"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 3,
+"coverage_id": 33,
+"coverage_key": "C005",
+"contract_type": "특약",
+"name": "화재원인 수산물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 3,
+"coverage_id": 35,
+"coverage_key": "C007",
+"contract_type": "특약",
+"name": "보험료분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 1,
+"coverage_id": 13,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "양식수산물(넙치) 자연재해 손해보장",
+"risk_types": [
+"태풍(강풍)",
+"해일(폭풍해일/지진해일)",
+"호우",
+"홍수",
+"대설",
+"한파",
+"적조",
+"저수온",
+"저염분"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 1,
+"coverage_id": 14,
+"coverage_key": "C002",
+"contract_type": "특약",
+"name": "자연재해원인 전기적장치위험보장 특별약관",
+"risk_types": [
+"보상대상 자연재해",
+"낙뢰",
+"정전"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 1,
+"coverage_id": 15,
+"coverage_key": "C003",
+"contract_type": "특약",
+"name": "고수온원인 수산물손해담보 특별약관",
+"risk_types": [
+"고수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 1,
+"coverage_id": 16,
+"coverage_key": "C004",
+"contract_type": "특약",
+"name": "적조원인 수산물손해부담보 특별약관",
+"risk_types": [
+"적조"
+],
+"effect": "보장제외"
+},
+{
+"product_id": 1,
+"coverage_id": 17,
+"coverage_key": "C005",
+"contract_type": "특약",
+"name": "화재원인 수산물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 1,
+"coverage_id": 18,
+"coverage_key": "C006",
+"contract_type": "특약",
+"name": "보험료분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 2,
+"coverage_id": 19,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "태풍·해일·풍랑",
+"risk_types": [
+"태풍",
+"해일(폭풍해일/지진해일)",
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 2,
+"coverage_id": 20,
+"coverage_key": "C002",
+"contract_type": "주계약",
+"name": "적조",
+"risk_types": [
+"적조"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 2,
+"coverage_id": 21,
+"coverage_key": "C003",
+"contract_type": "주계약",
+"name": "이상수온",
+"risk_types": [
+"이상수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 2,
+"coverage_id": 22,
+"coverage_key": "C004",
+"contract_type": "특약",
+"name": "이상수질원인 수산물손해담보 특별약관",
+"risk_types": [
+"이상수질"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 2,
+"coverage_id": 23,
+"coverage_key": "C005",
+"contract_type": "특약",
+"name": "양식시설물손해담보 특별약관",
+"risk_types": [
+"태풍",
+"해일(폭풍해일/지진해일)",
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 2,
+"coverage_id": 24,
+"coverage_key": "C006",
+"contract_type": "특약",
+"name": "이상수온원인 수산물손해부담보 특별약관",
+"risk_types": [
+"이상수온"
+],
+"effect": "보장제외"
+},
+{
+"product_id": 2,
+"coverage_id": 25,
+"coverage_key": "C007",
+"contract_type": "특약",
+"name": "적조원인 수산물손해부담보 특별약관",
+"risk_types": [
+"적조"
+],
+"effect": "보장제외"
+},
+{
+"product_id": 2,
+"coverage_id": 27,
+"coverage_key": "C009",
+"contract_type": "특약",
+"name": "화재원인 수산물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 2,
+"coverage_id": 28,
+"coverage_key": "C010",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 4,
+"coverage_id": 36,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "황백화로 인한 양식 김 폐사 손해 및 관련 비용",
+"risk_types": [
+"황백화"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 5,
+"coverage_id": 37,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "양식수산물(김) 자연재해 손해보장",
+"risk_types": [
+"태풍",
+"해일(폭풍해일/지진해일)",
+"풍랑",
+"이상수온",
+"이상수질",
+"조수"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 5,
+"coverage_id": 38,
+"coverage_key": "C002",
+"contract_type": "특약",
+"name": "괭생이모자반원인 수산물손해담보 특별약관",
+"risk_types": [
+"괭생이모자반"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 6,
+"coverage_id": 45,
+"coverage_key": "C005",
+"contract_type": "특약",
+"name": "이상수온원인 수산물손해담보 특약관",
+"risk_types": [
+"이상수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 5,
+"coverage_id": 39,
+"coverage_key": "C003",
+"contract_type": "특약",
+"name": "유빙원인 수산물손해담보 특별약관",
+"risk_types": [
+"유빙"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 5,
+"coverage_id": 40,
+"coverage_key": "C004",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 6,
+"coverage_id": 41,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "태풍",
+"risk_types": [
+"태풍"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 6,
+"coverage_id": 42,
+"coverage_key": "C002",
+"contract_type": "주계약",
+"name": "해일(폭풍해일/지진해일)",
+"risk_types": [
+"해일",
+"폭풍해일",
+"지진해일"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 6,
+"coverage_id": 43,
+"coverage_key": "C003",
+"contract_type": "주계약",
+"name": "풍랑",
+"risk_types": [
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 6,
+"coverage_id": 44,
+"coverage_key": "C004",
+"contract_type": "주계약",
+"name": "적조",
+"risk_types": [
+"적조"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 18,
+"coverage_id": 144,
+"coverage_key": "C003",
+"contract_type": "주계약",
+"name": "호우 원인 수산물 손해",
+"risk_types": [
+"호우"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 6,
+"coverage_id": 46,
+"coverage_key": "C006",
+"contract_type": "특약",
+"name": "용존산소원인 수산물손해담보 특별약관",
+"risk_types": [
+"용존산소"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 6,
+"coverage_id": 47,
+"coverage_key": "C007",
+"contract_type": "특약",
+"name": "염분･영양염류원인 수산물손해담보 특별약관",
+"risk_types": [
+"염분",
+"영양염류"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 6,
+"coverage_id": 48,
+"coverage_key": "C008",
+"contract_type": "특약",
+"name": "양식시설물손해담보 특별약관",
+"risk_types": [
+"태풍",
+"해일",
+"폭풍해일",
+"지진해일",
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 6,
+"coverage_id": 49,
+"coverage_key": "C009",
+"contract_type": "특약",
+"name": "보험료분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 7,
+"coverage_id": 50,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "양식수산물(김) 자연재해 및 자연재해로 인한 수산질병 손해보장",
+"risk_types": [
+"태풍",
+"해일(폭풍해일/지진해일)",
+"풍랑",
+"이상수온",
+"이상수질",
+"조수",
+"보상대상 자연재해로 인한 수산질병"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 7,
+"coverage_id": 51,
+"coverage_key": "C002",
+"contract_type": "특약",
+"name": "괭생이모자반원인 수산물손해담보 특별약관",
+"risk_types": [
+"괭생이모자반"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 7,
+"coverage_id": 52,
+"coverage_key": "C003",
+"contract_type": "특약",
+"name": "유빙원인 수산물손해담보 특별약관",
+"risk_types": [
+"유빙"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 7,
+"coverage_id": 53,
+"coverage_key": "C004",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 8,
+"coverage_id": 54,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "양식수산물 자연재해 손해 보장",
+"risk_types": [
+"태풍",
+"해일(폭풍해일·지진해일)",
+"풍랑",
+"적조",
+"염분",
+"용존산소",
+"영양염류"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 8,
+"coverage_id": 55,
+"coverage_key": "C002",
+"contract_type": "특약",
+"name": "양식시설물손해담보 특별약관",
+"risk_types": [
+"태풍",
+"해일(폭풍해일·지진해일)",
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 8,
+"coverage_id": 56,
+"coverage_key": "C003",
+"contract_type": "특약",
+"name": "이상수온원인 수산물손해 담보 특별약관",
+"risk_types": [
+"이상수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 8,
+"coverage_id": 57,
+"coverage_key": "C004",
+"contract_type": "특약",
+"name": "용존산소원인 수산물손해 부담보 특별약관",
+"risk_types": [
+"용존산소"
+],
+"effect": "보장제외"
+},
+{
+"product_id": 8,
+"coverage_id": 58,
+"coverage_key": "C005",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 9,
+"coverage_id": 59,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "태풍",
+"risk_types": [
+"태풍"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 9,
+"coverage_id": 60,
+"coverage_key": "C002",
+"contract_type": "주계약",
+"name": "해일(폭풍해일/지진해일)",
+"risk_types": [
+"해일",
+"폭풍해일",
+"지진해일"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 9,
+"coverage_id": 61,
+"coverage_key": "C003",
+"contract_type": "주계약",
+"name": "풍랑",
+"risk_types": [
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 9,
+"coverage_id": 62,
+"coverage_key": "C004",
+"contract_type": "주계약",
+"name": "적조",
+"risk_types": [
+"적조"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 9,
+"coverage_id": 63,
+"coverage_key": "C005",
+"contract_type": "주계약",
+"name": "이상수온",
+"risk_types": [
+"이상수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 9,
+"coverage_id": 64,
+"coverage_key": "C006",
+"contract_type": "주계약",
+"name": "이상수질",
+"risk_types": [
+"이상수질"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 9,
+"coverage_id": 65,
+"coverage_key": "C007",
+"contract_type": "특약",
+"name": "조수(潮水)손해담보특별약관",
+"risk_types": [
+"조수"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 9,
+"coverage_id": 66,
+"coverage_key": "C008",
+"contract_type": "특약",
+"name": "양식시설물손해담보특별약관",
+"risk_types": [
+"태풍",
+"해일",
+"폭풍해일",
+"지진해일",
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 9,
+"coverage_id": 67,
+"coverage_key": "C009",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 10,
+"coverage_id": 68,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "양식수산물 자연재해 손해보장",
+"risk_types": [
+"태풍(강풍)",
+"해일(폭풍해일/지진해일)",
+"호우",
+"홍수",
+"대설"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 10,
+"coverage_id": 69,
+"coverage_key": "C002",
+"contract_type": "특약",
+"name": "자연재해원인 전기적장치위험보장 특별약관",
+"risk_types": [
+"보상대상 자연재해",
+"낙뢰",
+"정전"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 10,
+"coverage_id": 70,
+"coverage_key": "C003",
+"contract_type": "특약",
+"name": "고수온원인 수산물손해담보특별약관",
+"risk_types": [
+"고수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 10,
+"coverage_id": 71,
+"coverage_key": "C004",
+"contract_type": "특약",
+"name": "양식시설물손해담보특별약관",
+"risk_types": [
+"태풍(강풍)",
+"해일(폭풍해일/지진해일)",
+"호우",
+"홍수",
+"대설"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 10,
+"coverage_id": 72,
+"coverage_key": "C005",
+"contract_type": "특약",
+"name": "화재원인 시설물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 10,
+"coverage_id": 73,
+"coverage_key": "C006",
+"contract_type": "특약",
+"name": "화재원인 수산물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 10,
+"coverage_id": 74,
+"coverage_key": "C007",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 11,
+"coverage_id": 75,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "태풍(강풍) 손해보장",
+"risk_types": [
+"태풍",
+"강풍"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 11,
+"coverage_id": 76,
+"coverage_key": "C002",
+"contract_type": "주계약",
+"name": "해일(폭풍해일/지진해일) 손해보장",
+"risk_types": [
+"폭풍해일",
+"지진해일",
+"해일"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 11,
+"coverage_id": 77,
+"coverage_key": "C003",
+"contract_type": "주계약",
+"name": "호우 손해보장",
+"risk_types": [
+"호우"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 11,
+"coverage_id": 78,
+"coverage_key": "C004",
+"contract_type": "주계약",
+"name": "홍수 손해보장",
+"risk_types": [
+"홍수"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 11,
+"coverage_id": 79,
+"coverage_key": "C005",
+"contract_type": "주계약",
+"name": "대설 손해보장",
+"risk_types": [
+"대설"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 11,
+"coverage_id": 80,
+"coverage_key": "C006",
+"contract_type": "주계약",
+"name": "한파 손해보장",
+"risk_types": [
+"한파"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 11,
+"coverage_id": 81,
+"coverage_key": "C007",
+"contract_type": "주계약",
+"name": "적조 손해보장",
+"risk_types": [
+"적조"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 11,
+"coverage_id": 82,
+"coverage_key": "C008",
+"contract_type": "주계약",
+"name": "저수온 손해보장",
+"risk_types": [
+"저수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 11,
+"coverage_id": 83,
+"coverage_key": "C009",
+"contract_type": "주계약",
+"name": "저염분 손해보장",
+"risk_types": [
+"저염분"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 11,
+"coverage_id": 84,
+"coverage_key": "C010",
+"contract_type": "특약",
+"name": "자연재해원인 전기적장치위험보장 특별약관",
+"risk_types": [
+"자연재해",
+"낙뢰",
+"전기적 사고",
+"정전"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 11,
+"coverage_id": 85,
+"coverage_key": "C011",
+"contract_type": "특약",
+"name": "고수온원인 수산물손해담보 특별약관",
+"risk_types": [
+"고수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 11,
+"coverage_id": 86,
+"coverage_key": "C012",
+"contract_type": "특약",
+"name": "화재원인 수산물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 11,
+"coverage_id": 87,
+"coverage_key": "C013",
+"contract_type": "특약",
+"name": "보험료분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 12,
+"coverage_id": 88,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "양식수산물 자연재해 손해보장",
+"risk_types": [
+"태풍",
+"해일(폭풍해일/지진해일)",
+"풍랑",
+"적조"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 12,
+"coverage_id": 89,
+"coverage_key": "C002",
+"contract_type": "특약",
+"name": "이상수온원인 수산물손해담보 특별약관",
+"risk_types": [
+"이상수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 12,
+"coverage_id": 90,
+"coverage_key": "C003",
+"contract_type": "특약",
+"name": "용존산소원인 수산물손해담보 특별약관",
+"risk_types": [
+"용존산소"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 12,
+"coverage_id": 91,
+"coverage_key": "C004",
+"contract_type": "특약",
+"name": "염분･영양염류원인 수산물손해담보 특별약관",
+"risk_types": [
+"염분",
+"영양염류"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 12,
+"coverage_id": 92,
+"coverage_key": "C005",
+"contract_type": "특약",
+"name": "양식시설물 손해담보 특별약관",
+"risk_types": [
+"태풍",
+"해일(폭풍해일/지진해일)",
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 12,
+"coverage_id": 93,
+"coverage_key": "C006",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 13,
+"coverage_id": 94,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "태풍 손해",
+"risk_types": [
+"태풍"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 13,
+"coverage_id": 95,
+"coverage_key": "C002",
+"contract_type": "주계약",
+"name": "해일(폭풍해일·지진해일) 손해",
+"risk_types": [
+"해일",
+"폭풍해일",
+"지진해일"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 13,
+"coverage_id": 96,
+"coverage_key": "C003",
+"contract_type": "주계약",
+"name": "풍랑 손해",
+"risk_types": [
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 13,
+"coverage_id": 97,
+"coverage_key": "C004",
+"contract_type": "주계약",
+"name": "적조 손해",
+"risk_types": [
+"적조"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 13,
+"coverage_id": 98,
+"coverage_key": "C005",
+"contract_type": "주계약",
+"name": "이상수온 손해",
+"risk_types": [
+"이상수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 13,
+"coverage_id": 99,
+"coverage_key": "C006",
+"contract_type": "주계약",
+"name": "이상수질 손해",
+"risk_types": [
+"이상수질"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 13,
+"coverage_id": 100,
+"coverage_key": "C007",
+"contract_type": "특약",
+"name": "조수(潮水)손해담보특별약관",
+"risk_types": [
+"조수"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 13,
+"coverage_id": 101,
+"coverage_key": "C008",
+"contract_type": "특약",
+"name": "양식시설물손해담보특별약관",
+"risk_types": [
+"태풍",
+"해일",
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 13,
+"coverage_id": 102,
+"coverage_key": "C009",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 14,
+"coverage_id": 103,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "양식수산물 자연재해 손해보장",
+"risk_types": [
+"태풍(강풍)",
+"해일(폭풍해일/지진해일)",
+"호우",
+"홍수"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 14,
+"coverage_id": 104,
+"coverage_key": "C002",
+"contract_type": "주계약",
+"name": "양식수산물 대설 손해보장",
+"risk_types": [
+"대설"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 14,
+"coverage_id": 105,
+"coverage_key": "C003",
+"contract_type": "주계약",
+"name": "양식수산물 가뭄 손해보장",
+"risk_types": [
+"가뭄"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 14,
+"coverage_id": 106,
+"coverage_key": "C004",
+"contract_type": "특약",
+"name": "자연재해원인 전기적장치위험보장 특별약관",
+"risk_types": [
+"주계약 보상대상 자연재해",
+"낙뢰",
+"정전"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 14,
+"coverage_id": 107,
+"coverage_key": "C005",
+"contract_type": "특약",
+"name": "고수온원인 수산물손해담보특별약관",
+"risk_types": [
+"고수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 15,
+"coverage_id": 120,
+"coverage_key": "C009",
+"contract_type": "주계약",
+"name": "저염분 손해보장",
+"risk_types": [
+"저염분"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 14,
+"coverage_id": 108,
+"coverage_key": "C006",
+"contract_type": "특약",
+"name": "양식시설물손해담보 특별약관",
+"risk_types": [
+"태풍(강풍)",
+"해일",
+"호우",
+"홍수",
+"대설"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 14,
+"coverage_id": 109,
+"coverage_key": "C007",
+"contract_type": "특약",
+"name": "화재원인 시설물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 14,
+"coverage_id": 110,
+"coverage_key": "C008",
+"contract_type": "특약",
+"name": "화재원인 수산물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 14,
+"coverage_id": 111,
+"coverage_key": "C009",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 15,
+"coverage_id": 112,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "태풍(강풍) 손해보장",
+"risk_types": [
+"태풍",
+"강풍"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 15,
+"coverage_id": 113,
+"coverage_key": "C002",
+"contract_type": "주계약",
+"name": "해일(폭풍해일/지진해일) 손해보장",
+"risk_types": [
+"폭풍해일",
+"지진해일"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 15,
+"coverage_id": 114,
+"coverage_key": "C003",
+"contract_type": "주계약",
+"name": "호우 손해보장",
+"risk_types": [
+"호우"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 15,
+"coverage_id": 115,
+"coverage_key": "C004",
+"contract_type": "주계약",
+"name": "홍수 손해보장",
+"risk_types": [
+"홍수"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 15,
+"coverage_id": 116,
+"coverage_key": "C005",
+"contract_type": "주계약",
+"name": "대설 손해보장",
+"risk_types": [
+"대설"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 15,
+"coverage_id": 117,
+"coverage_key": "C006",
+"contract_type": "주계약",
+"name": "한파 손해보장",
+"risk_types": [
+"한파"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 15,
+"coverage_id": 118,
+"coverage_key": "C007",
+"contract_type": "주계약",
+"name": "적조 손해보장",
+"risk_types": [
+"적조"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 15,
+"coverage_id": 119,
+"coverage_key": "C008",
+"contract_type": "주계약",
+"name": "저수온 손해보장",
+"risk_types": [
+"저수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 15,
+"coverage_id": 121,
+"coverage_key": "C010",
+"contract_type": "특약",
+"name": "자연재해원인 전기적장치위험보장 특별약관",
+"risk_types": [
+"보상대상 자연재해",
+"낙뢰",
+"전기적 사고",
+"정전"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 15,
+"coverage_id": 122,
+"coverage_key": "C011",
+"contract_type": "특약",
+"name": "고수온원인 수산물손해담보 특별약관",
+"risk_types": [
+"고수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 15,
+"coverage_id": 123,
+"coverage_key": "C012",
+"contract_type": "특약",
+"name": "화재원인 수산물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 15,
+"coverage_id": 124,
+"coverage_key": "C013",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 16,
+"coverage_id": 125,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "양식수산물 자연재해 보장",
+"risk_types": [
+"태풍",
+"해일(폭풍해일/지진해일)",
+"풍랑",
+"적조"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 16,
+"coverage_id": 126,
+"coverage_key": "C002",
+"contract_type": "특약",
+"name": "이상수온원인 수산물손해담보 특별약관",
+"risk_types": [
+"이상수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 16,
+"coverage_id": 127,
+"coverage_key": "C003",
+"contract_type": "특약",
+"name": "용존산소원인 수산물손해담보 특별약관",
+"risk_types": [
+"용존산소"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 16,
+"coverage_id": 128,
+"coverage_key": "C004",
+"contract_type": "특약",
+"name": "염분･영양염류원인 수산물손해담보 특별약관",
+"risk_types": [
+"염분",
+"영양염류"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 16,
+"coverage_id": 129,
+"coverage_key": "C005",
+"contract_type": "특약",
+"name": "생산비보장 특별약관",
+"risk_types": [
+"태풍",
+"해일(폭풍해일/지진해일)",
+"풍랑",
+"적조",
+"이상수온",
+"용존산소",
+"염분",
+"영양염류"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 16,
+"coverage_id": 130,
+"coverage_key": "C006",
+"contract_type": "특약",
+"name": "양식시설물손해담보 특별약관",
+"risk_types": [
+"태풍",
+"해일(폭풍해일/지진해일)",
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 16,
+"coverage_id": 131,
+"coverage_key": "C007",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 17,
+"coverage_id": 132,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "태풍 손해",
+"risk_types": [
+"태풍"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 17,
+"coverage_id": 133,
+"coverage_key": "C002",
+"contract_type": "주계약",
+"name": "해일(폭풍해일/지진해일) 손해",
+"risk_types": [
+"해일",
+"폭풍해일",
+"지진해일"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 17,
+"coverage_id": 134,
+"coverage_key": "C003",
+"contract_type": "주계약",
+"name": "풍랑 손해",
+"risk_types": [
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 17,
+"coverage_id": 135,
+"coverage_key": "C004",
+"contract_type": "주계약",
+"name": "적조 손해",
+"risk_types": [
+"적조"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 17,
+"coverage_id": 136,
+"coverage_key": "C005",
+"contract_type": "주계약",
+"name": "이상수온 손해",
+"risk_types": [
+"이상수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 17,
+"coverage_id": 137,
+"coverage_key": "C006",
+"contract_type": "주계약",
+"name": "이상수질 손해",
+"risk_types": [
+"이상수질"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 19,
+"coverage_id": 158,
+"coverage_key": "C004",
+"contract_type": "주계약",
+"name": "적조로 인한 미더덕 양식수산물 손해",
+"risk_types": [
+"적조"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 17,
+"coverage_id": 138,
+"coverage_key": "C007",
+"contract_type": "주계약",
+"name": "보상대상 자연재해 관련 비용손해",
+"risk_types": [
+"태풍",
+"해일",
+"풍랑",
+"적조",
+"이상수온",
+"이상수질"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 17,
+"coverage_id": 139,
+"coverage_key": "C008",
+"contract_type": "특약",
+"name": "조수(潮水)손해담보특별약관",
+"risk_types": [
+"조수"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 17,
+"coverage_id": 140,
+"coverage_key": "C009",
+"contract_type": "특약",
+"name": "양식시설물손해담보특별약관",
+"risk_types": [
+"태풍",
+"해일",
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 17,
+"coverage_id": 141,
+"coverage_key": "C010",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 18,
+"coverage_id": 142,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "태풍(강풍) 원인 수산물 손해",
+"risk_types": [
+"태풍",
+"강풍"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 18,
+"coverage_id": 143,
+"coverage_key": "C002",
+"contract_type": "주계약",
+"name": "해일(폭풍해일/지진해일) 원인 수산물 손해",
+"risk_types": [
+"해일",
+"폭풍해일",
+"지진해일"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 18,
+"coverage_id": 145,
+"coverage_key": "C004",
+"contract_type": "주계약",
+"name": "홍수 원인 수산물 손해",
+"risk_types": [
+"홍수"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 18,
+"coverage_id": 147,
+"coverage_key": "C006",
+"contract_type": "주계약",
+"name": "한파 원인 수산물 손해",
+"risk_types": [
+"한파"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 18,
+"coverage_id": 148,
+"coverage_key": "C007",
+"contract_type": "주계약",
+"name": "적조 원인 수산물 손해",
+"risk_types": [
+"적조"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 18,
+"coverage_id": 149,
+"coverage_key": "C008",
+"contract_type": "주계약",
+"name": "저수온 원인 수산물 손해",
+"risk_types": [
+"저수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 18,
+"coverage_id": 150,
+"coverage_key": "C009",
+"contract_type": "특약",
+"name": "자연재해원인 전기적장치위험보장 특별약관",
+"risk_types": [
+"보상대상 자연재해",
+"낙뢰",
+"전기적 사고",
+"정전"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 18,
+"coverage_id": 151,
+"coverage_key": "C010",
+"contract_type": "특약",
+"name": "고수온원인 수산물손해담보 특별약관",
+"risk_types": [
+"고수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 23,
+"coverage_id": 187,
+"coverage_key": "C004",
+"contract_type": "주계약",
+"name": "대설로 인한 양식수산물 손해",
+"risk_types": [
+"대설"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 18,
+"coverage_id": 152,
+"coverage_key": "C011",
+"contract_type": "특약",
+"name": "이상수질원인 수산물손해담보 특별약관",
+"risk_types": [
+"이상수질"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 18,
+"coverage_id": 153,
+"coverage_key": "C012",
+"contract_type": "특약",
+"name": "화재원인 수산물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 18,
+"coverage_id": 154,
+"coverage_key": "C013",
+"contract_type": "특약",
+"name": "보험료분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 19,
+"coverage_id": 155,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "태풍으로 인한 미더덕 양식수산물 손해",
+"risk_types": [
+"태풍"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 19,
+"coverage_id": 156,
+"coverage_key": "C002",
+"contract_type": "주계약",
+"name": "해일(폭풍해일·지진해일)로 인한 미더덕 양식수산물 손해",
+"risk_types": [
+"폭풍해일",
+"지진해일"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 19,
+"coverage_id": 157,
+"coverage_key": "C003",
+"contract_type": "주계약",
+"name": "풍랑으로 인한 미더덕 양식수산물 손해",
+"risk_types": [
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 19,
+"coverage_id": 159,
+"coverage_key": "C005",
+"contract_type": "주계약",
+"name": "이상수온으로 인한 미더덕 양식수산물 손해",
+"risk_types": [
+"이상수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 19,
+"coverage_id": 160,
+"coverage_key": "C006",
+"contract_type": "주계약",
+"name": "염분으로 인한 미더덕 양식수산물 손해",
+"risk_types": [
+"염분"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 19,
+"coverage_id": 161,
+"coverage_key": "C007",
+"contract_type": "주계약",
+"name": "용존산소로 인한 미더덕 양식수산물 손해",
+"risk_types": [
+"용존산소"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 19,
+"coverage_id": 162,
+"coverage_key": "C008",
+"contract_type": "주계약",
+"name": "영양염류로 인한 미더덕 양식수산물 손해",
+"risk_types": [
+"영양염류"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 19,
+"coverage_id": 163,
+"coverage_key": "C009",
+"contract_type": "특약",
+"name": "양식시설물손해담보특별약관",
+"risk_types": [
+"태풍",
+"해일(폭풍해일·지진해일)",
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 19,
+"coverage_id": 164,
+"coverage_key": "C010",
+"contract_type": "특약",
+"name": "이상수온원인 수산물손해부담보 특별약관",
+"risk_types": [
+"이상수온"
+],
+"effect": "보장제외"
+},
+{
+"product_id": 19,
+"coverage_id": 165,
+"coverage_key": "C011",
+"contract_type": "특약",
+"name": "용존산소원인 수산물손해부담보 특별약관",
+"risk_types": [
+"용존산소"
+],
+"effect": "보장제외"
+},
+{
+"product_id": 19,
+"coverage_id": 166,
+"coverage_key": "C012",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 20,
+"coverage_id": 167,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "양식수산물 자연재해 손해 보장",
+"risk_types": [
+"태풍",
+"해일(폭풍해일/지진해일)",
+"풍랑",
+"적조",
+"이상수온",
+"염분",
+"용존산소",
+"영양염류"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 20,
+"coverage_id": 168,
+"coverage_key": "C002",
+"contract_type": "특약",
+"name": "양식시설물손해담보특별약관",
+"risk_types": [
+"태풍",
+"해일(폭풍해일/지진해일)",
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 20,
+"coverage_id": 169,
+"coverage_key": "C003",
+"contract_type": "특약",
+"name": "이상수온원인 수산물손해부담보 특별약관",
+"risk_types": [
+"이상수온"
+],
+"effect": "보장제외"
+},
+{
+"product_id": 20,
+"coverage_id": 170,
+"coverage_key": "C004",
+"contract_type": "특약",
+"name": "용존산소원인 수산물손해부담보 특별약관",
+"risk_types": [
+"용존산소"
+],
+"effect": "보장제외"
+},
+{
+"product_id": 20,
+"coverage_id": 171,
+"coverage_key": "C005",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 21,
+"coverage_id": 172,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "양식수산물 자연재해 손해보장",
+"risk_types": [
+"태풍(강풍)",
+"해일(폭풍해일/지진해일)",
+"호우",
+"홍수",
+"대설",
+"한파",
+"적조",
+"저수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 22,
+"coverage_id": 173,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "주계약 자연재해 태풍(강풍) 손해",
+"risk_types": [
+"태풍(강풍)"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 22,
+"coverage_id": 174,
+"coverage_key": "C002",
+"contract_type": "주계약",
+"name": "주계약 자연재해 호우 손해",
+"risk_types": [
+"호우"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 22,
+"coverage_id": 175,
+"coverage_key": "C003",
+"contract_type": "주계약",
+"name": "주계약 자연재해 홍수 손해",
+"risk_types": [
+"홍수"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 22,
+"coverage_id": 176,
+"coverage_key": "C004",
+"contract_type": "주계약",
+"name": "주계약 자연재해 대설 손해",
+"risk_types": [
+"대설"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 22,
+"coverage_id": 177,
+"coverage_key": "C005",
+"contract_type": "주계약",
+"name": "주계약 자연재해 가뭄 손해",
+"risk_types": [
+"가뭄"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 22,
+"coverage_id": 178,
+"coverage_key": "C006",
+"contract_type": "특약",
+"name": "자연재해원인 전기적장치위험보장 특별약관",
+"risk_types": [
+"주계약 보상대상 자연재해",
+"낙뢰"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 23,
+"coverage_id": 188,
+"coverage_key": "C005",
+"contract_type": "주계약",
+"name": "가뭄으로 인한 양식수산물 손해",
+"risk_types": [
+"가뭄"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 22,
+"coverage_id": 179,
+"coverage_key": "C007",
+"contract_type": "특약",
+"name": "고수온원인 수산물손해담보 특별약관",
+"risk_types": [
+"고수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 22,
+"coverage_id": 180,
+"coverage_key": "C008",
+"contract_type": "특약",
+"name": "양식시설물손해담보 특별약관",
+"risk_types": [
+"태풍(강풍)",
+"호우",
+"홍수",
+"대설"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 22,
+"coverage_id": 181,
+"coverage_key": "C009",
+"contract_type": "특약",
+"name": "화재원인 시설물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 22,
+"coverage_id": 182,
+"coverage_key": "C010",
+"contract_type": "특약",
+"name": "화재원인 수산물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 22,
+"coverage_id": 183,
+"coverage_key": "C011",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 23,
+"coverage_id": 184,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "태풍(강풍)으로 인한 양식수산물 손해",
+"risk_types": [
+"태풍(강풍)"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 23,
+"coverage_id": 185,
+"coverage_key": "C002",
+"contract_type": "주계약",
+"name": "호우로 인한 양식수산물 손해",
+"risk_types": [
+"호우"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 23,
+"coverage_id": 186,
+"coverage_key": "C003",
+"contract_type": "주계약",
+"name": "홍수로 인한 양식수산물 손해",
+"risk_types": [
+"홍수"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 23,
+"coverage_id": 189,
+"coverage_key": "C006",
+"contract_type": "특약",
+"name": "자연재해원인 전기적장치위험보장 특별약관",
+"risk_types": [
+"태풍(강풍)",
+"호우",
+"홍수",
+"대설",
+"가뭄",
+"낙뢰"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 23,
+"coverage_id": 190,
+"coverage_key": "C007",
+"contract_type": "특약",
+"name": "고수온원인 수산물손해담보 특별약관",
+"risk_types": [
+"고수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 23,
+"coverage_id": 191,
+"coverage_key": "C008",
+"contract_type": "특약",
+"name": "양식시설물손해담보 특별약관",
+"risk_types": [
+"태풍(강풍)",
+"호우",
+"홍수",
+"대설"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 23,
+"coverage_id": 192,
+"coverage_key": "C009",
+"contract_type": "특약",
+"name": "화재원인 시설물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 23,
+"coverage_id": 193,
+"coverage_key": "C010",
+"contract_type": "특약",
+"name": "화재원인 수산물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 23,
+"coverage_id": 194,
+"coverage_key": "C011",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 24,
+"coverage_id": 195,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "양식수산물 자연재해 손해보장",
+"risk_types": [
+"태풍(강풍)",
+"해일(폭풍해일/지진해일)",
+"호우",
+"대설"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 24,
+"coverage_id": 196,
+"coverage_key": "C002",
+"contract_type": "특약",
+"name": "자연재해원인 전기적장치위험보장 특별약관",
+"risk_types": [
+"주계약 보상대상 자연재해",
+"낙뢰"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 24,
+"coverage_id": 197,
+"coverage_key": "C003",
+"contract_type": "특약",
+"name": "고수온원인 수산물손해담보 특별약관",
+"risk_types": [
+"고수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 24,
+"coverage_id": 198,
+"coverage_key": "C004",
+"contract_type": "특약",
+"name": "화재원인 수산물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 24,
+"coverage_id": 199,
+"coverage_key": "C005",
+"contract_type": "특약",
+"name": "양식시설물손해담보특별약관",
+"risk_types": [
+"태풍(강풍)",
+"해일(폭풍해일/지진해일)",
+"호우",
+"대설"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 24,
+"coverage_id": 200,
+"coverage_key": "C006",
+"contract_type": "특약",
+"name": "화재원인 시설물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 24,
+"coverage_id": 201,
+"coverage_key": "C007",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 25,
+"coverage_id": 202,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "양식수산물재해보험 주계약",
+"risk_types": [
+"태풍(강풍)",
+"해일(폭풍해일/지진해일)",
+"호우",
+"홍수"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 25,
+"coverage_id": 203,
+"coverage_key": "C002",
+"contract_type": "특약",
+"name": "자연재해원인 전기적장치위험보장 특별약관",
+"risk_types": [
+"주계약 보상대상 자연재해",
+"낙뢰"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 25,
+"coverage_id": 204,
+"coverage_key": "C003",
+"contract_type": "특약",
+"name": "고수온원인 수산물손해담보 특별약관",
+"risk_types": [
+"고수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 25,
+"coverage_id": 205,
+"coverage_key": "C004",
+"contract_type": "특약",
+"name": "화재원인 수산물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 25,
+"coverage_id": 206,
+"coverage_key": "C005",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 28,
+"coverage_id": 217,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "태풍(강풍)으로 인한 미꾸라지 유실·폐사 손해",
+"risk_types": [
+"태풍(강풍)"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 26,
+"coverage_id": 207,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "양식수산물재해보험 주계약",
+"risk_types": [
+"태풍(강풍)",
+"해일(폭풍해일/지진해일)",
+"호우",
+"홍수",
+"대설",
+"한파",
+"적조",
+"저수온",
+"저염분"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 26,
+"coverage_id": 208,
+"coverage_key": "C002",
+"contract_type": "특약",
+"name": "자연재해원인 전기적장치위험보장 특별약관",
+"risk_types": [
+"태풍(강풍)",
+"해일",
+"호우",
+"홍수",
+"대설",
+"한파",
+"저수온",
+"저염분",
+"낙뢰"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 26,
+"coverage_id": 209,
+"coverage_key": "C003",
+"contract_type": "특약",
+"name": "고수온원인 수산물손해담보 특별약관",
+"risk_types": [
+"고수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 26,
+"coverage_id": 210,
+"coverage_key": "C004",
+"contract_type": "특약",
+"name": "화재원인 수산물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 26,
+"coverage_id": 211,
+"coverage_key": "C005",
+"contract_type": "특약",
+"name": "보험료분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 27,
+"coverage_id": 212,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "태풍(강풍)·호우·홍수 자연재해 보장",
+"risk_types": [
+"태풍(강풍)",
+"호우",
+"홍수"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 27,
+"coverage_id": 213,
+"coverage_key": "C002",
+"contract_type": "주계약",
+"name": "대설 자연재해 보장",
+"risk_types": [
+"대설"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 27,
+"coverage_id": 214,
+"coverage_key": "C003",
+"contract_type": "주계약",
+"name": "가뭄·고수온 자연재해 보장",
+"risk_types": [
+"가뭄",
+"고수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 27,
+"coverage_id": 215,
+"coverage_key": "C004",
+"contract_type": "특약",
+"name": "자연재해원인 전기적장치위험보장 특별약관",
+"risk_types": [
+"자연재해",
+"낙뢰",
+"전기적 사고",
+"정전"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 27,
+"coverage_id": 216,
+"coverage_key": "C005",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 28,
+"coverage_id": 218,
+"coverage_key": "C002",
+"contract_type": "주계약",
+"name": "호우로 인한 미꾸라지 유실·폐사 손해",
+"risk_types": [
+"호우"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 28,
+"coverage_id": 219,
+"coverage_key": "C003",
+"contract_type": "주계약",
+"name": "홍수로 인한 미꾸라지 유실·폐사 손해",
+"risk_types": [
+"홍수"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 28,
+"coverage_id": 220,
+"coverage_key": "C004",
+"contract_type": "주계약",
+"name": "가뭄으로 인한 미꾸라지 폐사 손해",
+"risk_types": [
+"가뭄"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 28,
+"coverage_id": 221,
+"coverage_key": "C005",
+"contract_type": "주계약",
+"name": "고수온으로 인한 미꾸라지 폐사 손해",
+"risk_types": [
+"고수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 28,
+"coverage_id": 222,
+"coverage_key": "C006",
+"contract_type": "주계약",
+"name": "손해방지비용·대위권 보전비용·잔존물 보전비용·기타 협력비용",
+"risk_types": [
+"태풍(강풍)",
+"호우",
+"홍수",
+"가뭄",
+"고수온"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 28,
+"coverage_id": 223,
+"coverage_key": "C007",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 29,
+"coverage_id": 224,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "양식시설물(육상수조식) 자연재해 손해보장",
+"risk_types": [
+"태풍(강풍)",
+"해일(폭풍해일/지진해일)",
+"호우",
+"홍수",
+"대설"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 30,
+"coverage_id": 230,
+"coverage_key": "C004",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 29,
+"coverage_id": 225,
+"coverage_key": "C002",
+"contract_type": "특약",
+"name": "화재원인 시설물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 29,
+"coverage_id": 226,
+"coverage_key": "C003",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 30,
+"coverage_id": 227,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "양식시설물 자연재해손해",
+"risk_types": [
+"태풍",
+"해일(폭풍해일/지진해일)",
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 30,
+"coverage_id": 228,
+"coverage_key": "C002",
+"contract_type": "주계약",
+"name": "손해방지·대위권 보전·잔존물 보전·잔존물 제거·기타 협력 비용",
+"risk_types": [
+"태풍",
+"해일(폭풍해일/지진해일)",
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 30,
+"coverage_id": 229,
+"coverage_key": "C003",
+"contract_type": "특약",
+"name": "화재원인 시설물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 31,
+"coverage_id": 231,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "육상시설 자연재해 보장",
+"risk_types": [
+"태풍(강풍)",
+"해일(폭풍해일·지진해일)",
+"호우",
+"홍수",
+"대설"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 31,
+"coverage_id": 232,
+"coverage_key": "C002",
+"contract_type": "주계약",
+"name": "가두리시설 자연재해 보장",
+"risk_types": [
+"태풍(강풍)",
+"해일",
+"풍랑",
+"호우",
+"홍수",
+"대설"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 31,
+"coverage_id": 233,
+"coverage_key": "C003",
+"contract_type": "주계약",
+"name": "수하식시설 자연재해 보장",
+"risk_types": [
+"태풍",
+"해일",
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 31,
+"coverage_id": 234,
+"coverage_key": "C004",
+"contract_type": "주계약",
+"name": "해조류시설 자연재해 보장",
+"risk_types": [
+"태풍",
+"해일",
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 31,
+"coverage_id": 235,
+"coverage_key": "C005",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+},
+{
+"product_id": 31,
+"coverage_id": 236,
+"coverage_key": "C006",
+"contract_type": "특약",
+"name": "화재원인 시설물손해담보 특별약관",
+"risk_types": [
+"화재"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 32,
+"coverage_id": 237,
+"coverage_key": "C001",
+"contract_type": "주계약",
+"name": "양식시설물 자연재해손해 보장",
+"risk_types": [
+"태풍",
+"해일(폭풍해일/지진해일)",
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 32,
+"coverage_id": 238,
+"coverage_key": "C002",
+"contract_type": "특약",
+"name": "유빙원인 시설물손해담보 특별약관",
+"risk_types": [
+"유빙"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 32,
+"coverage_id": 239,
+"coverage_key": "C003",
+"contract_type": "특약",
+"name": "가이식 손해담보 특별약관",
+"risk_types": [
+"태풍",
+"해일(폭풍해일/지진해일)",
+"풍랑"
+],
+"effect": "보장추가"
+},
+{
+"product_id": 32,
+"coverage_id": 240,
+"coverage_key": "C004",
+"contract_type": "특약",
+"name": "보험료 분납 특별약관",
+"risk_types": [],
+"effect": "납입제도"
+}
+]
