@@ -17,6 +17,7 @@ from backend.routes import router
 from backend.customer_api import router as customer_router
 from backend.consult import router as consult_router
 from backend.gov_support import router as gov_support_router
+from backend.dashboard import router as dashboard_router
 from backend.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ app.include_router(api_router)
 app.include_router(customer_router)
 app.include_router(consult_router)
 app.include_router(gov_support_router)
+app.include_router(dashboard_router)
 app.add_middleware(CORSMiddleware, allow_origins=get_settings().cors_origins,
                    allow_credentials=True, allow_methods=["GET", "POST", "PATCH", "DELETE"],
                    allow_headers=["Authorization", "Content-Type", "X-CSRF-Protection"])
