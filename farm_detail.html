@@ -1095,6 +1095,7 @@ function ctrCard(x, k){
    왼쪽: 어가 · 수온 · 계약별 보험 / 오른쪽: 상담 시 확인 사항 · 전화 · 결과 기록 · 상담 기록 · 안내처 */
 const API_BASE = window.DETAIL_API_BASE ?? ((location.protocol === 'file:' ? 'http://127.0.0.1' : `${location.protocol}//${location.hostname}`) + ':8000');   // 다른 화면과 같이 항상 8000 백엔드로
 let apiOk = false, apiList = [], apiSel = null, apiData = null, apiErr = null, detailMode = 'mock';
+let apiRequestId = 0;
 const apiQuotes = {};   // mapping_id → 견적(만 원)
 
 function renderBrief(){ return detailMode === 'api' ? renderApiDetail() : renderMockBrief(); }
@@ -1110,7 +1111,8 @@ function renderPicker(){
   if(!apiOk) return;
   const mockF = farms.find(x => x.id === selected);
   const mockOpt = detailMode === 'mock' && mockF ? `<option value="" selected>가상 예시 · ${esc(mockF.name)} (${mockF.id})</option>` : '';
-  sel.innerHTML = mockOpt + apiList.map(h => `<option value="${h.household_id}" ${detailMode === 'api' && apiSel === h.household_id ? 'selected' : ''}>${esc(h.owner_name)} · ${esc(h.household_name)} (${esc(h.region || '-')}${h.species.length ? ' · ' + esc(h.species.join(', ')) : ''})</option>`).join('');
+  const emptyOpt = detailMode === 'api' && apiSel == null ? '<option value="" selected>어가를 선택해 주세요</option>' : '';
+  sel.innerHTML = mockOpt + emptyOpt + apiList.map(h => `<option value="${h.household_id}" ${detailMode === 'api' && apiSel === h.household_id ? 'selected' : ''}>${esc(h.owner_name)} · ${esc(h.household_name)} (${esc(h.region || '-')}${h.species.length ? ' · ' + esc(h.species.join(', ')) : ''})</option>`).join('');
 }
 
 /* ----- 가상 예시 어가 ----- */
@@ -1235,28 +1237,47 @@ async function apiPost(path, body){
   return j;
 }
 async function initApi(){
+  apiErr = null;
+  detailMode = 'api';
   try{
     apiList = await apiGet('/api/households?limit=1000');
     apiOk = true;
     // 상담 홈 연락 목록에서 고른 어가 (farm_detail.html?id=어가번호)
-    const wantId = Number(new URLSearchParams(location.search).get('id'));
-    if(apiList.some(h => h.household_id === wantId)) apiSel = wantId;
-    else if(apiList.length && apiSel == null) apiSel = apiList[0].household_id;
-    if(apiList.length) detailMode = 'api';
+    const params = new URLSearchParams(location.search);
+    if(params.has('id')){
+      const wantId = Number(params.get('id'));
+      apiSel = apiList.some(h => h.household_id === wantId) ? wantId : null;
+      if(apiSel == null) apiErr = '요청한 어가를 찾을 수 없어요.';
+    }else if(apiList.length && apiSel == null) apiSel = apiList[0].household_id;
     if(page === 'detail') renderBrief(); else renderPicker();
-  }catch(e){ apiOk = false; }
+  }catch(e){
+    apiOk = false; apiSel = null; apiData = null; apiErr = e.message;
+    addNotice(`⚠️ DB 어가 목록을 불러오지 못했어요. (${e.message})`);
+    if(page === 'detail') renderBrief(); else renderPicker();
+  }
 }
 async function loadApiDetail(id, force){
-  if(!force && apiData && apiData.household.household_id === id) return;
+  if(!force && apiData && apiData.household.household_id === id) return true;
+  const requestId = ++apiRequestId;
   apiData = null; apiErr = null;
   briefBoxes('<div class="loading">어가 정보를 불러오는 중…</div>', '');
-  try{ apiData = await apiGet(`/api/households/${id}/detail`); }
-  catch(e){ apiErr = e.message; }
+  try{
+    const data = await apiGet(`/api/households/${id}/detail`);
+    if(requestId !== apiRequestId || apiSel !== id || detailMode !== 'api') return false;
+    apiData = data;
+  }catch(e){
+    if(requestId !== apiRequestId || apiSel !== id || detailMode !== 'api') return false;
+    apiErr = e.message;
+  }
+  return true;
 }
 async function renderApiDetail(force){
   renderPicker();
-  if(apiSel == null){ briefBoxes('<div class="empty">어가를 고르면 통화 전 브리핑이 보여요.</div>', ''); return; }
-  await loadApiDetail(apiSel, force);
+  if(apiSel == null){
+    const message = apiErr || (apiOk && !apiList.length ? '등록된 어가가 없어요.' : '어가를 고르면 통화 전 브리핑이 보여요.');
+    briefBoxes(`<div class="empty">${esc(message)}</div>`, ''); return;
+  }
+  if(!await loadApiDetail(apiSel, force)) return;
   if(detailMode !== 'api') return;
   if(apiErr || !apiData){ briefBoxes(`<div class="empty">어가 정보를 불러오지 못했어요 · ${esc(apiErr || '')}</div>`, ''); return; }
   const D = apiData, H = D.household, S = D.sea, cards = D.cards;
@@ -1419,6 +1440,8 @@ async function runEstimate(btn){
 }
 
 async function saveApiLog(){
+  if(!apiData || apiData.household.household_id !== apiSel){ toast('선택한 어가 정보를 다시 불러온 뒤 저장해 주세요.'); return; }
+  const householdId = apiSel, savedData = apiData;
   const status = document.getElementById('r-status').value;
   const nx = document.getElementById('r-next').value;
   const body = {result_status:status, channel:'전화', memo:document.getElementById('r-memo').value.trim() || null,
@@ -1428,7 +1451,8 @@ async function saveApiLog(){
     if(s.value) body.items.push({mapping_id:+s.dataset.ares, result:s.value, insurance_id:s.dataset.ins ? +s.dataset.ins : null});
   });
   try{
-    const r = await apiPost(`/api/households/${apiSel}/consult-logs`, body);
+    const r = await apiPost(`/api/households/${householdId}/consult-logs`, body);
+    if(apiSel !== householdId || apiData !== savedData || detailMode !== 'api') return;
     apiData.consult = r.consult;
     toast(`${apiData.household.owner_name} 상담 결과 저장 · ${status}`);
     renderApiDetail();
