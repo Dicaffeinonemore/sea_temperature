@@ -1238,8 +1238,11 @@ async function initApi(){
   try{
     apiList = await apiGet('/api/households?limit=1000');
     apiOk = true;
-    if(apiList.length && apiSel == null) apiSel = apiList[0].household_id;
-    if(location.hash === '#detail' && apiList.length) detailMode = 'api';
+    // 상담 홈 연락 목록에서 고른 어가 (farm_detail.html?id=어가번호)
+    const wantId = Number(new URLSearchParams(location.search).get('id'));
+    if(apiList.some(h => h.household_id === wantId)) apiSel = wantId;
+    else if(apiList.length && apiSel == null) apiSel = apiList[0].household_id;
+    if(apiList.length) detailMode = 'api';
     if(page === 'detail') renderBrief(); else renderPicker();
   }catch(e){ apiOk = false; }
 }
@@ -1736,7 +1739,7 @@ detailEl.addEventListener('click', async e => {
   if(!selected && sorted().length) selected = sorted()[0].id;
   renderHome();
   initApi();
-  const startPage = ['home','detail','forecast','consult'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'home';
+  const startPage = ['home','detail','forecast','consult'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'detail';   // 다른 화면의 '어가 상세' 메뉴로 들어오므로 기본은 어가 상세
   showPage(startPage);
 })();
 </script>
