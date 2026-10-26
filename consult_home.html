@@ -444,11 +444,11 @@
 /* ===== 데이터 연결 =====
    백엔드(FastAPI, 8000 포트)에서 데이터를 받아요. 연결이 안 되면 아래 가상 데이터(SAMPLE)를 쓰고 화면 위에 경고를 띄워요.
    API 응답을 SAMPLE과 같은 모양으로 맞추면 화면 코드는 고치지 않아도 돼요.
-   지금 백엔드에 있는 경로는 /api/consult/logs (상담 결과 저장) 하나예요. '제안' 경로는 API를 만들면서 이름을 맞춰 주세요. */
+   어가 목록은 상담 API 응답을 화면 형식으로 변환해 사용해요. */
 const API_BASE = (location.protocol === 'file:' ? 'http://127.0.0.1' : `${location.protocol}//${location.hostname}`) + ':8000';
 const ENDPOINTS = {
   regions: '/api/dashboard/regions',        // 제안 · 지역별 21일 수온 예측
-  farms:   '/api/dashboard/farms',          // 제안 · 오늘 연락 대상 어가 + 계약 (순위는 n8n이 계산해 contact_queue에 넣음)
+  farms:   '/api/consult/customers',        // 어가 목록 · 어종별 보험 보장 상태
   noti:    '/api/dashboard/notifications',  // 제안 · 알림 (가입 신청 · 문자 회신 · 특보)
   logs:    '/api/consult/logs',             // 있음 · 상담 결과 저장 (POST)
   insurance: '/api/v1/insurance/products?species=%EC%A0%84%EB%B3%B5',
@@ -701,10 +701,36 @@ function loadLocal(){ try{ const s = localStorage.getItem(KEY); if(s) return JSO
 function save(){ if(mode !== 'sample') return; try{ localStorage.setItem(KEY, JSON.stringify(farms)); }catch(e){} }
 let farms = [];
 
+function toFarms(customers){
+  const statusKeys = Object.fromEntries(Object.entries(STATUS_DB).map(([key, value]) => [value, key]));
+  const coverageKeys = {none:'none', no_rider:'norider', covered:'full'};
+  return customers.map(customer => {
+    const householdId = Number(customer.code);
+    if(!Number.isSafeInteger(householdId) || householdId <= 0 || !statusKeys[customer.status]){
+      throw new Error('어가 번호 또는 상담 상태를 확인해 주세요.');
+    }
+    return {
+      id:String(householdId), household_id:householdId,
+      name:customer.name, region:customer.region,
+      phone:customer.phone_masked, consent:customer.sms_consent,
+      status:statusKeys[customer.status], next:null,
+      items:customer.contracts.map(contract => {
+        if(!Object.hasOwn(coverageKeys, contract.coverage)){
+          throw new Error('어가 보험 보장 상태를 확인해 주세요.');
+        }
+        // 상담 목록 API에는 상품·양식 방식·어종 매핑 번호가 없어요.
+        return {species:contract.species, ins:coverageKeys[contract.coverage],
+                p:null, method:null, mapping_id:null, quote:null};
+      }),
+    };
+  });
+}
+
 async function loadFarms(){
   try{
     const [rg, fm] = await Promise.all([getJSON(ENDPOINTS.regions), getJSON(ENDPOINTS.farms)]);
-    applyRegions(rg); farms = fm; setMode(true);
+    const loaded = toFarms(fm);
+    applyRegions(rg); farms = loaded; setMode(true);
   }catch(e){
     applyRegions(SAMPLE_REGIONS); farms = loadLocal() || withIds(structuredClone(SAMPLE_FARMS)); setMode(false, e);
   }
@@ -740,6 +766,7 @@ function speciesRisk(f){
 function farmStage(f){ return Math.max(regionInfo[f.region].top, speciesRisk(f).stage); }
 
 function saleState(p){
+  if(p === null) return {code:'unknown', text:'판매 기간 확인 필요', cls:'sale-later'};
   const m = TODAY.m, months = PRODUCTS[p].months;
   if(months.includes(m)){
     const next = m % 12 + 1;
@@ -767,7 +794,7 @@ function score(f){
   if(st >= 2){ const d = R.top >= 2 ? R.d : S.d; t += Math.max(0, 7 - d) * W.perDay; }
   t += W.gap[f.ins] || 0;
   const canBuy = !['full','checkExcl'].includes(f.ins);
-  if(canBuy && !alerted(f) && sale.code !== 'later') t += W.canBuy;  // 특보 발령 지역은 이번 피해 보상 불가라 0
+  if(canBuy && !alerted(f) && ['open','soon'].includes(sale.code)) t += W.canBuy;  // 특보 발령 지역은 이번 피해 보상 불가라 0
   if(S.hit) t += W.species;
   return {total: t};
 }

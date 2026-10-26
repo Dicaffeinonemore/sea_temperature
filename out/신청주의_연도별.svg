@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="720pt" height="360pt" viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-10-26T10:59:35.952430</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.7, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 360 
+L 720 360 
+L 720 0 
+L 0 0 
+L 0 360 
+z
+" style="fill: none"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 11.88 297.352 
+L 708.12 297.352 
+L 708.12 87 
+L 11.88 87 
+L 11.88 297.352 
+z
+" style="fill: none"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 525.771429 297.352 
+L 708.12 297.352 
+L 708.12 87 
+L 525.771429 87 
+z
+" clip-path="url(#p67b6099d99)" style="fill: #f4f6f9"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1"/>
+     <g id="text_1">
+      <text style="font-size: 11px; font-family: 'Noto Sans KR'; text-anchor: middle; fill: #6b7385" x="111.342857" y="314.086687" transform="rotate(-0 111.342857 314.086687)">2024</text>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_2"/>
+     <g id="text_2">
+      <text style="font-size: 11px; font-family: 'Noto Sans KR'; text-anchor: middle; fill: #6b7385" x="277.114286" y="314.086687" transform="rotate(-0 277.114286 314.086687)">2025</text>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_3"/>
+     <g id="text_3">
+      <text style="font-size: 11px; font-family: 'Noto Sans KR'; text-anchor: middle; fill: #6b7385" x="442.885714" y="314.086687" transform="rotate(-0 442.885714 314.086687)">2026</text>
+     </g>
+    </g>
+    <g id="xtick_4">
+     <g id="line2d_4"/>
+     <g id="text_4">
+      <text style="font-size: 11px; font-family: 'Noto Sans KR'; fill: #6b7385" transform="translate(597.196518 314.086687)">2027</text>
+      <text style="font-size: 11px; font-family: 'Noto Sans KR'; fill: #6b7385" transform="translate(595.247455 327.240969)">(예측)</text>
+     </g>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_5">
+      <path d="M 11.88 297.352 
+L 708.12 297.352 
+" clip-path="url(#p67b6099d99)" style="fill: none; stroke: #e8ecf1; stroke-linecap: square"/>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_6">
+      <path d="M 11.88 272.29518 
+L 708.12 272.29518 
+" clip-path="url(#p67b6099d99)" style="fill: none; stroke: #e8ecf1; stroke-linecap: square"/>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_7">
+      <path d="M 11.88 247.238361 
+L 708.12 247.238361 
+" clip-path="url(#p67b6099d99)" style="fill: none; stroke: #e8ecf1; stroke-linecap: square"/>
+     </g>
+    </g>
+    <g id="ytick_4">
+     <g id="line2d_8">
+      <path d="M 11.88 222.181541 
+L 708.12 222.181541 
+" clip-path="url(#p67b6099d99)" style="fill: none; stroke: #e8ecf1; stroke-linecap: square"/>
+     </g>
+    </g>
+    <g id="ytick_5">
+     <g id="line2d_9">
+      <path d="M 11.88 197.124722 
+L 708.12 197.124722 
+" clip-path="url(#p67b6099d99)" style="fill: none; stroke: #e8ecf1; stroke-linecap: square"/>
+     </g>
+    </g>
+    <g id="ytick_6">
+     <g id="line2d_10">
+      <path d="M 11.88 172.067902 
+L 708.12 172.067902 
+" clip-path="url(#p67b6099d99)" style="fill: none; stroke: #e8ecf1; stroke-linecap: square"/>
+     </g>
+    </g>
+    <g id="ytick_7">
+     <g id="line2d_11">
+      <path d="M 11.88 147.011083 
+L 708.12 147.011083 
+" clip-path="url(#p67b6099d99)" style="fill: none; stroke: #e8ecf1; stroke-linecap: square"/>
+     </g>
+    </g>
+    <g id="ytick_8">
+     <g id="line2d_12">
+      <path d="M 11.88 121.954263 
+L 708.12 121.954263 
+" clip-path="url(#p67b6099d99)" style="fill: none; stroke: #e8ecf1; stroke-linecap: square"/>
+     </g>
+    </g>
+    <g id="ytick_9">
+     <g id="line2d_13">
+      <path d="M 11.88 96.897444 
+L 708.12 96.897444 
+" clip-path="url(#p67b6099d99)" style="fill: none; stroke: #e8ecf1; stroke-linecap: square"/>
+     </g>
+    </g>
+   </g>
+   <g id="patch_4">
+    <path d="M 54.649029 297.352 
+L 108.358971 297.352 
+L 108.358971 240.974156 
+L 54.649029 240.974156 
+z
+" clip-path="url(#p67b6099d99)" style="fill: #1f5ae0; stroke: #1f5ae0; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 220.420457 297.352 
+L 274.1304 297.352 
+L 274.1304 207.14745 
+L 220.420457 207.14745 
+z
+" clip-path="url(#p67b6099d99)" style="fill: #1f5ae0; stroke: #1f5ae0; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 386.191886 297.352 
+L 439.901829 297.352 
+L 439.901829 183.343471 
+L 386.191886 183.343471 
+z
+" clip-path="url(#p67b6099d99)" style="fill: #1f5ae0; stroke: #1f5ae0; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 551.963314 297.352 
+L 605.673257 297.352 
+L 605.673257 135.735514 
+L 551.963314 135.735514 
+z
+" clip-path="url(#p67b6099d99)" style="fill: #ffffff; stroke-dasharray: 6.4,4.8; stroke-dashoffset: 0; stroke: #1f5ae0; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 114.326743 297.352 
+L 168.036686 297.352 
+L 168.036686 237.215633 
+L 114.326743 237.215633 
+z
+" clip-path="url(#p67b6099d99)" style="fill: #a8500a; stroke: #a8500a; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 280.098171 297.352 
+L 333.808114 297.352 
+L 333.808114 212.158814 
+L 280.098171 212.158814 
+z
+" clip-path="url(#p67b6099d99)" style="fill: #a8500a; stroke: #a8500a; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 445.8696 297.352 
+L 499.579543 297.352 
+L 499.579543 177.079266 
+L 445.8696 177.079266 
+z
+" clip-path="url(#p67b6099d99)" style="fill: #a8500a; stroke: #a8500a; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 611.641029 297.352 
+L 665.350971 297.352 
+L 665.350971 126.965627 
+L 611.641029 126.965627 
+z
+" clip-path="url(#p67b6099d99)" style="fill: #ffffff; stroke-dasharray: 6.4,4.8; stroke-dashoffset: 0; stroke: #a8500a; stroke-width: 1.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 11.88 297.352 
+L 708.12 297.352 
+" style="fill: none; stroke: #cdd3dd; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="LineCollection_1">
+    <path d="M 578.818286 153.275288 
+L 578.818286 114.437217 
+" clip-path="url(#p67b6099d99)" style="fill: none; stroke: #1f5ae0; stroke-width: 1.3"/>
+   </g>
+   <g id="line2d_14">
+    <defs>
+     <path id="meea0a4f785" d="M 5 0 
+L -5 -0 
+" style="stroke: #1f5ae0"/>
+    </defs>
+    <g clip-path="url(#p67b6099d99)">
+     <use xlink:href="#meea0a4f785" x="578.818286" y="153.275288" style="fill: #1f5ae0; stroke: #1f5ae0"/>
+    </g>
+   </g>
+   <g id="line2d_15">
+    <g clip-path="url(#p67b6099d99)">
+     <use xlink:href="#meea0a4f785" x="578.818286" y="114.437217" style="fill: #1f5ae0; stroke: #1f5ae0"/>
+    </g>
+   </g>
+   <g id="text_5">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Noto Sans KR'; text-anchor: middle; fill: #1f5ae0" x="268.825714" y="78.327344" transform="rotate(-0 268.825714 78.327344)">2024~2026 · 실적(가데이터)</text>
+   </g>
+   <g id="text_6">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Noto Sans KR'; text-anchor: middle; fill: #6b7385" x="616.945714" y="78.327344" transform="rotate(-0 616.945714 78.327344)">1년 후 · 예측 참고만</text>
+   </g>
+   <g id="line2d_16">
+    <path d="M 578.818286 135.735514 
+" clip-path="url(#p67b6099d99)" style="fill: none; stroke: #1f5ae0; stroke-width: 1.3; stroke-linecap: square"/>
+   </g>
+   <g id="text_7">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Noto Sans KR'; text-anchor: middle; fill: #1f5ae0" x="81.504" y="235.3015" transform="rotate(-0 81.504 235.3015)">45</text>
+   </g>
+   <g id="text_8">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Noto Sans KR'; text-anchor: middle; fill: #1f5ae0" x="247.275429" y="201.474793" transform="rotate(-0 247.275429 201.474793)">72</text>
+   </g>
+   <g id="text_9">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Noto Sans KR'; text-anchor: middle; fill: #1f5ae0" x="413.046857" y="177.670815" transform="rotate(-0 413.046857 177.670815)">91</text>
+   </g>
+   <g id="text_10">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Noto Sans KR'; text-anchor: middle; fill: #1f5ae0" x="578.818286" y="108.764561" transform="rotate(-0 578.818286 108.764561)">129</text>
+   </g>
+   <g id="text_11">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Noto Sans KR'; text-anchor: middle; fill: #a8500a" x="141.181714" y="231.542977" transform="rotate(-0 141.181714 231.542977)">48</text>
+   </g>
+   <g id="text_12">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Noto Sans KR'; text-anchor: middle; fill: #a8500a" x="306.953143" y="206.486157" transform="rotate(-0 306.953143 206.486157)">68</text>
+   </g>
+   <g id="text_13">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Noto Sans KR'; text-anchor: middle; fill: #a8500a" x="472.724571" y="171.40661" transform="rotate(-0 472.724571 171.40661)">96</text>
+   </g>
+   <g id="text_14">
+    <text style="font-weight: 700; font-size: 11px; font-family: 'Noto Sans KR'; text-anchor: middle; fill: #a8500a" x="638.496" y="121.292971" transform="rotate(-0 638.496 121.292971)">136</text>
+   </g>
+  </g>
+  <g id="text_15">
+   <text style="font-weight: 700; font-size: 16px; font-family: 'Noto Sans KR'; text-anchor: start; fill: #161a22" x="8.64" y="21.705" transform="rotate(-0 8.64 21.705)">연도별 신청·주의 건수</text>
+  </g>
+  <g id="text_16">
+   <text style="font-size: 12px; font-family: 'Noto Sans KR'; text-anchor: start; fill: #6b7385" x="165.6" y="21.04875" transform="rotate(-0 165.6 21.04875)">2027년 예상 신청 +42% · 주의 +42%</text>
+  </g>
+  <g id="text_17">
+   <text style="font-size: 11px; font-family: 'Noto Sans KR'; text-anchor: start; fill: #6b7385" x="8.64" y="354.6" transform="rotate(-0 8.64 354.6)">※ 가데이터 기반 시연용 · 예측은 연간 증가율 기하평균, 막대 위 선 = 예상 범위. 신청·주의 판단 기준이 아닌 참고값이에요.</text>
+  </g>
+  <g id="legend_1">
+   <g id="line2d_17">
+    <path d="M 15.12 52.12875 
+L 25.92 52.12875 
+L 36.72 52.12875 
+" style="fill: none; stroke: #1f5ae0; stroke-width: 6; stroke-linecap: square"/>
+   </g>
+   <g id="text_18">
+    <text style="font-size: 12px; font-family: 'Noto Sans KR'; text-anchor: start; fill: #4b5363" x="46.32" y="56.32875" transform="rotate(-0 46.32 56.32875)">신청</text>
+   </g>
+   <g id="line2d_18">
+    <path d="M 87.6 52.12875 
+L 98.4 52.12875 
+L 109.2 52.12875 
+" style="fill: none; stroke: #a8500a; stroke-width: 6; stroke-linecap: square"/>
+   </g>
+   <g id="text_19">
+    <text style="font-size: 12px; font-family: 'Noto Sans KR'; text-anchor: start; fill: #4b5363" x="118.8" y="56.32875" transform="rotate(-0 118.8 56.32875)">주의</text>
+   </g>
+   <g id="line2d_19">
+    <path d="M 160.08 52.12875 
+L 170.88 52.12875 
+L 181.68 52.12875 
+" style="fill: none; stroke-dasharray: 6.4,4.8; stroke-dashoffset: 0; stroke: #6b7385; stroke-width: 1.6"/>
+   </g>
+   <g id="text_20">
+    <text style="font-size: 12px; font-family: 'Noto Sans KR'; text-anchor: start; fill: #4b5363" x="191.28" y="56.32875" transform="rotate(-0 191.28 56.32875)">예측 (점선 · 범위)</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p67b6099d99">
+   <rect x="11.88" y="87" width="696.24" height="210.352"/>
+  </clipPath>
+ </defs>
+</svg>
