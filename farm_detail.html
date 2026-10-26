@@ -358,7 +358,7 @@
 <header class="top">
   <div class="top-in">
     <h1>고수온 선제 상담 대시보드</h1>
-    <span class="demo">보완판 · 가상 데이터</span>
+    <span class="demo" id="data-mode">불러오는 중</span>
     <div class="top-meta">
       <label>담당 <select id="office" aria-label="담당 지역">
         <option value="통영">통영 지역 담당</option>
@@ -369,7 +369,7 @@
         <option value="창원">창원 지역 담당</option>
         <option value="하동">하동 지역 담당</option>
       </select></label>
-      <span>2026.10.22 (목) 06:00 갱신</span>
+      <span id="updated"></span>
       <button class="ghost" id="reset" type="button">시연 처음으로</button>
       <div class="bell-wrap">
         <button type="button" class="bell" id="bell" aria-label="알림" aria-expanded="false" aria-controls="bell-panel">
@@ -553,26 +553,27 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
-/* ===== 데이터 연결 =====
-   백엔드(FastAPI, 8000 포트)에서 데이터를 받아요. 연결이 안 되면 아래 가상 데이터(SAMPLE)를 쓰고 화면 위에 경고를 띄워요.
-   API 응답을 SAMPLE과 같은 모양으로 맞추면 화면 코드는 고치지 않아도 돼요.
-   지금 백엔드에 있는 경로는 /api/consult/logs (상담 결과 저장) 하나예요. '제안' 경로는 API를 만들면서 이름을 맞춰 주세요. */
-const API_BASE = (location.protocol === 'file:' ? 'http://127.0.0.1' : `${location.protocol}//${location.hostname}`) + ':8000';
+/* ===== 데이터 연결 ===== */
+const DATA_API_BASE = (location.protocol === 'file:' ? 'http://127.0.0.1' : `${location.protocol}//${location.hostname}`) + ':8000';
 const ENDPOINTS = {
-  regions: '/api/dashboard/regions',  // 제안 · 지역별 21일 수온 예측 (상담 홈과 같음)
-  farms:   '/api/dashboard/farms',    // 제안 · 연락 대상 어가 + 계약 (상담 홈과 같음, 다음 어가 순서에 씀)
-  logs:    '/api/consult/logs',       // 있음 · 상담 결과 저장 (POST)
+  regions: '/api/dashboard/regions',
+  farms:   '/api/consult/customers',
+  logs:    '/api/consult/logs',
 };
 let mode = 'sample';   // 'db' = 서버 데이터 · 'sample' = 가상 데이터
 
+const esc = value => String(value).replace(/[&<>"']/g, char => ({
+  '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;',
+}[char]));
+
 async function getJSON(path){
-  const res = await fetch(API_BASE + path);
+  const res = await fetch(DATA_API_BASE + path);
   if(!res.ok) throw new Error(`${path} HTTP ${res.status}`);
   return res.json();
 }
 // 쓰기 요청은 백엔드 규칙상 X-CSRF-Protection: 1 헤더가 필요해요
 async function postJSON(path, body){
-  const res = await fetch(API_BASE + path, {method:'POST', headers:{'Content-Type':'application/json', 'X-CSRF-Protection':'1'}, body:JSON.stringify(body)});
+  const res = await fetch(DATA_API_BASE + path, {method:'POST', headers:{'Content-Type':'application/json', 'X-CSRF-Protection':'1'}, body:JSON.stringify(body)});
   if(!res.ok){
     let msg = `HTTP ${res.status}`;
     try{ const j = await res.json(); if(j.detail) msg += ' · ' + (typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail)); }catch(e){}
@@ -617,6 +618,34 @@ const REGIONS = [
   {id:'창원', t:[25.1,25.3,25.4,25.4,25.2,25.0,24.9], trend:'down', bias:{diff:-1.4, own:false}, alert:null},
   {id:'사천', t:[24.9,24.8,24.7,24.6,24.4,24.3,24.1], trend:'down', bias:{diff:-2.0, own:true},  alert:null},
 ];
+const SAMPLE_REGIONS = {
+  base_date:'2026-10-22',
+  regions:REGIONS.map(region => ({
+    ...region,
+    series:region.t.map((max,i) => ({i,max,mean:max,min:max,src:'ROMS'})),
+  })),
+};
+function stageOfDay(t, i, values){
+  if(t >= 28){
+    const run = values.slice(Math.max(0,i-2), i+1).filter(value => value >= 28).length;
+    return run >= 3 ? 3 : 2;
+  }
+  return t >= 25 ? 1 : 0;
+}
+let regionInfo = {};
+function applyRegions(data){
+  const [y,m,d] = data.base_date.split('-').map(Number);
+  TODAY = {y,m,d};
+  regionInfo = {};
+  data.regions.forEach(region => {
+    const series = region.series.slice().sort((a,b) => a.i - b.i);
+    const t = series.filter(point => point.src === 'ROMS').map(point => point.max);
+    if(!t.length) throw new Error(`지역 수온 자료가 없습니다: ${region.id}`);
+    const st = t.map((value,i,values) => stageOfDay(value,i,values));
+    const top = Math.max(...st), maxT = Math.max(...t);
+    regionInfo[region.id] = {...region,t,series,st,top,d:st.indexOf(top),maxT,dMax:t.indexOf(maxT)};
+  });
+}
 const biasQuality = d => { const a = Math.abs(d); return a < 0.5 ? '높음' : a < 1.5 ? '보통' : '낮음 · 흐름만 참고'; };
 const TREND = {up:'↗ 상승', flat:'→ 유지', down:'↘ 하강'};
 
@@ -645,6 +674,10 @@ const INS = {
 const STATUS = {
   todo:'미연락', absent:'부재 · 다시 연락', sms:'문자 발송', book:'상담 예약',
   win:'가입 완료', info:'안내 완료', hold:'보류 · 거절',
+};
+const STATUS_DB = {
+  todo:'미연락', absent:'부재·재연락', sms:'문자 발송', book:'상담 예약',
+  win:'가입 완료', info:'안내 완료', hold:'보류·거절',
 };
 const ACTIVE = ['todo','absent','sms'];
 
@@ -693,10 +726,39 @@ function loadLocal(){ try{ const s = localStorage.getItem(KEY); if(s) return JSO
 function save(){ if(mode !== 'sample') return; try{ localStorage.setItem(KEY, JSON.stringify(farms)); }catch(e){} }
 let farms = [];
 
+function toFarms(customers){
+  const statusKeys = {
+    '미연락':'todo', '부재·재연락':'absent', '문자 발송':'sms',
+    '상담 예약':'book', '가입 완료':'win', '안내 완료':'info', '보류·거절':'hold',
+  };
+  const coverageKeys = {none:'none', no_rider:'norider', covered:'full'};
+  return customers.map(customer => {
+    const householdId = Number(customer.code);
+    if(!Number.isSafeInteger(householdId) || householdId <= 0 || !Object.hasOwn(statusKeys, customer.status)){
+      throw new Error('어가 번호 또는 상담 상태를 확인해 주세요.');
+    }
+    return {
+      id:String(householdId), household_id:householdId,
+      name:customer.name, region:customer.region,
+      phone:customer.phone_masked, consent:customer.sms_consent,
+      status:statusKeys[customer.status], next:null, hist:[],
+      items:customer.contracts.map(contract => {
+        if(!Object.hasOwn(coverageKeys, contract.coverage)){
+          throw new Error('어가 보험 보장 상태를 확인해 주세요.');
+        }
+        return {
+          species:contract.species, ins:coverageKeys[contract.coverage],
+          p:'unknown', method:null, mapping_id:contract.mapping_id, quote:null,
+        };
+      }),
+    };
+  });
+}
+
 async function loadFarms(){
   try{
     const [rg, fm] = await Promise.all([getJSON(ENDPOINTS.regions), getJSON(ENDPOINTS.farms)]);
-    applyRegions(rg); farms = fm; setMode(true);
+    applyRegions(rg); farms = toFarms(fm); setMode(true);
   }catch(e){
     applyRegions(SAMPLE_REGIONS); farms = loadLocal() || withIds(structuredClone(SAMPLE_FARMS)); setMode(false, e);
   }
@@ -1055,7 +1117,7 @@ function renderPicker(){
 function renderMockBrief(){
   renderPicker();
   const f = farms.find(x => x.id === selected);
-  if(!f){ box.innerHTML = `<div class="empty">어가를 찾을 수 없어요${selected ? ` (${esc(selected)})` : ''}. <a class="linkish" href="consult_home.html">연락 목록에서 고르기 →</a></div>`; return; }
+  if(!f){ briefBoxes(`<div class="empty">어가를 찾을 수 없어요${selected ? ` (${esc(selected)})` : ''}. <a class="linkish" href="consult_home.html">연락 목록에서 고르기 →</a></div>`, ''); return; }
   const xs = items(f).sort(byUrgent), L0 = xs[0], I = regionInfo[f.region], st = fStage(f), sp = speciesRisk(L0);
   // 확인 사항: 가장 급한 계약 기준 + 나머지 계약은 한 줄씩
   const points = talkingPoints(L0).slice();
@@ -1625,7 +1687,7 @@ detailEl.addEventListener('toggle', e => {
   const key = e.target.dataset && e.target.dataset.key; if(!key) return;
   if(e.target.open) openSecs.add(key); else openSecs.delete(key);
 }, true);
-detailEl.addEventListener('click', e => {
+detailEl.addEventListener('click', async e => {
   const g = e.target.closest('[data-goto-fc]');
   if(g){ fcRegion = g.dataset.gotoFc; fcPick = 0; showPage('forecast'); return; }
   const a = e.target.closest('[data-act]'); if(!a) return;
@@ -1672,7 +1734,7 @@ detailEl.addEventListener('click', e => {
 (async () => {
   await loadFarms();
   if(!selected && sorted().length) selected = sorted()[0].id;
-  renderBrief();
+  renderHome();
 })();
 </script>
 
