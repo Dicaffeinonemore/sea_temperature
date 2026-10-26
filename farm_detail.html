@@ -1561,6 +1561,7 @@ function toast(msg){
 }
 
 function showPage(p){
+  if(p === 'home'){ location.href = 'consult_home.html'; return; }   // 상담 홈은 막대그래프가 있는 consult_home.html로 이동
   page = p;
   document.querySelectorAll('[data-page-section]').forEach(s => s.hidden = s.dataset.pageSection !== p);
   document.querySelectorAll('.nav').forEach(b => { if(b.dataset.page === p) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
@@ -1731,6 +1732,27 @@ detailEl.addEventListener('click', async e => {
     toast(`${f.name} 결과 저장` + (mode === 'db' ? ' · DB에 기록했어요' : ' · 가상 데이터라 이 브라우저에만 기록했어요'));
     if(nextFarm) select(nextFarm.id); else renderBrief();
   }
+});
+
+// 고객 상담 현황: 검색·열기·행 선택 (PR #41 병합 때 빠진 코드 복구)
+document.getElementById('q').addEventListener('input', e => { q = e.target.value.trim(); renderConsult(); });
+const consultEl = document.getElementById('page-consult');
+consultEl.addEventListener('click', e => {
+  const o = e.target.closest('[data-open]');
+  if(o){
+    // DB 어가 목록에 있으면 DB 브리핑으로 열기 (없으면 기존처럼 가상 예시)
+    const hid = Number(o.dataset.open);
+    if(apiList.some(h => h.household_id === hid)){ apiSel = hid; detailMode = 'api'; showPage('detail'); return; }
+    openDetail(o.dataset.open);
+    if(!listed().some(f => f.id === o.dataset.open)) toast('주의 단계가 아니라 연락 순서 목록에는 없지만 상세는 볼 수 있어요');
+    return; }
+  if(e.target.closest('[data-hist-all]')){ histFarm = null; renderConsult(); return; }
+  const tr = e.target.closest('tr[data-cust]');
+  if(tr){ histFarm = histFarm === tr.dataset.cust ? null : tr.dataset.cust; renderConsult(); }
+});
+consultEl.addEventListener('keydown', e => {
+  const tr = e.target.closest('tr[data-cust]');
+  if(tr && (e.key === 'Enter' || e.key === ' ') && !e.target.closest('button')){ e.preventDefault(); histFarm = histFarm === tr.dataset.cust ? null : tr.dataset.cust; renderConsult(); }
 });
 
 /* ===== 시작 ===== */
