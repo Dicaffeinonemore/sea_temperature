@@ -323,6 +323,9 @@
   a.nav{text-decoration:none}
   a.linkish{display:inline-block}
   .notice{margin:12px 0 0;padding:10px 12px;border-radius:8px;font-size:14px;background:var(--warn-soft);color:#7a3d06;border:1px solid #f3d3ad;white-space:pre-line}
+  /* 신청·주의 그래프: dash_chart.py가 만든 out/ 그림 */
+  .dash-img{display:block;width:100%;height:auto}
+  .dash-img[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -362,8 +365,13 @@
     <section id="page-home">
       <div class="home-top">
         <section class="panel fc-card" aria-labelledby="h-hfc">
-          <div class="sec-h"><h3 id="h-hfc">수온 예측</h3><p id="home-fc-sub"></p></div>
-          <div class="chart sm" id="home-chart"></div>
+          <div class="sec-h"><h3 id="h-hfc">신청·주의 추이</h3><p>과거 2년 · 올해 · 1년 후 예측 (가데이터)</p></div>
+          <div class="reg-pick" role="group" aria-label="그래프 단위">
+            <button type="button" class="chip" data-dash="연도별" aria-pressed="true">연도별</button>
+            <button type="button" class="chip" data-dash="월별" aria-pressed="false">월별</button>
+          </div>
+          <img class="dash-img" id="dash-img" src="out/신청주의_연도별.svg" alt="연도별 신청·주의 건수와 1년 후 예측 그래프">
+          <p class="note" id="dash-miss" hidden>그래프 파일이 없어요. sea_temperature 폴더에서 python dash_chart.py --db 를 실행하면 out 폴더에 만들어져요.</p>
         </section>
         <section class="panel temp-now" id="home-temp" aria-label="선택 지역 수온"></section>
         <section class="panel" aria-labelledby="h-kpi">
@@ -782,8 +790,6 @@ function renderKpis(){
 }
 function renderHomeTemp(){
   const I = regionInfo[homeRegion];
-  document.getElementById('home-fc-sub').textContent = `${homeRegion} · ${md(0)}~${md(20)} · 일최고 수온`;
-  document.getElementById('home-chart').innerHTML = chartSvg(I, -1, {h:240, still:true});
   const first = I.top >= 1 ? `${mdw(I.d)} (D-${I.d})` : '없음';
   document.getElementById('home-temp').innerHTML = `
     <span class="rg">${homeRegion} 오늘 수온</span>
@@ -904,6 +910,19 @@ document.getElementById('bell-list').addEventListener('click', e => {
 });
 
 /* ===== 이벤트 ===== */
+// 신청·주의 그래프: 그림 파일은 dash_chart.py --db 가 DB에서 만들어요 (브라우저는 DB에 직접 붙지 않음)
+const dashImg = document.getElementById('dash-img');
+function dashMissing(miss){ dashImg.hidden = miss; document.getElementById('dash-miss').hidden = !miss; }
+dashImg.addEventListener('error', () => dashMissing(true));
+dashImg.addEventListener('load', () => dashMissing(false));
+if(dashImg.complete && !dashImg.naturalWidth) dashMissing(true);
+document.querySelector('.fc-card .reg-pick').addEventListener('click', e => {
+  const b = e.target.closest('[data-dash]');
+  if(!b) return;
+  document.querySelectorAll('[data-dash]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  dashImg.src = `out/신청주의_${b.dataset.dash}.svg`;
+  dashImg.alt = `${b.dataset.dash} 신청·주의 건수와 1년 후 예측 그래프`;
+});
 const openDetail = id => { location.href = 'farm_detail.html?id=' + encodeURIComponent(id); };
 document.getElementById('office').addEventListener('change', e => {
   homeRegion = e.target.value; putOffice(homeRegion);
