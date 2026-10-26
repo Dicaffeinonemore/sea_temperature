@@ -20,6 +20,7 @@ from backend.dashboard import router as dashboard_router
 from backend.gov_support import router as gov_support_router
 from backend.config import get_settings
 from backend.dashboard import router as dashboard_router     # 다른 import 줄들 맨 아래                        # 다른 app.include_router 줄들 맨 아래
+from backend.farm_detail import router as farm_detail_router
 
 logger = logging.getLogger(__name__)
 app = FastAPI(
@@ -33,6 +34,7 @@ app.include_router(customer_router)
 app.include_router(consult_router)
 app.include_router(gov_support_router)
 app.include_router(dashboard_router)
+app.include_router(farm_detail_router)
 app.add_middleware(CORSMiddleware, allow_origins=get_settings().cors_origins,
                    allow_credentials=True, allow_methods=["GET", "POST", "PATCH", "DELETE"],
                    allow_headers=["Authorization", "Content-Type", "X-CSRF-Protection"])
