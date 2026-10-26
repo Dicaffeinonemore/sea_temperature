@@ -1,5 +1,6 @@
 """Dashboard API for sea_forecast.html, consult_home.html and farm_detail.html."""
 from datetime import date
+from typing import Literal
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -43,6 +44,37 @@ class Region(BaseModel):
 class Regions(BaseModel):
     base_date: date
     regions: list[Region]
+
+
+class Notification(BaseModel):
+    id: int
+    ty: Literal["apply", "join"]
+    lbl: Literal["상담 예약", "가입 완료"]
+    farm: str
+    at: str
+    text: str
+    read: bool = False
+
+
+@router.get("/notifications", response_model=list[Notification],
+            summary="최근 상담 예약·가입 완료 알림")
+def notifications(db: DB):
+    rows = db.execute("""
+        SELECT log_id, household_id, result_status,
+               contacted_at AT TIME ZONE 'Asia/Seoul' AS contacted_at
+        FROM customer_service.consult_logs
+        WHERE result_status IN (%s, %s)
+        ORDER BY contacted_at DESC, log_id DESC
+        LIMIT 50
+    """, ("상담 예약", "가입 완료")).fetchall()
+    # SMS replies and official alerts need their own event source; consult logs cannot establish them.
+    return [Notification(
+        id=row["log_id"],
+        ty="join" if row["result_status"] == "가입 완료" else "apply",
+        lbl=row["result_status"], farm=str(row["household_id"]),
+        at=row["contacted_at"].strftime("%m/%d %H:%M"),
+        text=f'어가 {row["household_id"]} · {row["result_status"]} 기록이 등록됐어요.',
+    ) for row in rows]
 
 
 def trend_of(series: list[Point]) -> str:
