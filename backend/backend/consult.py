@@ -29,7 +29,7 @@ def mask_phone(phone: str | None) -> str | None:
 
 def contracts_by_household(db: Connection, household_ids: list[int]) -> dict[int, list[dict]]:
     rows = db.execute("""
-        SELECT m.household_id, s.standard_name AS species,
+        SELECT m.household_id, m.mapping_id, s.standard_name AS species,
                CASE
                  WHEN bool_or(c.insurance_id IS NOT NULL AND (
                         COALESCE(t.rider_details->'riders' ? %(rider)s, false)
@@ -56,7 +56,8 @@ def contracts_by_household(db: Connection, household_ids: list[int]) -> dict[int
     grouped: dict[int, list[dict]] = {}
     for row in rows:
         grouped.setdefault(row["household_id"], []).append(
-            {"species": row["species"], "coverage": row["coverage"], "sale_text": None})
+            {"mapping_id": row["mapping_id"], "species": row["species"],
+             "coverage": row["coverage"], "sale_text": None})
     return grouped
 
 

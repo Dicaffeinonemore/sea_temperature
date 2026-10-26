@@ -370,7 +370,7 @@
 const API_BASE = (location.protocol === 'file:' ? 'http://127.0.0.1' : `${location.protocol}//${location.hostname}`) + ':8000';
 const ENDPOINTS = {
   regions: '/api/dashboard/regions',  // 제안 · 지역별 21일 수온 예측 (상담 홈과 같음)
-  farms:   '/api/dashboard/farms',    // 제안 · 연락 대상 어가 + 계약 (상담 홈과 같음, 다음 어가 순서에 씀)
+  farms:   '/api/consult/customers',  // 어가 목록 · 어종별 보험 보장 상태
   logs:    '/api/consult/logs',       // 있음 · 상담 결과 저장 (POST)
 };
 let mode = 'sample';   // 'db' = 서버 데이터 · 'sample' = 가상 데이터
@@ -477,6 +477,7 @@ function toast(msg){
 /* ===== 보험 상품 · 가입 상태 ===== */
 // 상품요약서·사업방법서(2026.5.13) 기준. 공개 자료에 없는 값은 비워 둠.
 const PRODUCTS = {
+  unknown:{name:'상품 확인 필요', heat:null, months:[], saleText:'확인 필요'},
   cage:   {name:'해상가두리어류 재해보험', heat:'rider', base:'태풍·해일·풍랑·적조', rider:'고수온·저수온·이상수질', months:[1,2,3,4,5,10,11,12], saleText:'1~5·10~12월', subsidy:'일부', split4:true},
   ascid:  {name:'멍게 보험', heat:'rider', months:[4,5,6,7,8,9,10], saleText:'4~10월', subsidy:'일부', split4:false, caution:'멍게는 상품요약서와 약관(제5조)의 고수온 보장 내용이 달라요. 약관 우선, 수협에 확인 필요'},
   abaSea: {name:'해상 전복 보험', heat:'base', months:[1,2,3,4,5,10,11,12], saleText:'1~5·10~12월', subsidy:'50%', split4:true},
@@ -551,10 +552,36 @@ function loadLocal(){ try{ const s = localStorage.getItem(KEY); if(s) return JSO
 function save(){ if(mode !== 'sample') return; try{ localStorage.setItem(KEY, JSON.stringify(farms)); }catch(e){} }
 let farms = [];
 
+function toFarms(customers){
+  const statusKeys = Object.fromEntries(Object.entries(STATUS_DB).map(([key, value]) => [value, key]));
+  const coverageKeys = {none:'none', no_rider:'norider', covered:'full'};
+  return customers.map(customer => {
+    const householdId = Number(customer.code);
+    if(!Number.isSafeInteger(householdId) || householdId <= 0 || !statusKeys[customer.status]){
+      throw new Error('어가 번호 또는 상담 상태를 확인해 주세요.');
+    }
+    return {
+      id:String(householdId), household_id:householdId,
+      name:customer.name, region:customer.region,
+      phone:customer.phone_masked || '연락처 미등록', consent:customer.sms_consent,
+      status:statusKeys[customer.status], next:null,
+      items:customer.contracts.map(contract => {
+        if(!Object.hasOwn(coverageKeys, contract.coverage)){
+          throw new Error('어가 보험 보장 상태를 확인해 주세요.');
+        }
+        return {species:contract.species, ins:coverageKeys[contract.coverage],
+                p:'unknown', method:'양식 방식 확인 필요',
+                mapping_id:contract.mapping_id ?? null, quote:null};
+      }),
+    };
+  });
+}
+
 async function loadFarms(){
   try{
     const [rg, fm] = await Promise.all([getJSON(ENDPOINTS.regions), getJSON(ENDPOINTS.farms)]);
-    applyRegions(rg); farms = fm; setMode(true);
+    const loaded = toFarms(fm);
+    applyRegions(rg); farms = loaded; setMode(true);
   }catch(e){
     applyRegions(SAMPLE_REGIONS); farms = loadLocal() || withIds(structuredClone(SAMPLE_FARMS)); setMode(false, e);
   }
@@ -568,6 +595,7 @@ async function loadFarms(){
 // 상담 결과 저장: 서버 연결 시 POST /api/consult/logs (backend/backend/consult.py). 가상 데이터면 서버에 보내지 않아요.
 async function recordLog(f, {status, channel, memo, next, results = []}){
   if(mode !== 'db') return;
+  if(results.some(r => !r.mapping_id)) throw new Error('어종 식별자가 없어 계약 결과를 저장할 수 없어요. 백엔드를 확인해 주세요.');
   await postJSON(ENDPOINTS.logs, {
     household_id: f.household_id, status: STATUS_DB[status], channel,
     memo: memo || null,
@@ -590,6 +618,7 @@ function speciesRisk(f){
 function farmStage(f){ return Math.max(regionInfo[f.region].top, speciesRisk(f).stage); }
 
 function saleState(p){
+  if(p === 'unknown') return {code:'unknown', text:'판매 기간 확인 필요', cls:'sale-later'};
   const m = TODAY.m, months = PRODUCTS[p].months;
   if(months.includes(m)){
     const next = m % 12 + 1;
@@ -617,7 +646,7 @@ function score(f){
   if(st >= 2){ const d = R.top >= 2 ? R.d : S.d; t += Math.max(0, 7 - d) * W.perDay; }
   t += W.gap[f.ins] || 0;
   const canBuy = !['full','checkExcl'].includes(f.ins);
-  if(canBuy && !alerted(f) && sale.code !== 'later') t += W.canBuy;  // 특보 발령 지역은 이번 피해 보상 불가라 0
+  if(canBuy && !alerted(f) && ['open','soon'].includes(sale.code)) t += W.canBuy;  // 특보 발령 지역은 이번 피해 보상 불가라 0
   if(S.hit) t += W.species;
   return {total: t};
 }
@@ -648,6 +677,8 @@ function sorted(){
 
 function heatLine(f){
   const P = PRODUCTS[f.p];
+  if(f.p === 'unknown') return {ok:f.ins === 'full' ? true : f.ins === 'norider' ? false : null,
+    text:f.ins === 'full' ? '고수온 보장 정보 있음 · 약관 조건 확인 필요' : '상품·특약 및 고수온 보장 조건 확인 필요'};
   if(f.ins === 'full') return {ok:true, text:'고수온 보장 대상 (특약 포함 가입)'};
   if(P.heat === 'base'){
     if(f.ins === 'checkExcl') return {ok:null, text:'기본 보험에 고수온 포함 · 부담보 특약으로 뺐는지 확인 필요'};
@@ -659,6 +690,7 @@ function heatLine(f){
 
 function talkingPoints(f){
   const r = regionInfo[f.region], sale = saleState(f.p), P = PRODUCTS[f.p], pts = [];
+  if(sale.code === 'unknown') pts.push({key:true, t:'보험 상품·양식 방식·판매 기간을 확인한 뒤 가입 가능 여부를 안내하세요.'});
   if(f.ins === 'none' || f.ins === 'unknown' || f.ins === 'norider'){
     if(r.alert) pts.push({key:true, t:`${r.alert.type}가 이미 발령(${r.alert.since})돼서 지금 가입해도 이번 고수온 피해는 보상되지 않아요 → 대응 요령 안내 후 다음 판매 기간 가입을 권해요`});
     else if(sale.code !== 'later') pts.push({key:true, t:'첫 보험료를 낸 날 이미 특보가 난 지역은 그 재해를 보상하지 않아요 → 특보 전에 가입해야 해요'});
@@ -691,6 +723,7 @@ function checkGuide(f){
 // 예시 문장. 예상 부담은 보험료 칸에 견적을 넣으면 채워짐.
 function exampleScript(f){
   const r = regionInfo[f.region], sale = saleState(f.p);
+  if(sale.code === 'unknown') return `“${esc(f.name)}님, ${esc(f.region)} 수온 예보와 보험 보장 상태를 확인하려고 연락드렸습니다. 가입 상품과 판매 기간, 약관 조건을 함께 확인해 드릴까요?”`;
   const open = `“${esc(f.name)}님, ${r.top >= 2
     ? `${r.d}일 뒤 ${esc(f.region)} 바다가 ${r.t[r.d].toFixed(1)}℃까지 오를 것으로`
     : '앞으로 수온이 오를 것으로'} 보여 먼저 연락드렸습니다.`;
@@ -719,9 +752,11 @@ const TEMPLATES = {
     const w = r.top >= 2 ? `${f.region} 바다 ${r.d}일 뒤 ${r.t[r.d].toFixed(1)}℃ 예상.` : `${f.region} 바다 수온이 높아요.`;
     return `[○○수협] ${w} 특보가 나면 지금 가입해도 이번 피해는 보상되지 않아요. 내 양식장 정보 보기: [링크]`; }},
   close: {label:'판매 마감 안내', make:f => { const s = saleState(f.p), P = PRODUCTS[f.p];
+    if(s.code === 'unknown') return '[○○수협] 보험 상품과 판매 기간 확인이 필요해요. 가입 가능 여부는 상담으로 확인해 주세요. 상담: [수협 전화]';
     const when = s.code === 'soon' ? `${P.name}은 ${s.end}월 말에 판매가 끝나요` : `${P.name} 판매기간은 ${P.saleText}이에요`;
     return `[○○수협] ${when}. 고수온 보장 여부를 함께 확인해 보세요. 상담: [수협 전화] 내 양식장 정보: [링크]`; }},
   open: {label:'판매 시작 안내', make:f => { const s = saleState(f.p), P = PRODUCTS[f.p];
+    if(s.code === 'unknown') return '[○○수협] 보험 상품과 판매 기간 확인이 필요해요. 가입 가능 여부는 상담으로 확인해 주세요. 상담: [수협 전화]';
     const when = s.code === 'later' ? `${s.start}월부터 가입할 수 있어요` : `지금 가입할 수 있어요`;
     return `[○○수협] ${P.name}은 ${when}. 상담 예약: [수협 전화] 내 양식장 정보: [링크]`; }},
 };
@@ -756,11 +791,12 @@ function ctrCard(x, k){
   const P = PRODUCTS[x.p], sale = saleState(x.p), H = heatLine(x);
   const saleLine = sale.code === 'open' ? `<span class="ok">지금 가입 가능</span>`
                  : sale.code === 'soon' ? `<span class="ng">${sale.end}월 말 마감</span>`
+                 : sale.code === 'unknown' ? '<span>판매 기간 확인 필요</span>'
                  : `<span>${sale.start}월부터 가입 가능</span>`;
   const heatCls = H.ok === true ? 'ok' : H.ok === false ? 'ng' : '';
   const gap = GAP.includes(x.ins);
   return `<div class="ctr-card">
-    <div class="ctr-h"><span class="ctr-no">${k+1}</span><b>${esc(x.species)}</b><span class="note">${esc(x.method)} · ${P.name}</span><span class="${INS[x.ins].cls}" style="margin-left:auto">${INS[x.ins].label}</span></div>
+    <div class="ctr-h"><span class="ctr-no">${k+1}</span><b>${esc(x.species)}</b><span class="note">${esc(x.method)} · ${P.name}</span><span class="${INS[x.ins].cls}" style="margin-left:auto">${x.p === 'unknown' && x.ins === 'full' ? '고수온 보장 · 약관 확인 필요' : INS[x.ins].label}</span></div>
     <dl class="facts">
       <dt>고수온</dt><dd class="${heatCls}">${H.text}</dd>
       ${gap ? `<dt>판매기간</dt><dd>${P.saleText} → ${saleLine}</dd>` : ''}
@@ -774,12 +810,13 @@ function renderBrief(){
   const box = document.getElementById('brief');
   const f = farms.find(x => x.id === selected);
   if(!f){ box.innerHTML = `<div class="empty">어가를 찾을 수 없어요${selected ? ` (${esc(selected)})` : ''}. <a class="linkish" href="consult_home.html">연락 목록에서 고르기 →</a></div>`; return; }
+  if(!f.items.length){ box.innerHTML = `<div class="empty">${esc(f.name)} 어가의 등록된 어종 정보가 없어요. <a class="linkish" href="consult_home.html">연락 목록으로 →</a></div>`; return; }
   const xs = items(f).sort(byUrgent), L0 = xs[0], I = regionInfo[f.region], st = fStage(f), sp = speciesRisk(L0);
   if(!tpl) tpl = defaultTpl(L0);
   // 확인 사항: 가장 급한 계약 기준 + 나머지 계약은 한 줄씩
   const points = talkingPoints(L0).slice();
   xs.slice(1).forEach(x => {
-    if(x.ins === 'none') points.push({key:true, t:`${x.species}: 미가입 · ${saleState(x.p).code === 'later' ? saleState(x.p).start + '월부터 가입 가능' : '지금 가입 가능'}`});
+    if(x.ins === 'none') points.push({key:true, t:`${x.species}: 미가입 · ${saleState(x.p).code === 'unknown' ? '판매 기간 확인 필요' : saleState(x.p).code === 'later' ? saleState(x.p).start + '월부터 가입 가능' : '지금 가입 가능'}`});
     if(x.ins === 'norider') points.push({key:true, t:`${x.species}: 기본만 가입 → 고수온 특약 추가 안내`});
     if(x.ins === 'unknown') points.push({key:true, t:`${x.species}: 보험 가입 여부 확인`});
     if(x.ins === 'checkExcl') points.push({t:`${x.species}: 고수온을 빼고 가입했는지 증권 확인`});
@@ -796,7 +833,7 @@ function renderBrief(){
   box.innerHTML = `
     <div class="b-head">
       <h2>${esc(f.name)} 어가 브리핑</h2>
-      <p>${f.id} · ${esc(f.region)} · ${f.phone} · 계약 ${f.items.length}건</p>
+      <p>${f.id} · ${esc(f.region)} · ${esc(f.phone)} · 계약 ${f.items.length}건</p>
       <p>연락·문자 수신 동의 ${f.consent ? '<span class="consent-y">○ 동의</span>' : '<span class="consent-n">× 미동의 · 문자 불가, 전화로 동의부터 받기</span>'}</p>
     </div>
 
@@ -948,7 +985,7 @@ briefEl.addEventListener('click', async e => {
 /* ===== 시작 ===== */
 (async () => {
   await loadFarms();
-  if(!selected && sorted().length) selected = sorted()[0].id;
+  if(!selected && farms.length) selected = (sorted()[0] || farms[0]).id;
   renderBrief();
 })();
 </script>
