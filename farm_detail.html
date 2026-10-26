@@ -1105,6 +1105,8 @@ function briefBoxes(leftHtml, rightHtml){
   document.getElementById('brief-side').innerHTML = rightHtml;
 }
 
+// 어가 선택에는 담당 지역 어가만
+const regionHouseholds = () => apiList.filter(h => h.region === homeRegion);
 function renderPicker(){
   const wrap = document.getElementById('hh-pick-wrap'), sel = document.getElementById('hh-pick');
   wrap.hidden = !apiOk;
@@ -1112,7 +1114,7 @@ function renderPicker(){
   const mockF = farms.find(x => x.id === selected);
   const mockOpt = detailMode === 'mock' && mockF ? `<option value="" selected>가상 예시 · ${esc(mockF.name)} (${mockF.id})</option>` : '';
   const emptyOpt = detailMode === 'api' && apiSel == null ? '<option value="" selected>어가를 선택해 주세요</option>' : '';
-  sel.innerHTML = mockOpt + emptyOpt + apiList.map(h => `<option value="${h.household_id}" ${detailMode === 'api' && apiSel === h.household_id ? 'selected' : ''}>${esc(h.owner_name)} · ${esc(h.household_name)} (${esc(h.region || '-')}${h.species.length ? ' · ' + esc(h.species.join(', ')) : ''})</option>`).join('');
+  sel.innerHTML = mockOpt + emptyOpt + regionHouseholds().map(h => `<option value="${h.household_id}" ${detailMode === 'api' && apiSel === h.household_id ? 'selected' : ''}>${esc(h.owner_name)} · ${esc(h.household_name)} (${esc(h.region || '-')}${h.species.length ? ' · ' + esc(h.species.join(', ')) : ''})</option>`).join('');
 }
 
 /* ----- 가상 예시 어가 ----- */
@@ -1246,9 +1248,11 @@ async function initApi(){
     const params = new URLSearchParams(location.search);
     if(params.has('id')){
       const wantId = Number(params.get('id'));
-      apiSel = apiList.some(h => h.household_id === wantId) ? wantId : null;
+      const want = apiList.find(h => h.household_id === wantId);
+      apiSel = want ? wantId : null;
+      if(want && want.region !== homeRegion && hasOffice(want.region)) setOffice(want.region);   // 다른 지역 어가면 담당을 그 지역으로
       if(apiSel == null) apiErr = '요청한 어가를 찾을 수 없어요.';
-    }else if(apiList.length && apiSel == null) apiSel = apiList[0].household_id;
+    }else if(!regionHouseholds().some(h => h.household_id === apiSel)) apiSel = regionHouseholds()[0]?.household_id ?? null;
     if(page === 'detail') renderBrief(); else renderPicker();
   }catch(e){
     apiOk = false; apiSel = null; apiData = null; apiErr = e.message;
@@ -1274,7 +1278,7 @@ async function loadApiDetail(id, force){
 async function renderApiDetail(force){
   renderPicker();
   if(apiSel == null){
-    const message = apiErr || (apiOk && !apiList.length ? '등록된 어가가 없어요.' : '어가를 고르면 통화 전 브리핑이 보여요.');
+    const message = apiErr || (apiOk && apiList.length && !regionHouseholds().length ? `${homeRegion} 지역 고객이 없어요. 위 '담당'에서 다른 지역을 골라 보세요.` : apiOk && !apiList.length ? '등록된 어가가 없어요.' : '어가를 고르면 통화 전 브리핑이 보여요.');
     briefBoxes(`<div class="empty">${esc(message)}</div>`, ''); return;
   }
   if(!await loadApiDetail(apiSel, force)) return;
@@ -1614,6 +1618,7 @@ document.querySelector('.home-top').addEventListener('click', e => {
 const OFFICE_KEY = 'heat-dashboard-office';
 function getOffice(){ try{ return localStorage.getItem(OFFICE_KEY) || '통영'; }catch(e){ return '통영'; } }
 function putOffice(id){ try{ localStorage.setItem(OFFICE_KEY, id); }catch(e){} }
+const hasOffice = id => [...document.getElementById('office').options].some(o => o.value === id);
 function setOffice(id){
   putOffice(id);
   homeRegion = fcRegion = id; fcPick = 0;
@@ -1621,6 +1626,10 @@ function setOffice(id){
   if(filter.region) filter.region = id;
   renderHomeTemp(); renderFilters(); renderRows();
   if(page === 'forecast') renderForecast();
+  if(apiOk){   // 어가 선택을 새 담당 지역 어가로
+    if(!regionHouseholds().some(h => h.household_id === apiSel)) apiSel = regionHouseholds()[0]?.household_id ?? null;
+    if(page === 'detail') renderBrief(); else renderPicker();
+  }
 }
 document.getElementById('office').addEventListener('change', e => setOffice(e.target.value));
 document.getElementById('filters').addEventListener('click', e => {
@@ -1771,7 +1780,8 @@ consultEl.addEventListener('click', e => {
   if(o){
     // DB 어가 목록에 있으면 DB 브리핑으로 열기 (없으면 기존처럼 가상 예시)
     const hid = Number(o.dataset.open);
-    if(apiList.some(h => h.household_id === hid)){ apiSel = hid; detailMode = 'api'; showPage('detail'); return; }
+    const h = apiList.find(x => x.household_id === hid);
+    if(h){ apiSel = hid; detailMode = 'api'; if(h.region !== homeRegion && hasOffice(h.region)) setOffice(h.region); showPage('detail'); return; }
     openDetail(o.dataset.open);
     if(!listed().some(f => f.id === o.dataset.open)) toast('주의 단계가 아니라 연락 순서 목록에는 없지만 상세는 볼 수 있어요');
     return; }
@@ -1788,7 +1798,7 @@ consultEl.addEventListener('keydown', e => {
 (async () => {
   await loadFarms();
   const savedOffice = getOffice();
-  if([...document.getElementById('office').options].some(o => o.value === savedOffice)) setOffice(savedOffice);
+  if(hasOffice(savedOffice)) setOffice(savedOffice);
   if(!selected && sorted().length) selected = sorted()[0].id;
   renderHome();
   initApi();
