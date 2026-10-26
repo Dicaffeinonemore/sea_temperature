@@ -16,7 +16,11 @@ from backend.support import router as support_router
 from backend.routes import router
 from backend.customer_api import router as customer_router
 from backend.consult import router as consult_router
+<<<<<<< HEAD
+from backend.dashboard import router as dashboard_router
+=======
 from backend.gov_support import router as gov_support_router
+>>>>>>> 622597dc7451e93045a8b115955c65753eb55f36
 from backend.config import get_settings
 from backend.dashboard import router as dashboard_router     # 다른 import 줄들 맨 아래                        # 다른 app.include_router 줄들 맨 아래
 
