@@ -3,6 +3,7 @@ import logging
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from psycopg import Connection, Error
@@ -92,7 +93,7 @@ app.include_router(insurance_router)
 app.include_router(n8n_router)
 
 # --- 배포용: 화면 4개를 이 백엔드에서 같이 내보냄 (Render 등 한 주소로 실행) ---
-# 폴더 전체를 공개하면 backend/backend/.env 까지 열리므로 파일 4개와 out/ 만 지정합니다.
+# 폴더 전체를 공개하면 backend/backend/.env 까지 열리므로 파일만 골라서 지정합니다.
 from pathlib import Path  # noqa: E402
 
 from fastapi.responses import FileResponse, RedirectResponse  # noqa: E402
@@ -100,16 +101,25 @@ from fastapi.staticfiles import StaticFiles  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]   # sea_temperature/
 SCREENS = ("consult_home.html", "consult_status.html", "farm_detail.html", "sea_forecast.html")
+# 모든 화면이 함께 불러오는 공통 상단 바 · 왼쪽 메뉴 · 알림 (없으면 상단 바·사이드바가 안 그려져요)
+# 형식(MIME)을 명시해야 브라우저가 스크립트를 실행하고 스타일을 적용해요.
+SHARED = {
+    "shell.js": "text/javascript; charset=utf-8",
+    "shell.css": "text/css; charset=utf-8",
+}
 
 
-def _screen(path: Path):
+def _screen(path: Path, media_type: str | None = None):
     def serve():
-        return FileResponse(path)
+        return FileResponse(path, media_type=media_type)
     return serve
 
 
 for _name in SCREENS:
     app.add_api_route(f"/{_name}", _screen(ROOT / _name), include_in_schema=False)
+
+for _name, _type in SHARED.items():
+    app.add_api_route(f"/{_name}", _screen(ROOT / _name, _type), include_in_schema=False)
 
 
 @app.get("/", include_in_schema=False)
