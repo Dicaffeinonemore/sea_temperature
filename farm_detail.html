@@ -363,7 +363,7 @@
     <p class="notice" id="notice" role="alert" hidden></p>
 
     <!-- ===== 상담 홈 ===== -->
-    <section id="page-home" data-page-section="home">
+    <section id="page-home" data-page-section="home" hidden>
       <div class="home-top">
         <section class="panel fc-card" aria-labelledby="h-hfc">
           <div class="sec-h"><h3 id="h-hfc">수온 예측</h3><p id="home-fc-sub"></p></div>
@@ -422,7 +422,8 @@
     </section>
 
     <!-- ===== 어가 상세 ===== -->
-    <section id="page-detail" data-page-section="detail" hidden>
+    <!-- 데이터를 받기 전에도 어가 상세가 먼저 보이게 (홈 영역의 수온 예측 카드가 잠깐 비치지 않도록) -->
+    <section id="page-detail" data-page-section="detail">
       <div class="page-h"><button type="button" class="ghost" id="back-home">← 연락 목록</button><h2>어가 상세</h2><p>통화 전 브리핑 · 전화 · 결과 기록</p>
         <label class="hh-pick" id="hh-pick-wrap" hidden>어가 선택 <select id="hh-pick" aria-label="어가 선택"></select></label></div>
       <div class="detail-grid">
