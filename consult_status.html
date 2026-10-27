@@ -87,8 +87,23 @@
   .search{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
   .search label{font-size:13px;color:var(--sub);font-weight:700}
   .search input{flex:1;min-width:0;max-width:440px;border:1px solid var(--line-strong);border-radius:8px;padding:9px 12px;font-size:15px;background:#fff}
-  .stack{display:grid;gap:16px}
-  .hist-res{font-weight:700;white-space:nowrap}
+  .stack{display:grid;gap:16px;grid-template-columns:minmax(0,1fr) minmax(300px,380px);align-items:start}
+  /* 오른쪽 과거 상담 내역: 목록을 내려도 화면에 붙어 있게 */
+  .hist-panel{position:sticky;top:16px;max-height:calc(100vh - 32px);display:flex;flex-direction:column}
+  .hist-list{list-style:none;overflow-y:auto;padding:4px 16px 12px}
+  .hist-item{padding:12px 0;border-bottom:1px solid var(--line);animation:hist-in .25s ease-out both}
+  .hist-item:last-child{border-bottom:0}
+  .hist-top{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted)}
+  .hist-res{font-weight:700;white-space:nowrap;font-size:12.5px;color:var(--text);background:#eef0f4;border-radius:6px;padding:1px 8px}
+  .hist-who{margin-top:4px;font-size:14px}
+  .hist-who b{margin-right:6px}
+  .hist-who small{color:var(--muted);font-size:12.5px}
+  .hist-memo{margin-top:4px;font-size:14px;color:var(--sub)}
+  @keyframes hist-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  @media (max-width:1100px){
+    .stack{grid-template-columns:1fr}
+    .hist-panel{position:static;max-height:none}
+  }
   .notice{margin:0 0 12px;padding:10px 12px;border-radius:8px;font-size:14px;background:var(--warn-soft);color:#7a3d06;border:1px solid #f3d3ad}
 
   .foot{margin-top:18px;font-size:12px;color:var(--muted);line-height:1.7}
@@ -103,7 +118,7 @@
   @media (max-width:640px){
     .wrap{padding:0 16px 32px}.top-in{padding:12px 16px}
   }
-  @media (prefers-reduced-motion:reduce){.toast{transition:none}}
+  @media (prefers-reduced-motion:reduce){.toast{transition:none}.hist-item{animation:none}}
 </style>
 </head>
 <body>
@@ -139,7 +154,7 @@
       <div class="stack">
         <section class="panel" aria-labelledby="h-cust">
           <div class="list-h">
-            <div class="sec-h" style="margin:0"><h3 id="h-cust">고객 목록</h3><p>고객을 누르면 아래 상담 내역이 그 고객만 보여요</p></div>
+            <div class="sec-h" style="margin:0"><h3 id="h-cust">고객 목록</h3><p>고객을 누르면 오른쪽에 그 고객의 상담 내역이 보여요</p></div>
             <div class="filters" id="prog-filter">
               <button type="button" class="chip" data-prog="0" aria-pressed="true">전체</button>
               <button type="button" class="chip" data-prog="1" aria-pressed="false">진행</button>  
@@ -157,17 +172,12 @@
           <div class="empty" id="loading">불러오는 중이에요…</div>
           <div class="empty" id="cust-empty" hidden></div>
         </section>
-        <section class="panel" aria-labelledby="h-hist">
+        <section class="panel hist-panel" id="hist-panel" aria-labelledby="h-hist">
           <div class="list-h">
             <div class="sec-h" style="margin:0"><h3 id="h-hist">과거 상담 내역</h3><p id="hist-sub">최근 순</p></div>
             <div class="filters" id="hist-filter"></div>
           </div>
-          <div class="tbl-wrap">
-            <table>
-              <thead><tr><th scope="col">날짜</th><th scope="col">고객</th><th scope="col">지역 · 어종</th><th scope="col">결과</th><th scope="col">내용</th></tr></thead>
-              <tbody id="hist-rows"></tbody>
-            </table>
-          </div>
+          <ul class="hist-list" id="hist-rows" aria-live="polite"></ul>
           <div class="empty" id="hist-empty" hidden>상담 내역이 없어요.</div>
         </section>
       </div>
@@ -288,13 +298,12 @@ function renderConsult(){
   document.getElementById('hist-sub').textContent = hf ? `${hf.name} (${hf.code}) · ${items.length}건 · 최근 순` : `${items.length}건 · 최근 순`;
   document.getElementById('hist-filter').innerHTML = hf ? `<button type="button" class="chip" data-hist-all aria-pressed="true">${esc(hf.name)} ✕ 전체 보기</button>` : '';
   document.getElementById('hist-empty').hidden = items.length > 0;
-  document.getElementById('hist-rows').innerHTML = items.map(h => `<tr>
-      <td>${esc(h.date)}</td>
-      <td class="who"><b>${esc(h.name)}</b><small>${esc(h.code)}</small></td>
-      <td>${esc(h.region)} · ${h.species.map(esc).join(' · ')}</td>
-      <td class="hist-res">${esc(h.result)}</td>
-      <td>${esc(h.memo)}</td>
-    </tr>`).join('');
+  document.getElementById('hist-empty').textContent = hf ? `${hf.name} 고객은 아직 상담 내역이 없어요.` : '상담 내역이 없어요.';
+  document.getElementById('hist-rows').innerHTML = items.map(h => `<li class="hist-item">
+      <div class="hist-top"><span>${esc(h.date)}</span><span class="hist-res">${esc(h.result)}</span></div>
+      <div class="hist-who">${hf ? '' : `<b>${esc(h.name)}</b>`}<small>${h.species.map(esc).join(' · ')}</small></div>
+      <div class="hist-memo">${esc(h.memo)}</div>
+    </li>`).join('');
 }
 
 async function getJSON(path){
@@ -344,12 +353,18 @@ consultEl.addEventListener('click', e => {
   if(o){ location.href = 'farm_detail.html?id=' + encodeURIComponent(o.dataset.open); return; }
   if(e.target.closest('[data-hist-all]')){ histFarm = null; renderConsult(); return; }
   const tr = e.target.closest('tr[data-cust]');
-  if(tr){ histFarm = histFarm === tr.dataset.cust ? null : tr.dataset.cust; renderConsult(); }
+  if(tr) pickCustomer(tr.dataset.cust);
 });
 consultEl.addEventListener('keydown', e => {
   const tr = e.target.closest('tr[data-cust]');
-  if(tr && (e.key === 'Enter' || e.key === ' ') && !e.target.closest('button')){ e.preventDefault(); histFarm = histFarm === tr.dataset.cust ? null : tr.dataset.cust; renderConsult(); }
+  if(tr && (e.key === 'Enter' || e.key === ' ') && !e.target.closest('button')){ e.preventDefault(); pickCustomer(tr.dataset.cust); }
 });
+// 좁은 화면에서는 상담 내역이 목록 아래로 내려가므로, 고객을 고르면 그쪽으로 이동
+function pickCustomer(code){
+  histFarm = histFarm === code ? null : code;
+  renderConsult();
+  if(histFarm && matchMedia('(max-width:1100px)').matches) document.getElementById('hist-panel').scrollIntoView({behavior:'smooth', block:'start'});
+}
 
 load();
 </script>
