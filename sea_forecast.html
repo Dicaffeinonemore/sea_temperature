@@ -217,7 +217,9 @@
   .chart svg{display:block;width:100%;min-width:560px;height:auto}
   .g-line{stroke:#e8ecf1;stroke-width:1}
   .g-txt{fill:var(--muted);font-size:11px}
-  .g-band{fill:#f4f6f9}
+  .g-band{fill:rgba(110,120,140,.09)}
+  .zone-warn{fill:#f8c9c4;opacity:.65}
+  .zone-watch{fill:#fbe6a2;opacity:.6}
   .g-head{font-size:11px;font-weight:700}
   .g-head.r{fill:var(--accent)} .g-head.o{fill:var(--muted)}
   .th25{stroke:var(--th25);stroke-width:1.6;stroke-dasharray:6 6}
@@ -553,11 +555,14 @@ function chartSvg(I, pick, o = {}){
   const pts = I.series, fcPick = pick;
   const W = 900, H = o.h || 300, L = 46, R = 16, T = 28, B = 40, pW = W - L - R, pH = H - T - B;
   const temps = pts.map(p => p.max).concat([25, 28]);
-  const lo = Math.floor(Math.min(...temps) - 0.5), hi = Math.ceil(Math.max(...temps) + 0.5);
+    const lo = Math.floor(Math.min(...temps) - 0.5), hi = Math.max(29, Math.ceil(Math.max(...temps) + 0.5));   // 주의(28℃↑) 띠가 보이도록 최소 29℃까지
   const x = i => L + i / 20 * pW, y = v => T + (hi - v) / (hi - lo) * pH;
   const step = hi - lo > 6 ? 2 : 1;
   let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${fcRegion} 21일 수온 예측 그래프">`;
-  svg += `<rect class="g-band" x="${x(6.5)}" y="${T}" width="${W - R - x(6.5)}" height="${pH}"/>`;
+    // 위험 구간 색칠: 주의(28℃ 이상) 빨강 · 관심(25~28℃) 노랑
+  svg += `<rect class="zone-warn" x="${L}" y="${T}" width="${pW}" height="${Math.max(0, y(28) - T)}"/>`;
+  svg += `<rect class="zone-watch" x="${L}" y="${y(28)}" width="${pW}" height="${y(25) - y(28)}"/>`;
+    svg += `<rect class="g-band" x="${x(6.5)}" y="${T}" width="${W - R - x(6.5)}" height="${pH}"/>`;
   svg += `<text class="g-head r" x="${x(3)}" y="16" text-anchor="middle">1~7일 · ROMS 대응 검토</text>`;
   svg += `<text class="g-head o" x="${x(13.75)}" y="16" text-anchor="middle">8~21일 · ECMWF 보정 · 참고만</text>`;
   for(let v = lo; v <= hi; v += step){
