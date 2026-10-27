@@ -9,6 +9,7 @@
   GET /api/v1/gov-support/services/{service_id}
   GET /api/v1/gov-support/summary?region=&species=          상위 3건 짧은 카드
   GET /api/v1/gov-support/insurance-subsidy?species=&region=&method=   국가 보조 + 지자체 추가 지원
+  GET /api/v1/gov-support/damage?species=조피볼락&species=넙치          고수온 피해 시 지원 (재난지원금·상환연기 등)
 
 파이썬에서 바로 (backend 폴더에서):
   python -m backend.gov_support services --region 통영 --species 조피볼락
@@ -20,12 +21,14 @@
 
 from __future__ import annotations
 
+import csv
 import re
 import sys
+from pathlib import Path
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, HTTPException, Query
-from psycopg import Connection
+from psycopg import Connection, sql
 from pydantic import BaseModel
 
 from backend.insurance import escape_like, species_terms
@@ -60,7 +63,7 @@ FIELDS = {
     "name": ["서비스명"], "agency": ["소관기관명"], "support_type": ["지원유형"],
     "purpose": ["서비스목적요약", "서비스목적"], "target": ["지원대상"], "criteria": ["선정기준"],
     "content": ["지원내용"], "how_to_apply": ["신청방법"], "deadline": ["신청기한"],
-    "reception": ["접수기관"], "phone": ["전화문의", "문의처"], "documents": ["구비서류"],
+    "reception": ["접수기관", "접수기관명"], "phone": ["전화문의", "문의처"], "documents": ["구비서류"],
     "field": ["서비스분야"], "detail_url": ["상세조회URL"], "online_url": ["온라인신청사이트URL"],
 }
 
@@ -312,6 +315,177 @@ def insurance_subsidy(db: Connection, species: str, region: str | None = None,
 
 
 # ---------------------------------------------------------------------------
+# 고수온 피해 시 지원 (팀 CSV 4개: 제도 · 복구 단가 · 상환연기 · 출처)
+# 1) DB에 같은 칸 이름의 표가 있으면 그 표 (표 이름은 상관없음)
+# 2) 없으면 backend/backend/data/damage/*.csv 파일 (DB를 바꾸지 않아도 되게)
+# ---------------------------------------------------------------------------
+DAMAGE_TABLES = {
+    "programs": ["제도ID", "제도명", "지원내용"],
+    "prices": ["품목", "단가_원", "단위"],
+    "relief": ["피해율_이상", "피해율_미만", "상환연기_년"],
+    "sources": ["분류", "기관_자료명", "링크"],
+}
+# 재해복구비 나누는 비율 · 어가당 한도. 표(제도 S01)에는 '법령 별표 기준'으로만 있어 보도 기준값을 쓰고 확인 필요로 표시
+RECOVERY_SPLIT = {"grant": 50, "loan": 30, "self": 20, "cap": 50_000_000,
+                  "source": "서울신문 2023-09-25 (어가당 5천만 원 한도, 국비·지방비 보조 50%·융자 30%·자부담 20%)",
+                  "confirmed": False}
+
+
+class DamageProgram(BaseModel):
+    id: str
+    kind: str | None              # 지원금 · 대출 · 보증 · 참고
+    name: str
+    agency: str | None
+    target: str | None
+    content: str | None
+    required: str | None
+    apply_to: str | None
+    when: str | None              # 앱표시시점 (경보·피해 후, 관심·주의보 …)
+    status_2026: str | None
+    to_check: list[str]           # 확인필요_항목
+    link: str | None
+    basis: str | None
+    checked: str | None
+
+
+class UnitPrice(BaseModel):
+    item: str
+    size: str | None
+    price: float | None           # 원
+    unit: str | None
+    raise_pct: str | None
+    since: str | None
+    note: str | None
+
+
+class ReliefRule(BaseModel):
+    min_rate: float               # 피해율 이상 (%)
+    max_rate: float               # 피해율 미만 (%)
+    years: float                  # 상환연기 (년)
+    interest: str | None
+    apply_to: str | None
+    note: str | None
+
+
+class DamageSource(BaseModel):
+    kind: str | None
+    name: str
+    use: str | None
+    link: str | None
+    read: str | None              # 내용_열람확인
+
+
+class DamageSupport(BaseModel):
+    programs: list[DamageProgram]
+    prices: dict[str, list[UnitPrice]]   # 요청한 어종 → 맞는 단가 (없으면 빈 목록)
+    all_prices: list[UnitPrice]
+    relief: list[ReliefRule]
+    split: dict[str, Any]
+    sources: list[DamageSource]
+    missing: list[str]            # DB에도 CSV 파일에도 없는 표 (programs · prices · relief · sources)
+    origin: dict[str, str] = {}   # 표마다 어디서 읽었는지: db · csv
+
+
+def _num(v: Any) -> float | None:
+    try:
+        return float(str(v).replace(",", "").strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def _txt(v: Any) -> str | None:
+    return str(v).strip() if v is not None and str(v).strip() not in ("", "-") else None
+
+
+BOM = "\ufeff"   # 엑셀 UTF-8 CSV 맨 앞 숨은 문자 → 업로드하면 첫 칸 이름에 붙음 ('\ufeff제도ID')
+
+
+def _key(name: str) -> str:
+    return str(name).replace(BOM, "").strip()
+
+
+def find_table(db: Connection, cols: list[str]) -> sql.Composed | None:
+    """칸 이름을 모두 가진 표 (읽을 수 있는 것만). public 을 먼저 고른다. 칸 이름의 BOM·앞뒤 공백은 무시"""
+    r = db.execute("""
+        SELECT c.table_schema, c.table_name
+        FROM information_schema.columns c
+        WHERE btrim(replace(c.column_name, %(bom)s, '')) = ANY(%(c)s)
+          AND c.table_schema NOT IN ('pg_catalog', 'information_schema')
+        GROUP BY 1, 2
+        HAVING count(DISTINCT btrim(replace(c.column_name, %(bom)s, ''))) = %(n)s
+           AND has_table_privilege(format('%%I.%%I', c.table_schema, c.table_name), 'SELECT')
+        ORDER BY (c.table_schema = 'public') DESC, 2
+        LIMIT 1
+    """, {"c": cols, "n": len(cols), "bom": BOM}).fetchone()
+    return sql.SQL("{}.{}").format(sql.Identifier(r["table_schema"]), sql.Identifier(r["table_name"])) if r else None
+
+
+DAMAGE_DIR = Path(__file__).resolve().parent / "data" / "damage"   # programs.csv · prices.csv · relief.csv · sources.csv
+
+
+def _csv_rows(key: str) -> list[dict] | None:
+    path = DAMAGE_DIR / f"{key}.csv"
+    if not path.is_file():
+        return None
+    with path.open(encoding="utf-8-sig", newline="") as f:
+        rows = [{_key(k): (v if v != "" else None) for k, v in row.items() if k is not None} for row in csv.DictReader(f)]
+    return rows if rows and all(c in rows[0] for c in DAMAGE_TABLES[key]) else None
+
+
+def _table_rows(db: Connection, key: str, missing: list[str], origin: dict[str, str]) -> list[dict]:
+    t = find_table(db, DAMAGE_TABLES[key])
+    if t is not None:
+        origin[key] = "db"
+        return [{_key(k): v for k, v in r["row"].items()}
+                for r in db.execute(sql.SQL("SELECT to_jsonb(t) AS row FROM {} t").format(t)).fetchall()]
+    rows = _csv_rows(key)
+    if rows is None:
+        missing.append(key)
+        return []
+    origin[key] = "csv"
+    return [r for r in rows if any(v for v in r.values())]
+
+
+def _item_words(item: str) -> set[str]:
+    """'조피볼락(우럭)' → {'조피볼락', '우럭'}"""
+    return {ALIAS.get(w, w) for w in species_terms(item)} | set(species_terms(item))
+
+
+def damage_support(db: Connection, species: list[str] | None = None) -> dict:
+    missing: list[str] = []
+    origin: dict[str, str] = {}
+    programs = []
+    for r in _table_rows(db, "programs", missing, origin):
+        programs.append({
+            "id": str(r.get("제도ID") or ""), "kind": _txt(r.get("구분")), "name": _txt(r.get("제도명")) or "(이름 없음)",
+            "agency": _txt(r.get("운영기관")), "target": _txt(r.get("대상")), "content": _txt(r.get("지원내용")),
+            "required": _txt(r.get("필수조건")), "apply_to": _txt(r.get("신청처")), "when": _txt(r.get("앱표시시점")),
+            "status_2026": _txt(r.get("2026년_현황")),
+            "to_check": [x.strip() for x in str(r.get("확인필요_항목") or "").split(";") if x.strip()],
+            "link": _txt(r.get("공식링크")), "basis": _txt(r.get("근거_법령고시")), "checked": _txt(r.get("확인일")),
+        })
+    order = {"지원금": 0, "대출": 1, "보증": 2}
+    programs.sort(key=lambda x: (order.get(x["kind"] or "", 9), x["id"]))
+    prices = [{"item": str(r.get("품목") or "").strip(), "size": _txt(r.get("규격")), "price": _num(r.get("단가_원")),
+               "unit": _txt(r.get("단위")), "raise_pct": _txt(r.get("전년대비_인상률_퍼센트")),
+               "since": _txt(r.get("시행일")), "note": _txt(r.get("비고"))}
+              for r in _table_rows(db, "prices", missing, origin)]
+    relief = sorted(({"min_rate": _num(r.get("피해율_이상")) or 0, "max_rate": _num(r.get("피해율_미만")) or 0,
+                      "years": _num(r.get("상환연기_년")) or 0, "interest": _txt(r.get("이자감면")),
+                      "apply_to": _txt(r.get("신청처")), "note": _txt(r.get("비고"))}
+                     for r in _table_rows(db, "relief", missing, origin)), key=lambda x: x["min_rate"])
+    sources = [{"kind": _txt(r.get("분류")), "name": _txt(r.get("기관_자료명")) or "", "use": _txt(r.get("용도")),
+                "link": _txt(r.get("링크")), "read": _txt(r.get("내용_열람확인"))}
+               for r in _table_rows(db, "sources", missing, origin)]
+    by_species = {}
+    for sp in species or []:
+        words = set(species_words(sp)) - {"어류", "가두리"}
+        by_species[sp] = [p for p in prices if p["price"] is not None and words & _item_words(p["item"])]
+    return {"programs": programs, "prices": by_species, "all_prices": prices, "relief": relief,
+            "split": RECOVERY_SPLIT, "sources": sources, "missing": missing, "origin": origin}
+
+
+# ---------------------------------------------------------------------------
 # API
 # ---------------------------------------------------------------------------
 Region = Annotated[str | None, Query(max_length=30, description="통영 · 통영시 · 창원시(진해구) …")]
@@ -345,6 +519,11 @@ def insurance_subsidy_api(db: DB, species: Annotated[str, Query(min_length=1, ma
     return insurance_subsidy(db, species, region, method)
 
 
+@router.get("/damage", response_model=DamageSupport)
+def damage(db: DB, species: Annotated[list[str] | None, Query(max_length=50, description="조피볼락 · 넙치 … (여러 번 가능)")] = None):
+    return damage_support(db, species[:10] if species else None)
+
+
 # ---------------------------------------------------------------------------
 # 실행
 # ---------------------------------------------------------------------------
@@ -366,6 +545,7 @@ def main():
     d = sub.add_parser("detail", help="지원사업 한 건"); d.add_argument("service_id")
     b = sub.add_parser("subsidy", help="보험료 지원(국가+지자체)")
     b.add_argument("--species", required=True); b.add_argument("--region"); b.add_argument("--method", choices=["가두리", "육상"])
+    g = sub.add_parser("damage", help="고수온 피해 시 지원 (재난지원금·상환연기)"); g.add_argument("--species", action="append")
     a = ap.parse_args()
     try:
         with connect() as conn:
@@ -374,6 +554,8 @@ def main():
                 out = search_services(conn, a.region, a.species, a.keyword, a.disaster_only, a.limit)
             elif a.cmd == "detail":
                 out = service_detail(conn, a.service_id)
+            elif a.cmd == "damage":
+                out = damage_support(conn, a.species)
             else:
                 out = insurance_subsidy(conn, a.species, a.region, a.method)
     except psycopg.Error as exc:

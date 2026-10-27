@@ -1257,7 +1257,7 @@ async function loadGov(ctx){
     return;
   }
   const P = g.species.map(sp => [sp, (g.dmg.prices[sp] || [])[0]]).find(([, x]) => x);
-  sum.textContent = `피해 지원 제도 ${g.dmg.programs.length}개${P ? ` · ${P[0]} 복구 단가 ${money(P[1].price)}원/${P[1].unit || ''}` : ''}`;
+  sum.textContent = `정부24 지원사업 ${g.services.length}건 · 피해 지원 제도 ${g.dmg.programs.length}개${P ? ` · ${P[0]} 복구 단가 ${money(P[1].price)}원/${P[1].unit || ''}` : ''}`;
   box.innerHTML = govBody(g);
   govCalc();
 }
@@ -1375,9 +1375,14 @@ function govBody(g){
   }).join('');
   const progs = D.programs, top = progs.filter(x => x.kind === '지원금'), rest = progs.filter(x => x.kind !== '지원금');
   const srcs = (D.sources || []).filter(x => safeUrl(x.link));
+  const sv = g.services, svTop = sv.slice(0, 3), svMore = sv.slice(3);
   return `${govAiBox(g)}
-    ${D.missing.length ? `<p class="note need" style="display:block;margin-bottom:8px">DB에서 찾지 못한 표: ${D.missing.map(esc).join(', ')}</p>` : ''}
-    <div class="gov-sub"><h4>고수온 피해가 나면 · 재해복구비(재난지원금) 계산</h4>
+    <h4>${esc(g.region || '')} 어가가 받을 수 있는 정부24 지원사업 ${sv.length}건 (가까운 순)</h4>
+    ${sv.length ? `<div class="gov-list">${svTop.map(govCard).join('')}</div>
+      ${svMore.length ? `<details class="est"><summary>정부24 지원사업 ${svMore.length}건 더 보기</summary><div class="gov-list" style="margin-top:8px">${svMore.map(govCard).join('')}</div></details>` : ''}`
+      : '<p class="note">이 지역·어종에 맞는 정부24 지원사업을 DB에서 찾지 못했어요.</p>'}
+    ${D.missing.length ? `<p class="note need" style="display:block;margin:12px 0 8px">피해 지원 자료를 찾지 못한 항목: ${D.missing.map(esc).join(', ')}</p>` : ''}
+    <div class="gov-sub" style="margin-top:14px"><h4>고수온 피해가 나면 · 재해복구비(재난지원금) 계산</h4>
       ${spRows || '<p class="note">어종 정보가 없어요.</p>'}
       <div class="gov-calc"><label>피해율 (시·군 조사) <input id="gov-rate" type="number" min="0" max="100" inputmode="numeric" placeholder="입력"> %</label></div>
       <dl class="facts gov-out" id="gov-res"></dl>
@@ -1386,7 +1391,6 @@ function govBody(g){
     <h4>피해 지원 제도 ${progs.length}개</h4>
     <div class="gov-list">${top.map(govProgram).join('')}</div>
     ${rest.length ? `<details class="est"><summary>대출·보증 등 ${rest.length}개 더 보기</summary><div class="gov-list" style="margin-top:8px">${rest.map(govProgram).join('')}</div></details>` : ''}
-    ${g.services.length ? `<details class="est"><summary>정부24 지원사업 ${g.services.length}건 (${esc(g.region || '')} · 참고)</summary><div class="gov-list" style="margin-top:8px">${g.services.map(govCard).join('')}</div></details>` : ''}
     ${srcs.length ? `<details class="est"><summary>자료 출처 ${srcs.length}개</summary><ul class="links" style="margin:6px 0 0 16px">${srcs.map(x => `<li><a class="linkish" href="${esc(safeUrl(x.link))}" target="_blank" rel="noopener noreferrer">${esc(x.name)}</a> <span class="note">${esc(x.use || '')}</span></li>`).join('')}</ul></details>` : ''}`;
 }
 
