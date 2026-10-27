@@ -28,14 +28,6 @@ AI(언어 모델)와 팀원이 코드를 고치기 전에 담당자를 확인하
 | `common.css`, `common.js` | **공동** · 관리 sooui9 | 모든 화면의 하단 바. 관리자를 거쳐 수정 | |
 | `start_bg.jpg`, `start_screen.py` | sooui9 | | |
 
-## Streamlit 버전
-
-| 파일 | 담당 | 확인 |
-|---|---|---|
-| `app.py`, `style.css` | **공동** (LSH · Dicaffeinonemore) | |
-| `client.py`, `requirements.txt` | Dicaffeinonemore | |
-| `locations.py` | LSH | |
-
 ## 백엔드 (`backend/`)
 
 | 파일 | 담당 | 확인 |
