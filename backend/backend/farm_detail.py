@@ -130,7 +130,7 @@ HEAT_SCENARIO_RATES = tuple(float(x) for x in os.getenv("HEAT_SCENARIO_RATES", "
 OFFICIAL_ALERTS: dict[str, dict] = json.loads(os.getenv("OFFICIAL_ALERTS", "{}") or "{}")
 
 # 상담 기록: consult_cases.season (어가 × 시즌 1건)
-CONSULT_SEASON = os.getenv("CONSULT_SEASON", "")            # 비우면 'YYYY 고수온'
+CONSULT_SEASON = os.getenv("CONSULT_SEASON", "")            # 비우면 'YYYY-고수온'
 
 ACTIVE_CONTRACT = "유효"
 PENDING_CONTRACT = "청약"
@@ -142,7 +142,7 @@ def today_kst() -> date:
 
 
 def consult_season(d: date) -> str:
-    return CONSULT_SEASON or f"{d.year} 고수온"
+    return CONSULT_SEASON or f"{d.year}-고수온"   # consult.py SEASON("2026-고수온")과 같은 형식이어야 같은 consult_cases 행을 씀
 
 
 # ---------------------------------------------------------------------------

@@ -6,7 +6,7 @@ No staff authentication exists yet: run only on a trusted local network.
 from datetime import datetime
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from psycopg import Connection
 from pydantic import BaseModel, Field, model_validator
 
@@ -86,7 +86,7 @@ def list_customers(db: Connection, season: str) -> list[dict]:
 
 def list_history(db: Connection, household_id: int | None = None) -> list[dict]:
     rows = db.execute(f"""
-        SELECT l.household_id, h.owner_name AS name, {REGION_SHORT} AS region,
+        SELECT l.log_id, l.household_id, h.owner_name AS name, {REGION_SHORT} AS region, l.channel, l.staff_name,
                (l.contacted_at AT TIME ZONE 'Asia/Seoul')::date AS date, l.result_status, l.memo,
                ARRAY(SELECT s.standard_name FROM customer_service.household_species m
                      JOIN customer_service.fish_species s ON s.species_id = m.species_id
@@ -97,8 +97,9 @@ def list_history(db: Connection, household_id: int | None = None) -> list[dict]:
         WHERE %(hid)s::integer IS NULL OR l.household_id = %(hid)s
         ORDER BY l.contacted_at DESC, l.log_id DESC
     """, {"hid": household_id}).fetchall()
-    return [{"code": str(r["household_id"]), "name": r["name"], "region": r["region"], "species": r["species"],
-             "date": r["date"], "result": r["result_status"], "memo": r["memo"] or "–"} for r in rows]
+    return [{"log_id": r["log_id"], "code": str(r["household_id"]), "name": r["name"], "region": r["region"],
+             "species": r["species"], "date": r["date"], "result": r["result_status"], "memo": r["memo"] or "–",
+             "channel": r["channel"], "staff_name": r["staff_name"]} for r in rows]
 
 
 def save_consultation(db: Connection, household_id: int, season: str, status: str, channel: str,
@@ -141,6 +142,39 @@ def save_consultation(db: Connection, household_id: int, season: str, status: st
             VALUES (%s, %s, %s, %s)
         """, (log_id, item["mapping_id"], item["result"], item.get("insurance_id")))
     return log_id
+
+
+def delete_consultation(db: Connection, log_id: int) -> dict:
+    """Delete one log and its per-species results, then re-derive the case from the logs that remain.
+
+    consult_cases holds the latest state of a household for a season, so after a deletion it must
+    match the newest remaining log; with no logs left the case row is removed (the household reads
+    as '미연락' again). Runs in the caller's transaction.
+    """
+    log = db.execute("""
+        SELECT log_id, case_id, household_id FROM customer_service.consult_logs WHERE log_id = %s
+    """, (log_id,)).fetchone()
+    if log is None:
+        raise LookupError("이미 지워졌거나 없는 상담 기록입니다.")
+    # Lock the case so a concurrent save or delete for the same household cannot interleave.
+    db.execute("SELECT 1 FROM customer_service.consult_cases WHERE case_id = %s FOR UPDATE", (log["case_id"],))
+    db.execute("DELETE FROM customer_service.consult_log_items WHERE log_id = %s", (log_id,))
+    db.execute("DELETE FROM customer_service.consult_logs WHERE log_id = %s", (log_id,))
+    latest = db.execute("""
+        SELECT result_status, next_contact_at, contacted_at FROM customer_service.consult_logs
+        WHERE case_id = %s ORDER BY contacted_at DESC, log_id DESC LIMIT 1
+    """, (log["case_id"],)).fetchone()
+    if latest is None:
+        db.execute("DELETE FROM customer_service.consult_cases WHERE case_id = %s", (log["case_id"],))
+        status = "미연락"
+    else:
+        db.execute("""
+            UPDATE customer_service.consult_cases
+               SET status = %s, next_contact_at = %s, last_contact_at = %s, updated_at = now()
+             WHERE case_id = %s
+        """, (latest["result_status"], latest["next_contact_at"], latest["contacted_at"], log["case_id"]))
+        status = latest["result_status"]
+    return {"log_id": log_id, "household_id": log["household_id"], "status": status}
 
 
 class ConsultItem(BaseModel):
@@ -190,3 +224,12 @@ def create_log(data: ConsultInput, db: WriteDB):
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from None
     return {"log_id": log_id}
+
+
+@router.delete("/logs/{log_id}")
+def remove_log(log_id: Annotated[int, Path(gt=0)], db: WriteDB):
+    """Delete one consultation record (the screen asks the user to confirm first)."""
+    try:
+        return delete_consultation(db, log_id)
+    except LookupError as exc:
+        raise HTTPException(404, str(exc)) from None
