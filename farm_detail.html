@@ -174,6 +174,15 @@
   .checks li.key span{font-weight:700}
   .checks input:checked+span{color:var(--muted);text-decoration:line-through}
   .script{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;white-space:pre-line}
+  /* 예시 멘트: 상담자가 고쳐 쓸 수 있어요 */
+  .script[contenteditable]{cursor:text;background:#fff;border-color:var(--line-strong);min-height:64px;transition:border-color .15s,box-shadow .15s}
+  .script[contenteditable]:hover{border-color:#9fb6e8}
+  .script[contenteditable]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .script-h{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:12px;color:var(--muted)}
+  .script-h b{font-size:13px;color:var(--sub)}
+  .script-h .edited{font-size:11px;font-weight:700;border-radius:4px;padding:0 6px;background:var(--accent-soft);color:var(--accent)}
+  .script-tools{display:flex;justify-content:flex-end;gap:12px;margin-top:6px}
+  .script-tools .linkish[disabled]{color:var(--muted);cursor:default}
   .tpl-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
   textarea{width:100%;border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;font-size:14px;resize:vertical;min-height:84px}
   .sms-meta{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);margin-top:4px}
@@ -581,6 +590,7 @@ const ENDPOINTS = {
   regions: '/api/dashboard/regions',
   farms:   '/api/consult/customers',
   logs:    '/api/consult/logs',
+  noti:    '/api/dashboard/notifications',  // 알림 (가입 신청 · 문자 회신 · 특보) · 상담 홈과 같은 출처
 };
 let mode = 'sample';   // 'db' = 서버 데이터 · 'sample' = 가상 데이터
 
@@ -1191,7 +1201,7 @@ function renderMockBrief(){
     ${acc('check', '상담 시 확인 사항', `확인할 것 ${points.length}개`, `
       <p class="guide">${esc(checkGuide(L0))}</p>
       <ul class="checks">${checks}</ul>
-      <div class="script">${exampleScript(L0)}</div>`)}
+      ${scriptBox('m:' + f.id, exampleScript(L0))}`)}
 
     <div class="actions">
       <button type="button" class="btn pri" data-act="call">📞 전화 연결</button>
@@ -1394,6 +1404,26 @@ function updateCalc(f){
   });
   showBurden(any ? total : null);
 }
+/* ===== 예시 멘트 편집 =====
+   어가마다 상담자가 고친 멘트를 이 화면에 기억해요(새로고침하면 처음 멘트로).
+   [예상 부담] 자리(#s-burden)를 지우지 않으면 견적을 넣을 때 금액이 자동으로 바뀌어요. */
+const scriptOrig = {}, scriptEdits = {};
+function scriptBox(key, html){
+  scriptOrig[key] = html;
+  const edited = Object.hasOwn(scriptEdits, key);
+  return `<div class="script-h"><b>예시 멘트</b><span>눌러서 고쳐 쓸 수 있어요</span><span class="edited" data-script-flag ${edited ? '' : 'hidden'}>수정함</span></div>
+    <div class="script" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" aria-label="예시 멘트 (고쳐 쓸 수 있어요)" data-script-key="${esc(key)}">${edited ? scriptEdits[key] : html}</div>
+    <div class="script-tools">
+      <button type="button" class="linkish" data-script-reset ${edited ? '' : 'disabled'}>↺ 원래 멘트로</button>
+      <button type="button" class="linkish" data-script-copy>복사</button>
+    </div>`;
+}
+function scriptFlag(key){
+  const on = Object.hasOwn(scriptEdits, key);
+  const flag = document.querySelector('#brief-side [data-script-flag]'), btn = document.querySelector('#brief-side [data-script-reset]');
+  if(flag) flag.hidden = !on;
+  if(btn) btn.disabled = !on;
+}
 function showBurden(total){
   const t = document.getElementById('c-total-mine');
   if(t) t.textContent = total != null ? money(total) + '만 원' : '–';
@@ -1515,7 +1545,7 @@ async function renderApiDetail(force){
     ${acc('check', '상담 시 확인 사항', `확인할 것 ${D.checks.length}개`, `
       <p class="guide">${esc(D.guide)}</p>
       <ul class="checks">${D.checks.map((p,i) => `<li class="${p.key ? 'key' : ''}"><label><input type="checkbox" id="chk-h${H.household_id}-${i}"><span>${esc(p.t)}${p.need ? '<span class="need">근거 확인 필요</span>' : ''}</span></label></li>`).join('')}</ul>
-      <div class="script">${esc(D.script).replace('{burden}', '<b id="s-burden">[예상 부담]</b>')}</div>`)}
+      ${scriptBox('h:' + H.household_id, esc(D.script).replace('{burden}', '<b id="s-burden">[예상 부담]</b>'))}`)}
 
     <div class="actions">
       <button type="button" class="btn pri" data-act="call">📞 전화 연결${H.phone_masked ? ' · ' + esc(H.phone_masked) : ''}</button>
@@ -1882,15 +1912,21 @@ document.getElementById('bulk-sms').addEventListener('click', () => {
   toast(`${sent}곳에 문자 발송 기록 · 실제 발송 안 함` + (skip ? ` · 수신 미동의 ${skip}곳은 빼고 전화 목록에 남겼어요` : ''));
   renderKpis(); renderRows(); renderBrief();
 });
-/* ===== 알림 (가상) : 가입 완료 · 가입 신청 · 문자 회신 · 특보 ===== */
-const NOTI0 = [
+/* ===== 알림 : 상담 홈(consult_home.html)과 같은 출처 =====
+   서버 연결 시 ENDPOINTS.noti, 가상 데이터일 때만 아래 예시. ty: apply·reply·alert·join, farm: 어가 id 또는 null, region: 특보 지역 */
+const SAMPLE_NOTI = [
   {id:1, ty:'apply', lbl:'가입 신청', farm:'A-060', at:'10/22 05:52', text:'배○○ · 문자 링크로 고수온 특약 가입 상담 신청', read:false},
   {id:2, ty:'reply', lbl:'문자 회신', farm:'B-007', at:'10/22 05:31', text:'이○○ · 판매 마감 문자에 "전화 주세요" 회신', read:false},
   {id:3, ty:'apply', lbl:'상담 요청', farm:'E-008', at:'10/21 18:20', text:'서○○ · 오만둥이 보험 문의, 전화 요청', read:false},
   {id:4, ty:'alert', lbl:'특보', farm:null, region:'고성', at:'10/21 10:00', text:'고성 고수온 예비특보 발령 (수과원 발표)', read:true},
   {id:5, ty:'join', lbl:'가입 완료', farm:'F-002', at:'08/14 15:10', text:'오○○ · 해상가두리어류 재해보험 + 고수온 특약 가입', read:true},
 ];
-let noti = structuredClone(NOTI0), notiSeq = 100;
+let noti = [], notiSeq = 100;
+async function loadNoti(){
+  try{ noti = mode === 'db' ? await getJSON(ENDPOINTS.noti) : structuredClone(SAMPLE_NOTI); }
+  catch(e){ noti = []; addNotice(`⚠️ 알림을 불러오지 못했어요. (${e.message})`); }
+  renderBell();
+}
 function pushNoti(n){ noti.unshift({id:notiSeq++, read:false, at:'10/22 ' + new Date().toTimeString().slice(0,5), ...n}); renderBell(); }
 function renderBell(){
   const un = noti.filter(n => !n.read).length, b = document.getElementById('bell-n');
@@ -1909,8 +1945,17 @@ document.getElementById('bell-list').addEventListener('click', e => {
   const b = e.target.closest('[data-noti]'); if(!b) return;
   const n = noti.find(x => x.id === +b.dataset.noti); n.read = true; renderBell();
   bellPanel.hidden = true;
-  if(n.farm){ openDetail(n.farm); }
-  else if(n.region){ showPage('home'); homeRegion = filter.region = n.region; renderHomeTemp(); renderFilters(); renderRows(); }
+  if(n.farm){   // 상담 홈과 같이 그 어가 상세를 열어요 (DB 어가면 DB 브리핑, 아니면 가상 예시)
+    const hid = Number(n.farm), h = apiList.find(x => x.household_id === hid);
+    if(h){
+      apiSel = hid; detailMode = 'api';
+      if(h.region !== homeRegion && hasOffice(h.region)) setOffice(h.region);
+      try{ history.replaceState(null, '', '?id=' + hid + '#detail'); }catch(e){}
+      showPage('detail');
+    }else if(farms.some(f => f.id === n.farm)) openDetail(n.farm);
+    else location.href = 'farm_detail.html?id=' + encodeURIComponent(n.farm);
+  }
+  else if(n.region && regionInfo[n.region]){ setOffice(n.region); }   // 상담 홈과 같이 담당 지역을 특보 지역으로
 });
 renderBell();
 rowsEl.addEventListener('keydown', e => {
@@ -1927,7 +1972,26 @@ document.getElementById('hh-pick').addEventListener('change', e => {
   if(!e.target.value) return;
   detailMode = 'api'; apiSel = +e.target.value; renderBrief();
 });
+// 멘트에 붙여넣을 때는 글자만 (다른 곳의 서식·링크가 섞이지 않게)
+detailEl.addEventListener('paste', e => {
+  if(!e.target.closest || !e.target.closest('[data-script-key]')) return;
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+  const sel = window.getSelection(); if(!sel.rangeCount) return;
+  const range = sel.getRangeAt(0); range.deleteContents();
+  const node = document.createTextNode(text); range.insertNode(node);
+  range.setStartAfter(node); range.collapse(true); sel.removeAllRanges(); sel.addRange(range);
+  e.target.closest('[data-script-key]').dispatchEvent(new Event('input', {bubbles:true}));
+});
 detailEl.addEventListener('input', e => {
+  const sc = e.target.closest && e.target.closest('[data-script-key]');
+  if(sc){
+    const k = sc.dataset.scriptKey;
+    // [예상 부담] 자리에 금액이 채워진 것은 수정으로 보지 않아요
+    const norm = h => h.replace(/(<b id="s-burden">)[\s\S]*?(<\/b>)/, '$1[예상 부담]$2');
+    if(norm(sc.innerHTML) === norm(scriptOrig[k])) delete scriptEdits[k]; else scriptEdits[k] = sc.innerHTML;
+    scriptFlag(k); return;
+  }
   if(e.target.matches('[data-gdead], [data-gsize], #gov-rate')) return govCalc();
   if(e.target.matches('[data-aquote]')) return updateApiCalc();
   const f = farms.find(x => x.id === selected); if(!f) return;
@@ -1940,6 +2004,20 @@ detailEl.addEventListener('toggle', e => {
 detailEl.addEventListener('click', async e => {
   const g = e.target.closest('[data-goto-fc]');
   if(g){ fcRegion = g.dataset.gotoFc; fcPick = 0; showPage('forecast'); return; }
+  if(e.target.closest('[data-script-reset]')){
+    const sc = document.querySelector('#brief-side [data-script-key]'); if(!sc) return;
+    const k = sc.dataset.scriptKey;
+    delete scriptEdits[k]; sc.innerHTML = scriptOrig[k]; scriptFlag(k);
+    if(detailMode === 'api') updateApiCalc(); else { const f0 = farms.find(x => x.id === selected); if(f0) updateCalc(f0); }   // [예상 부담] 다시 채우기
+    toast('원래 멘트로 되돌렸어요'); return;
+  }
+  if(e.target.closest('[data-script-copy]')){
+    const sc = document.querySelector('#brief-side [data-script-key]'); if(!sc) return;
+    const text = sc.innerText.trim();
+    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject())
+      .then(() => toast('멘트를 복사했어요'), () => toast('복사하지 못했어요 · 멘트를 직접 선택해 복사해 주세요'));
+    return;
+  }
   const a = e.target.closest('[data-act]'); if(!a) return;
   // DB 어가: 결과 기록 → POST /api/households/{id}/consult-logs (consult_cases · consult_logs · consult_log_items)
   if(a.dataset.act === 'api-save'){
@@ -2025,6 +2103,7 @@ consultEl.addEventListener('keydown', e => {
   if(!selected && sorted().length) selected = sorted()[0].id;
   renderHome();
   initApi();
+  loadNoti();
   const startPage = ['home','detail','forecast','consult'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'detail';   // 다른 화면의 '어가 상세' 메뉴로 들어오므로 기본은 어가 상세
   showPage(startPage);
 })();
