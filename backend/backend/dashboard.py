@@ -46,7 +46,8 @@ def fetch(db, region: str, schema: str = "public") -> tuple[list[dict], list[dic
 @api_router.get("/dashboard/chart/{kind}.svg", tags=["대시보드"],
                 response_class=Response, responses={200: {"content": {"image/svg+xml": {}}}})
 def chart_svg(kind: Literal["yearly", "monthly"], db: DB,
-              region: Annotated[str, Query(min_length=1, max_length=40)] = "전체"):
+              region: Annotated[str, Query(min_length=1, max_length=40)] = "전체",
+              compact: bool = False):
     try:
         yearly, monthly = fetch(db, region)
     except NotReady as exc:
@@ -57,7 +58,8 @@ def chart_svg(kind: Literal["yearly", "monthly"], db: DB,
     # Matplotlib figures and font settings are shared across request threads.
     with _CHART_LOCK:
         try:
-            fig = yearly_figure(rows) if kind == "yearly" else monthly_figure(rows)
+            # compact: 상담 홈 상단 카드용. 제목·범례·각주는 화면(HTML)이 그려서 그림에서는 빼요.
+            fig = yearly_figure(rows, compact) if kind == "yearly" else monthly_figure(rows, compact)
             content = render(fig, "svg")
         except RuntimeError as exc:
             raise HTTPException(503, "그래프 생성 환경을 확인해 주세요.") from exc
@@ -171,6 +173,8 @@ def regions(db: DB):
 METRICS = ("신청", "주의")
 
 COLOR = {"신청": "#1f5ae0", "주의": "#a8500a"}
+# 상담 홈 상단 카드(consult_home.html .ht-legend)와 같은 색
+COMPACT_COLOR = {"신청": "#0f7c8c", "주의": "#c2620a"}
 TEXT, SUB, MUTED = "#161a22", "#4b5363", "#6b7385"
 GRID, BAND, AXIS = "#e8ecf1", "#f4f6f9", "#cdd3dd"
 FONTS = ("Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", "AppleGothic", "NanumGothic", "Noto Sans CJK KR")
@@ -207,10 +211,12 @@ def _style(ax, *, hide_y: bool = False):
     ax.set_axisbelow(True)
 
 
-def _heads(ax, x_split: float, past_txt: str, fc_txt: str):
+def _heads(ax, x_split: float, past_txt: str, fc_txt: str, compact: bool = False):
     left, right = ax.get_xlim()
     ax.axvspan(x_split, right, color=BAND, zorder=0, linewidth=0)
     ax.set_xlim(left, right)
+    if compact:
+        return
     kw = dict(xycoords=("data", "axes fraction"), xytext=(0, 6), textcoords="offset points",
               ha="center", va="bottom", fontsize=11, fontweight="bold", annotation_clip=False)
     ax.annotate(past_txt, ((left + x_split) / 2, 1), color=COLOR["신청"], **kw)
@@ -231,14 +237,15 @@ def _legend(fig, items):
                frameon=False, handlelength=1.8, columnspacing=1.6, fontsize=12)
 
 
-def yearly_figure(rows: list[dict]):
+def yearly_figure(rows: list[dict], compact: bool = False):
     Figure = _mpl()
+    C = COMPACT_COLOR if compact else COLOR
     rows = [r for r in rows if r.get("metric") in METRICS]
     years = sorted({int(r["year"]) for r in rows})
     fc_year = max((int(r["year"]) for r in rows if r["kind"] == "예측"), default=None)
     by = {(r["metric"], int(r["year"])): r for r in rows}
 
-    fig = Figure(figsize=(10, 5), dpi=100)
+    fig = Figure(figsize=(8, 2.8) if compact else (10, 5), dpi=100)
     ax = fig.subplots()
     w, top_all = 0.36, 0.0
     for k, mt in enumerate(METRICS):
@@ -248,15 +255,15 @@ def yearly_figure(rows: list[dict]):
                 continue
             v, is_fc = float(r["value"]), r["kind"] == "예측"
             pos = i + (k - 0.5) * w
-            ax.bar(pos, v, w * 0.9, color="white" if is_fc else COLOR[mt], edgecolor=COLOR[mt],
+            ax.bar(pos, v, w * 0.9, color="white" if is_fc else C[mt], edgecolor=C[mt],
                    linewidth=1.6, linestyle=(0, (4, 3)) if is_fc else "-", zorder=2)
             top = v
             lo, hi = r.get("low"), r.get("high")
             if is_fc and lo is not None and hi is not None and float(hi) > float(lo):
-                ax.errorbar(pos, v, yerr=[[v - float(lo)], [float(hi) - v]], color=COLOR[mt], capsize=5, linewidth=1.3, zorder=3)
+                ax.errorbar(pos, v, yerr=[[v - float(lo)], [float(hi) - v]], color=C[mt], capsize=5, linewidth=1.3, zorder=3)
                 top = float(hi)
             ax.annotate(f"{round(v):,}", (pos, top), xytext=(0, 3), textcoords="offset points",
-                        ha="center", va="bottom", color=COLOR[mt], fontsize=11, fontweight="bold", zorder=4)
+                        ha="center", va="bottom", color=C[mt], fontsize=11, fontweight="bold", zorder=4)
             top_all = max(top_all, top)
 
     ax.set_xticks(range(len(years)), [f"{y}\n(예측)" if y == fc_year else str(y) for y in years])
@@ -264,7 +271,11 @@ def yearly_figure(rows: list[dict]):
     ax.set_ylim(0, (top_all or 1) * 1.15)
     _style(ax, hide_y=True)
     if fc_year is not None:
-        _heads(ax, years.index(fc_year) - 0.5, f"{years[0]}~{fc_year - 1} · 실적(가데이터)", "1년 후 · 예측 참고만")
+        _heads(ax, years.index(fc_year) - 0.5, f"{years[0]}~{fc_year - 1} · 실적(가데이터)", "1년 후 · 예측 참고만", compact)
+
+    if compact:
+        fig.tight_layout(pad=0.4)
+        return fig
 
     growth = []
     for mt in METRICS:
@@ -280,27 +291,28 @@ def yearly_figure(rows: list[dict]):
     return fig
 
 
-def monthly_figure(rows: list[dict]):
+def monthly_figure(rows: list[dict], compact: bool = False):
     Figure = _mpl()
+    C = COMPACT_COLOR if compact else COLOR
     rows = [r for r in rows if r.get("metric") in METRICS]
     labels = sorted({r["month"][:7] for r in rows})
     idx = {m: i for i, m in enumerate(labels)}
 
-    fig = Figure(figsize=(11, 5), dpi=100)
+    fig = Figure(figsize=(8, 2.8) if compact else (11, 5), dpi=100)
     ax = fig.subplots()
     for mt in METRICS:
         r = sorted((x for x in rows if x["metric"] == mt), key=lambda x: x["month"])
         past = [x for x in r if x["kind"] != "예측"]
         fc = [x for x in r if x["kind"] == "예측"]
         ax.plot([idx[x["month"][:7]] for x in past], [float(x["value"]) for x in past],
-                color=COLOR[mt], linewidth=2.4, solid_joinstyle="round", solid_capstyle="round", zorder=3)
+                color=C[mt], linewidth=2.4, solid_joinstyle="round", solid_capstyle="round", zorder=3)
         if fc:
             head = past[-1:]
             ax.plot([idx[x["month"][:7]] for x in head + fc], [float(x["value"]) for x in head + fc],
-                    color=COLOR[mt], linewidth=2.4, linestyle=(0, (4, 3)), zorder=3)
+                    color=C[mt], linewidth=2.4, linestyle=(0, (4, 3)), zorder=3)
             if all(x.get("low") is not None and x.get("high") is not None for x in fc):
                 ax.fill_between([idx[x["month"][:7]] for x in fc], [float(x["low"]) for x in fc],
-                                [float(x["high"]) for x in fc], color=COLOR[mt], alpha=0.12, linewidth=0, zorder=2)
+                                [float(x["high"]) for x in fc], color=C[mt], alpha=0.12, linewidth=0, zorder=2)
 
     ax.set_xticks(range(len(labels)), [m.replace("-", ".") if m.endswith(("-01", "-07")) else "" for m in labels])
     ax.set_xlim(-0.5, len(labels) - 0.5)
@@ -309,7 +321,10 @@ def monthly_figure(rows: list[dict]):
     _style(ax)
     first_fc = min((idx[x["month"][:7]] for x in rows if x["kind"] == "예측"), default=None)
     if first_fc is not None:
-        _heads(ax, first_fc - 0.5, "실적(가데이터)", "1년 후 · 예측 참고만")
+        _heads(ax, first_fc - 0.5, "실적(가데이터)", "1년 후 · 예측 참고만", compact)
+    if compact:
+        fig.tight_layout(pad=0.4)
+        return fig
     _header(fig, "월별 신청·주의 건수", f"{labels[0].replace('-', '.')} ~ {labels[-1].replace('-', '.')} · 전체 지역 합계" if labels else "")
     _legend(fig, [("신청", COLOR["신청"], "-", 3), ("주의", COLOR["주의"], "-", 3),
                   ("예측 (점선 · 범위)", MUTED, (0, (4, 3)), 2)])
