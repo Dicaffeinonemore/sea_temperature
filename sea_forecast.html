@@ -25,23 +25,8 @@
   :focus-visible{outline:3px solid #93b4f5;outline-offset:2px}
   td,th,.kpi b,.tp{font-variant-numeric:tabular-nums}
 
-  /* 상단 바 */
-  .top{background:var(--panel);border-bottom:1px solid var(--line)}
-  .top-in{max-width:1440px;margin:0 auto;padding:14px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px}
-  .top h1{font-size:19px;font-weight:700;letter-spacing:-.3px}
-  .demo{font-size:12px;font-weight:500;color:var(--warn);background:var(--warn-soft);border:1px solid #f3d3ad;border-radius:999px;padding:2px 10px}
-  .top-meta{margin-left:auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;color:var(--sub);font-size:14px}
-  .top-meta select{border:1px solid var(--line-strong);border-radius:8px;padding:5px 8px;background:#fff}
-  .ghost{border:1px solid var(--line-strong);background:#fff;border-radius:8px;padding:5px 10px;font-size:13px;color:var(--sub)}
 
   /* 사이드바 + 본문 */
-  .shell{max-width:1440px;margin:0 auto;display:grid;grid-template-columns:196px minmax(0,1fr)}
-  .side{position:sticky;top:0;align-self:start;padding:18px 10px;display:flex;flex-direction:column;gap:4px}
-  .nav{display:flex;align-items:center;gap:10px;border:0;background:none;text-align:left;padding:10px 12px;border-radius:8px;font-size:15px;font-weight:500;color:var(--sub);white-space:nowrap}
-  .nav:hover{background:#e9edf3}
-  .nav[aria-current="page"]{background:var(--panel);color:var(--text);font-weight:700;box-shadow:inset 3px 0 0 var(--accent)}
-  .nav .ic{width:20px;text-align:center}
-  .nav .cnt{margin-left:auto;font-size:12px;font-weight:700;color:#fff;background:var(--alert);border-radius:999px;padding:0 7px}
   .wrap{padding:0 20px 40px;min-width:0}
   .page-h{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin:18px 0 12px}
   .page-h h2{font-size:20px}
@@ -114,23 +99,6 @@
   .ctr-q input{width:90px;border:1px solid var(--line-strong);border-radius:6px;padding:3px 8px;text-align:right;background:#fff}
   .ctr-total{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--accent-soft);font-size:14px}
   .ctr-total b{font-size:18px}
-  /* 알림 종 */
-  .bell-wrap{position:relative}
-  .bell{position:relative;width:38px;height:38px;border-radius:50%;border:1px solid var(--line-strong);background:#fff;display:flex;align-items:center;justify-content:center;color:var(--text)}
-  .bell:hover{background:#f3f5f8}
-  .bell svg{width:20px;height:20px}
-  .bell-n{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:999px;background:var(--alert);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px;border:2px solid #fff}
-  .bell-panel{position:absolute;right:0;top:46px;width:360px;max-width:calc(100vw - 32px);background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(20,30,50,.16);z-index:50;overflow:hidden}
-  .bell-h{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);font-weight:700}
-  .bell-list{list-style:none;max-height:420px;overflow-y:auto}
-  .bell-list li{border-bottom:1px solid var(--line)}
-  .bell-list button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:auto 1fr;gap:2px 10px;width:100%;padding:11px 14px;cursor:pointer;font-size:14px}
-  .bell-list button:hover{background:#f8fafd}
-  .bell-list li.unread button{background:#f2f6ff}
-  .bell-list .ty{grid-row:span 2;font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;height:fit-content;margin-top:2px;white-space:nowrap}
-  .ty.join{background:#dcf3e3;color:#17663a}.ty.apply{background:#e3eefb;color:#1d5fb8}
-  .ty.reply{background:#fff4c2;color:#7a5a00}.ty.alert{background:#fde4e2;color:#b42318}
-  .bell-list small{color:var(--muted);font-size:12px}
   .sale-open{color:var(--sub);font-weight:500}
   .sale-soon{color:var(--warn);font-weight:700}
   .sale-later{color:var(--muted)}
@@ -328,44 +296,27 @@
   @media (max-width:1240px){.regions{grid-template-columns:repeat(4,1fr)}}
   @media (max-width:1100px){.main,.fc-grid{grid-template-columns:1fr}}
   @media (max-width:900px){
-    .shell{grid-template-columns:1fr}
-    .side{position:static;flex-direction:row;overflow-x:auto;padding:10px 16px 0}
-    .nav[aria-current="page"]{box-shadow:inset 0 -3px 0 var(--accent)}
     .tables{grid-template-columns:1fr}
   }
   @media (max-width:640px){
-    .wrap{padding:0 16px 32px}.top-in{padding:12px 16px}
+    .wrap{padding:0 16px 32px}
     .kpis{grid-template-columns:repeat(2,1fr)}
     .regions{grid-template-columns:repeat(2,1fr)}
     .col-sale,.col-st{display:none}
     .actions,.record{grid-template-columns:1fr}
   }
   @media (prefers-reduced-motion:reduce){.acc>summary .arw,.region,.toast{transition:none}}
-  a.nav{text-decoration:none}
   a.linkish{display:inline-block}
   .notice{margin:12px 0 0;padding:10px 12px;border-radius:8px;font-size:14px;background:var(--warn-soft);color:#7a3d06;border:1px solid #f3d3ad;white-space:pre-line}
 </style>
+<link rel="stylesheet" href="shell.css">
 </head>
 <body>
 
-<header class="top">
-  <div class="top-in">
-    <h1>고수온 선제 상담 대시보드</h1>
-    <span class="demo" id="data-mode">불러오는 중</span>
-    <div class="top-meta">
-      <label>담당 <select id="office" aria-label="담당 지역"></select></label>
-      <span id="updated"></span>
-    </div>
-  </div>
-</header>
+<script src="shell.js" data-part="header"></script>
 
 <div class="shell">
-  <nav class="side" aria-label="화면 이동">
-    <a class="nav" href="consult_home.html"><span class="ic" aria-hidden="true">☎</span>상담 홈<span class="cnt" id="nav-left" hidden></span></a>
-    <a class="nav" href="farm_detail.html"><span class="ic" aria-hidden="true">☰</span>어가 상세</a>
-    <a class="nav" href="sea_forecast.html" aria-current="page"><span class="ic" aria-hidden="true">〰</span>수온 예측</a>
-    <a class="nav" href="consult_status.html"><span class="ic" aria-hidden="true">☷</span>고객 상담 현황</a>
-  </nav>
+  <script src="shell.js" data-part="nav" data-page="forecast"></script>
 
   <main class="wrap">
     <p class="notice" id="notice" role="alert" hidden></p>
