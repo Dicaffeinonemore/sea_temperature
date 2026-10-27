@@ -190,6 +190,24 @@
   /* 수온 예측 */
   .fc-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(260px,.7fr);gap:16px;align-items:start;margin-bottom:16px}
   .fc-side{display:grid;gap:16px}
+  /* 어종 신호등: 7일 일최고 vs 어종별 한계 수온 */
+  .sig-panel{margin-bottom:16px}
+  @media (max-width:640px){.sig-row{grid-template-columns:1fr;gap:6px}}
+  .sig-rows{display:grid;gap:10px}
+  .sig-row{display:grid;grid-template-columns:200px minmax(0,1fr);gap:12px;align-items:center;padding-top:10px;border-top:1px solid var(--line)}
+  .sig-row:first-child{padding-top:0;border-top:0}
+  .sig-row h4{font-size:14px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .sig-row h4 small{font-size:12px;font-weight:500;color:var(--muted)}
+  .sig-row h4 i,.sig i{display:inline-block;width:12px;height:12px;border-radius:50%;flex:none}
+  .sig-list{list-style:none;display:flex;flex-wrap:wrap;gap:8px}
+  .sig-none{font-size:13px;color:var(--muted)}
+  .sig{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:6px 12px 6px 10px;border-radius:999px;border:1px solid var(--line);font-size:14px}
+  .sig .lim{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+  .sig .dd{font-size:11.5px;font-weight:700}
+  .sig-0{background:var(--alert-soft);border-color:#f5c2bd}.sig-0 i,.l0{background:#d9534a}.sig-0 .lim,.sig-0 .dd{color:var(--alert)}
+  .sig-1{background:#fff1b8;border-color:#f0d873}.sig-1 i,.l1{background:#e0b400}.sig-1 .lim{color:#7a5a00}
+  .sig-2{background:var(--normal-soft);border-color:#c3e2cd}.sig-2 i,.l2{background:#5aa874}.sig-2 .lim{color:#1f5c36}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   .reg-pick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
   .legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:var(--sub);margin:2px 0 8px}
   .legend i{display:inline-block;width:20px;border-top:3px solid var(--accent);vertical-align:middle;margin-right:6px}
@@ -375,12 +393,14 @@
               <li><span>경보</span><b>28℃ 이상 3일 연속</b></li>
             </ul>
             <p class="note" style="margin-top:8px">예보값에 적용한 앱 자체 판정이에요. 수과원 공식 특보 기준과 같은지는 <span class="need">출처 확인 중</span><span class="chg">8</span> 공식 특보는 수과원 발표로 확인하세요.</p>
-            <div class="sec-h" style="margin-top:14px"><h3>어종별 견디는 한계 수온</h3></div>
-            <ul class="mini" id="fc-species"></ul>
-            <p class="note" style="margin-top:8px">국립수산과학원(2024.7.19) 자료. 그 밖의 어종은 자료를 확보하면 추가해요.</p>
           </section>
         </div>
       </div>
+      <section class="panel panel-in sig-panel" aria-labelledby="h-sig">
+        <div class="sec-h"><h3 id="h-sig">어종 신호등</h3><p id="sig-sub"></p></div>
+        <div class="sig-rows" id="fc-signal"></div>
+        <p class="note" style="margin-top:12px">앞으로 7일(ROMS) 일최고 수온이 어종 한계 수온에 도달하면 주의, 한계 1℃ 이내까지 오르면 관심이에요. 예보값에 적용한 앱 판정(참고)이에요.</p>
+      </section>
       <section class="panel panel-in" aria-labelledby="h-fct">
         <div class="sec-h"><h3 id="h-fct">예측 상세 값</h3><p>날짜별 모델값 · 최고 / 평균 / 최저 수온</p></div>
         <div class="tables" id="fc-tables"></div>
@@ -448,8 +468,15 @@ const r1 = v => Math.round(v * 10) / 10;
 const pad = n => String(n).padStart(2, '0');
 const ymd = i => { const d = dayOf(i); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
 const TREND = {up:'↗ 상승', flat:'→ 유지', down:'↘ 하강'};
-// 국립수산과학원(2024.7.19) 품종별 생존 상한. 자료 없는 어종은 지역 기준을 그대로 씀.
-const SPECIES_LIMIT = {'조피볼락':28, '전복':28, '넙치':29, '강도다리':27};
+// 어종 신호등: 어종별 견디는 한계 수온(℃). 앞으로 7일 예보가 이 값에 닿으면 주의, SIGNAL_NEAR 이내면 관심.
+// 출처: 조피볼락·전복·넙치·강도다리 = 국립수산과학원(2024.7.19) / 멍게·가숭어·굴·참돔 = 팀 리서치 자료(.local/pdf-review)
+const SPECIES_SIGNAL = [
+  {name:'조피볼락', limit:28}, {name:'전복', limit:28}, {name:'넙치', limit:29}, {name:'강도다리', limit:27},
+  {name:'멍게', limit:25}, {name:'가숭어', limit:30}, {name:'굴', limit:30}, {name:'참돔', limit:31},
+];
+const SIGNAL_NEAR = 1;   // 한계 수온보다 이만큼(℃) 낮은 값까지 올라오면 '관심'
+const SIGNAL = ['주의', '관심', '정상'];
+const SIGNAL_RULE = ['7일 안 한계 도달', `한계 ${SIGNAL_NEAR}℃ 이내`, '여유 있음'];
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* ===== 수온 예측 데이터 =====
@@ -578,9 +605,20 @@ function renderForecastSide(I){
     <li><span>${STAGE[I.top]} 첫 예상일</span><b>${first}</b></li>
     <li><span>2~3주 흐름</span><b>${TREND[I.trend]}</b></li>
 `;
-  document.getElementById('fc-species').innerHTML = Object.entries(SPECIES_LIMIT).map(([s,v]) => {
-    const reach = I.t.findIndex(t => t >= v);
-    return `<li><span>${s}</span><b>${v}℃ ${reach >= 0 ? `<span class="sp-hit">· ${fcRegion} D-${reach} 도달</span>` : ''}</b></li>`;
+  document.getElementById('sig-sub').textContent = `${fcRegion} · 앞으로 7일 최고 ${I.maxT.toFixed(1)}℃ 기준`;
+  const sig = SPECIES_SIGNAL.map((s, i) => {
+    const lv = I.maxT >= s.limit ? 0 : I.maxT >= s.limit - SIGNAL_NEAR ? 1 : 2;
+    return {...s, i, lv, reach: I.t.findIndex(t => t >= s.limit)};
+  });
+  const chip = s => `<li class="sig sig-${s.lv}" title="${esc(s.name)} · 한계 ${s.limit}℃${s.reach >= 0 ? ` · ${mdw(s.reach)} 도달 예상` : ''}">`
+    + `<i aria-hidden="true"></i><b>${esc(s.name)}</b><span class="lim">${s.limit}℃</span>`
+    + (s.lv === 0 ? `<span class="dd">${s.reach === 0 ? '오늘' : `D-${s.reach}`}</span>` : '')
+    + '</li>';
+  document.getElementById('fc-signal').innerHTML = SIGNAL.map((label, lv) => {
+    const rows = sig.filter(s => s.lv === lv).sort((a, b) => lv === 0 ? a.reach - b.reach || a.i - b.i : a.i - b.i);
+    return `<div class="sig-row"><h4><i class="l${lv}" aria-hidden="true"></i>${label} ${rows.length}<small>${SIGNAL_RULE[lv]}</small></h4>`
+      + (rows.length ? `<ul class="sig-list" aria-label="${label}">${rows.map(chip).join('')}</ul>` : '<p class="sig-none">해당 어종 없음</p>')
+      + '</div>';
   }).join('');
 
   const table = (rows, stage) => `<div class="tbl-wrap"><table><thead><tr><th>날짜</th>${stage?'<th>단계</th>':''}<th class="num">최고℃</th><th class="num">평균℃</th><th class="num">최저℃</th></tr></thead><tbody>${
