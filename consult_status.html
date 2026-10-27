@@ -28,6 +28,7 @@
   .top h1{font-size:19px;font-weight:700;letter-spacing:-.3px}
   .demo{font-size:12px;font-weight:500;color:var(--warn);background:var(--warn-soft);border:1px solid #f3d3ad;border-radius:999px;padding:2px 10px}
   .top-meta{margin-left:auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;color:var(--sub);font-size:14px}
+  .top-meta select{border:1px solid var(--line-strong);border-radius:8px;padding:5px 8px;background:#fff}
 
   /* 사이드바 + 본문 */
   .shell{max-width:1440px;margin:0 auto;display:grid;grid-template-columns:196px minmax(0,1fr)}
@@ -43,12 +44,6 @@
   .sec-h{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin:0 0 8px}
   .sec-h h3{font-size:16px;font-weight:700}
   .sec-h p{font-size:13px;color:var(--muted)}
-
-  .badge{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:700;border-radius:6px;padding:1px 7px;white-space:nowrap}
-  .badge.s0{color:#1f5c36;background:#c3e8cf}
-  .badge.s1{color:#7a5a00;background:#fff1b8}
-  .badge.s2{color:#7a3300;background:#fbcf9c}
-  .badge.s3{color:var(--alert);background:var(--alert-soft)}
 
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);min-width:0}
   .list-h{padding:14px 16px 10px;border-bottom:1px solid var(--line)}
@@ -117,7 +112,10 @@
   <div class="top-in">
     <h1>고수온 선제 상담 대시보드</h1>
     <span class="demo" id="data-mode">불러오는 중</span>
-    <div class="top-meta"><span id="updated"></span></div>
+    <div class="top-meta">
+      <label>담당 <select id="office" aria-label="담당 지역"></select></label>
+      <span id="updated"></span>
+    </div>
   </div>
 </header>
 
@@ -140,12 +138,18 @@
       </div>
       <div class="stack">
         <section class="panel" aria-labelledby="h-cust">
-          <div class="list-h"><div class="sec-h" style="margin:0"><h3 id="h-cust">고객 목록</h3><p>고객을 누르면 아래 상담 내역이 그 고객만 보여요</p></div></div>
+          <div class="list-h">
+            <div class="sec-h" style="margin:0"><h3 id="h-cust">고객 목록</h3><p>고객을 누르면 아래 상담 내역이 그 고객만 보여요</p></div>
+            <div class="filters" id="prog-filter">
+              <button type="button" class="chip" data-prog="0" aria-pressed="true">전체</button>
+              <button type="button" class="chip" data-prog="1" aria-pressed="false">진행</button>  
+            </div>
+          </div>
           <div class="tbl-wrap">
             <table>
               <thead><tr>
-                <th scope="col">고객</th><th scope="col">연락처</th><th scope="col">수신 동의</th><th scope="col">지역</th><th scope="col">계약별 보험</th>
-                <th scope="col">위험</th><th scope="col">현재 상태</th><th scope="col">최근 연락</th><th scope="col" class="num">상담</th><th scope="col"><span class="note">브리핑</span></th>
+                <th scope="col">고객</th><th scope="col">연락처</th><th scope="col">수신 동의</th><th scope="col">계약별 보험</th>
+                <th scope="col">현재 상태</th><th scope="col">최근 연락</th><th scope="col" class="num">상담</th><th scope="col"><span class="note">브리핑</span></th>
               </tr></thead>
               <tbody id="cust-rows"></tbody>
             </table>
@@ -213,8 +217,6 @@ const SAMPLE = {
   ],
 };
 
-const STAGE = ['정상','관심','주의','경보'];
-const STAGE_ICON = ['○','◐','▲','■'];
 const COVERAGE = {
   none:            {label:'미가입',          cls:'ins ins-none'},
   no_rider:        {label:'특약 없음',       cls:'ins ins-gap'},
@@ -235,8 +237,14 @@ let q = '', histFarm = null;
 const OFFICE_KEY = 'heat-dashboard-office';
 const OFFICES = ['통영','사천','거제','고성','남해','창원','하동'];
 function getOffice(){ try{ return localStorage.getItem(OFFICE_KEY) || '통영'; }catch(e){ return '통영'; } }
+function putOffice(id){ try{ localStorage.setItem(OFFICE_KEY, id); }catch(e){} }
 let office = OFFICES.includes(getOffice()) ? getOffice() : '통영';
 const inRegion = c => c.region === office;   // 항상 담당 지역 고객만
+
+// 상담 진행 중 = 연락은 했지만 아직 끝나지 않은 상태 (미연락·가입 완료·안내 완료·보류·거절은 제외)
+const IN_PROGRESS = ['부재·재연락', '문자 발송', '상담 예약'];
+let progOnly = false;
+const inProgress = c => !progOnly || IN_PROGRESS.includes(c.status);
 
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -252,21 +260,22 @@ function ctrLines(c){
 }
 
 function renderConsult(){
-  const base = customers.filter(inRegion);
+  const base = customers.filter(inRegion).filter(inProgress);
+  document.querySelectorAll('#prog-filter [data-prog]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.prog === '1') === progOnly)));
   const custs = base.filter(matchQ);
   if(histFarm && !custs.some(c => c.code === histFarm)) histFarm = null;
   document.getElementById('q-count').textContent = q ? `${custs.length}명` : `${office} ${base.length}명`;
   document.getElementById('cust-empty').textContent = base.length
     ? '검색 결과가 없어요. 이름 한 글자나 전화번호 뒷자리로 찾아보세요.'
-    : `${office} 지역 고객이 없어요. 상담 홈 맨 위 '담당'에서 다른 지역을 골라 주세요.`;
+    : progOnly
+      ? `${office} 지역에 상담 진행 중인 고객이 없어요. '전체'를 누르면 모든 고객을 볼 수 있어요.`
+      : `${office} 지역 고객이 없어요. 맨 위 '담당'에서 다른 지역을 골라 주세요.`;
   document.getElementById('cust-empty').hidden = custs.length > 0;
   document.getElementById('cust-rows').innerHTML = custs.map(c => `<tr class="pick-row" data-cust="${esc(c.code)}" tabindex="0" aria-selected="${histFarm===c.code}">
       <td class="who"><b>${esc(c.name)}</b><small>${esc(c.code)}</small></td>
       <td>${c.phone_masked ? esc(c.phone_masked) : '–'}</td>
       <td>${!c.phone_masked ? '–' : c.sms_consent ? '<span class="consent-y">○</span>' : '<span class="consent-n">× 미동의</span>'}</td>
-      <td>${esc(c.region)}</td>
       <td>${ctrLines(c)}</td>
-      <td>${c.risk_stage == null ? '–' : `<span class="badge s${c.risk_stage}">${STAGE_ICON[c.risk_stage]} ${STAGE[c.risk_stage]}</span>`}</td>
       <td><span class="st ${STATUS_CLS[c.status] || ''}">${esc(c.status)}</span></td>
       <td>${c.last_contact ? esc(c.last_contact) : '–'}</td>
       <td class="num">${c.consult_count}</td>
@@ -321,6 +330,14 @@ function toast(msg){
 }
 
 document.getElementById('q').addEventListener('input', e => { q = e.target.value.trim(); renderConsult(); });
+const officeSel = document.getElementById('office');
+officeSel.innerHTML = OFFICES.map(r => `<option value="${r}">${r} 지역 담당</option>`).join('');
+officeSel.value = office;
+officeSel.addEventListener('change', e => { office = e.target.value; putOffice(office); histFarm = null; renderConsult(); });
+document.getElementById('prog-filter').addEventListener('click', e => {
+  const b = e.target.closest('[data-prog]');
+  if(b){ progOnly = b.dataset.prog === '1'; histFarm = null; renderConsult(); }
+});
 const consultEl = document.getElementById('page-consult');
 consultEl.addEventListener('click', e => {
   const o = e.target.closest('[data-open]');
