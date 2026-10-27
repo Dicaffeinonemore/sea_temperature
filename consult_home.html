@@ -25,23 +25,8 @@
   :focus-visible{outline:3px solid #93b4f5;outline-offset:2px}
   td,th,.kpi b,.tp{font-variant-numeric:tabular-nums}
 
-  /* 상단 바 */
-  .top{background:var(--panel);border-bottom:1px solid var(--line)}
-  .top-in{max-width:1440px;margin:0 auto;padding:14px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px}
-  .top h1{font-size:19px;font-weight:700;letter-spacing:-.3px}
-  .demo{font-size:12px;font-weight:500;color:var(--warn);background:var(--warn-soft);border:1px solid #f3d3ad;border-radius:999px;padding:2px 10px}
-  .top-meta{margin-left:auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;color:var(--sub);font-size:14px}
-  .top-meta select{border:1px solid var(--line-strong);border-radius:8px;padding:5px 8px;background:#fff}
-  .ghost{border:1px solid var(--line-strong);background:#fff;border-radius:8px;padding:5px 10px;font-size:13px;color:var(--sub)}
 
   /* 사이드바 + 본문 */
-  .shell{max-width:1440px;margin:0 auto;display:grid;grid-template-columns:196px minmax(0,1fr)}
-  .side{position:sticky;top:0;align-self:start;padding:18px 10px;display:flex;flex-direction:column;gap:4px}
-  .nav{display:flex;align-items:center;gap:10px;border:0;background:none;text-align:left;padding:10px 12px;border-radius:8px;font-size:15px;font-weight:500;color:var(--sub);white-space:nowrap}
-  .nav:hover{background:#e9edf3}
-  .nav[aria-current="page"]{background:var(--panel);color:var(--text);font-weight:700;box-shadow:inset 3px 0 0 var(--accent)}
-  .nav .ic{width:20px;text-align:center}
-  .nav .cnt{margin-left:auto;font-size:12px;font-weight:700;color:#fff;background:var(--alert);border-radius:999px;padding:0 7px}
   .wrap{padding:0 20px 40px;min-width:0}
   .page-h{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;margin:18px 0 12px}
   .page-h h2{font-size:20px}
@@ -113,23 +98,6 @@
   .ctr-q input{width:90px;border:1px solid var(--line-strong);border-radius:6px;padding:3px 8px;text-align:right;background:#fff}
   .ctr-total{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--accent-soft);font-size:14px}
   .ctr-total b{font-size:18px}
-  /* 알림 종 */
-  .bell-wrap{position:relative}
-  .bell{position:relative;width:38px;height:38px;border-radius:50%;border:1px solid var(--line-strong);background:#fff;display:flex;align-items:center;justify-content:center;color:var(--text)}
-  .bell:hover{background:#f3f5f8}
-  .bell svg{width:20px;height:20px}
-  .bell-n{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:999px;background:var(--alert);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px;border:2px solid #fff}
-  .bell-panel{position:absolute;right:0;top:46px;width:360px;max-width:calc(100vw - 32px);background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(20,30,50,.16);z-index:50;overflow:hidden}
-  .bell-h{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);font-weight:700}
-  .bell-list{list-style:none;max-height:420px;overflow-y:auto}
-  .bell-list li{border-bottom:1px solid var(--line)}
-  .bell-list button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:auto 1fr;gap:2px 10px;width:100%;padding:11px 14px;cursor:pointer;font-size:14px}
-  .bell-list button:hover{background:#f8fafd}
-  .bell-list li.unread button{background:#f2f6ff}
-  .bell-list .ty{grid-row:span 2;font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;height:fit-content;margin-top:2px;white-space:nowrap}
-  .ty.join{background:#dcf3e3;color:#17663a}.ty.apply{background:#e3eefb;color:#1d5fb8}
-  .ty.reply{background:#fff4c2;color:#7a5a00}.ty.alert{background:#fde4e2;color:#b42318}
-  .bell-list small{color:var(--muted);font-size:12px}
   .sale-open{color:var(--sub);font-weight:500}
   .sale-soon{color:var(--warn);font-weight:700}
   .sale-later{color:var(--muted)}
@@ -307,20 +275,16 @@
   @media (max-width:1240px){.regions{grid-template-columns:repeat(4,1fr)}}
   @media (max-width:1100px){.main,.fc-grid{grid-template-columns:1fr}}
   @media (max-width:900px){
-    .shell{grid-template-columns:1fr}
-    .side{position:static;flex-direction:row;overflow-x:auto;padding:10px 16px 0}
-    .nav[aria-current="page"]{box-shadow:inset 0 -3px 0 var(--accent)}
     .tables{grid-template-columns:1fr}
   }
   @media (max-width:640px){
-    .wrap{padding:0 16px 32px}.top-in{padding:12px 16px}
+    .wrap{padding:0 16px 32px}
     .kpis{grid-template-columns:repeat(2,1fr)}
     .regions{grid-template-columns:repeat(2,1fr)}
     .col-sale,.col-st{display:none}
     .actions,.record{grid-template-columns:1fr}
   }
   @media (prefers-reduced-motion:reduce){.acc>summary .arw,.region,.toast{transition:none}}
-  a.nav{text-decoration:none}
   a.linkish{display:inline-block}
   .notice{margin:12px 0 0;padding:10px 12px;border-radius:8px;font-size:14px;background:var(--warn-soft);color:#7a3d06;border:1px solid #f3d3ad;white-space:pre-line}
   /* 신청·주의 그래프: dash_chart.py가 만든 out/ 그림 */
@@ -389,38 +353,14 @@
   @media (max-width:1240px){.home-top{grid-template-columns:1fr 1fr}.home-top>.fc-card{grid-column:1/-1;border-left:0;border-top:1px solid var(--line)}}
   @media (max-width:640px){.home-top{grid-template-columns:1fr}.home-top>.ht-col+.ht-col{border-left:0;border-top:1px solid var(--line)}}
 </style>
+<link rel="stylesheet" href="shell.css">
 </head>
 <body>
 
-<header class="top">
-  <div class="top-in">
-    <h1>고수온 선제 상담 대시보드</h1>
-    <span class="demo" id="data-mode">불러오는 중</span>
-    <div class="top-meta">
-      <label>담당 <select id="office" aria-label="담당 지역"></select></label>
-      <span id="updated"></span>
-      <button class="ghost" id="reset" type="button" hidden>시연 처음으로</button>
-      <div class="bell-wrap">
-        <button type="button" class="bell" id="bell" aria-label="알림" aria-expanded="false" aria-controls="bell-panel">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-          <span class="bell-n" id="bell-n" hidden></span>
-        </button>
-        <div class="bell-panel" id="bell-panel" hidden>
-          <div class="bell-h"><span>알림</span><button type="button" class="linkish" id="bell-read">모두 읽음</button></div>
-          <ul class="bell-list" id="bell-list"></ul>
-        </div>
-      </div>
-    </div>
-  </div>
-</header>
+<script src="shell.js" data-part="header"></script>
 
 <div class="shell">
-  <nav class="side" aria-label="화면 이동">
-    <a class="nav" href="consult_home.html" aria-current="page"><span class="ic" aria-hidden="true">☎</span>상담 홈<span class="cnt" id="nav-left" hidden></span></a>
-    <a class="nav" href="farm_detail.html"><span class="ic" aria-hidden="true">☰</span>어가 상세</a>
-    <a class="nav" href="sea_forecast.html"><span class="ic" aria-hidden="true">〰</span>수온 예측</a>
-    <a class="nav" href="consult_status.html"><span class="ic" aria-hidden="true">☷</span>고객 상담 현황</a>
-  </nav>
+  <script src="shell.js" data-part="nav" data-page="home"></script>
 
   <main class="wrap">
     <p class="notice" id="notice" role="alert" hidden></p>
@@ -516,7 +456,6 @@ const API_BASE = (location.protocol === 'file:' ? 'http://127.0.0.1:8000'
 const ENDPOINTS = {
   regions: '/api/dashboard/regions',        // 제안 · 지역별 21일 수온 예측
   farms:   '/api/consult/customers',        // 어가 목록 · 어종별 보험 보장 상태
-  noti:    '/api/dashboard/notifications',  // 제안 · 알림 (가입 신청 · 문자 회신 · 특보)
   logs:    '/api/consult/logs',             // 있음 · 상담 결과 저장 (POST)
 };
 let mode = 'sample';   // 'db' = 서버 데이터 · 'sample' = 가상 데이터
@@ -877,7 +816,6 @@ let filter = {region:null, only:'all'};
 let homeRegion = '통영', bulkTpl = 'before';
 const BULK_TPL = {
   before: {label:'특보 전 가입 안내', text:'[○○수협] 바다 수온이 오르고 있어요. 고수온 특보가 난 뒤에 가입하면 이번 피해는 보상받기 어려워요. 양식보험과 고수온 특약 가입 여부를 지금 확인해 보세요. 상담: [수협 전화]'},
-  close:  {label:'판매 마감 안내', text:'[○○수협] 일부 양식보험은 이번 달 말에 판매가 끝나요. 아직 가입하지 않았거나 고수온 특약이 없다면 마감 전에 상담받아 보세요. 상담: [수협 전화]'},
   alert:  {label:'특보 발령 시 대응', text:'[○○수협] 고수온 특보가 발령됐어요. 먹이 주기를 멈추고 선별·분조는 미뤄 주세요. 산소 공급 장비를 점검하고, 피해가 보이면 바로 수협에 알려 주세요. 문의: [수협 전화]'},
 };
 let bulkText = BULK_TPL.before.text;
@@ -913,7 +851,7 @@ function renderHomeTemp(){
 }
 
 function renderFilters(){
-  const opts = [['all','전체'],['active','안내 필요만'],['none','미가입 계약'],['gap','특약 없음·모름'],['book','예약']];
+  const opts = [['all','전체'],['active','안내 필요만'],['none','미가입 계약'],['book','예약']];
   const reg = filter.region ? `<button type="button" class="chip" data-clear aria-pressed="true">${esc(filter.region)} ✕</button>`
                             : `<button type="button" class="chip" data-reg="${homeRegion}" aria-pressed="false">${esc(homeRegion)} 어가만</button>`;
   document.getElementById('filters').innerHTML = reg + opts.map(([k,t]) =>
@@ -925,7 +863,6 @@ function pass(f){
   switch(filter.only){
     case 'active': return ACTIVE.includes(f.status);
     case 'none': return f.items.some(c => c.ins === 'none');
-    case 'gap': return f.items.some(c => ['norider','checkExcl','unknown'].includes(c.ins));
     case 'book': return f.status === 'book';
   }
   return true;
@@ -1018,35 +955,8 @@ function renderBulk(rows){
 function renderHome(){ renderKpis(); renderHomeTemp(); renderFilters(); renderRows(); }
 
 /* ===== 알림 =====
-   API 응답 모양 (ENDPOINTS.noti): 아래 배열과 같아요. ty: apply·reply·alert·join, farm: 어가 id 또는 null, region: 특보 지역 */
-const SAMPLE_NOTI = [
-  {id:1, ty:'apply', lbl:'가입 신청', farm:'A-060', at:'10/22 05:52', text:'배○○ · 문자 링크로 고수온 특약 가입 상담 신청', read:false},
-  {id:2, ty:'reply', lbl:'문자 회신', farm:'B-007', at:'10/22 05:31', text:'이○○ · 판매 마감 문자에 "전화 주세요" 회신', read:false},
-  {id:3, ty:'apply', lbl:'상담 요청', farm:'E-008', at:'10/21 18:20', text:'서○○ · 오만둥이 보험 문의, 전화 요청', read:false},
-  {id:4, ty:'alert', lbl:'특보', farm:null, region:'고성', at:'10/21 10:00', text:'고성 고수온 예비특보 발령 (수과원 발표)', read:true},
-  {id:5, ty:'join', lbl:'가입 완료', farm:'F-002', at:'08/14 15:10', text:'오○○ · 해상가두리어류 재해보험 + 고수온 특약 가입', read:true},
-];
-let noti = [];
-function renderBell(){
-  const un = noti.filter(n => !n.read).length, b = document.getElementById('bell-n');
-  b.textContent = un; b.hidden = !un;
-  document.getElementById('bell').setAttribute('aria-label', `알림 ${un}개 안 읽음`);
-  document.getElementById('bell-list').innerHTML = noti.length ? noti.map(n => `<li class="${n.read?'':'unread'}">
-    <button type="button" data-noti="${n.id}"><span class="ty ${n.ty}">${n.lbl}</span><span>${esc(n.text)}</span><small>${n.at}</small></button></li>`).join('')
-    : '<li class="empty">새 알림이 없어요</li>';
-}
-const bellBtn = document.getElementById('bell'), bellPanel = document.getElementById('bell-panel');
-bellBtn.addEventListener('click', e => { e.stopPropagation(); bellPanel.hidden = !bellPanel.hidden; bellBtn.setAttribute('aria-expanded', !bellPanel.hidden); });
-document.addEventListener('click', e => { if(!bellPanel.hidden && !e.target.closest('.bell-wrap')){ bellPanel.hidden = true; bellBtn.setAttribute('aria-expanded', false); } });
-document.addEventListener('keydown', e => { if(e.key === 'Escape' && !bellPanel.hidden){ bellPanel.hidden = true; bellBtn.focus(); } });
-document.getElementById('bell-read').addEventListener('click', () => { noti.forEach(n => n.read = true); renderBell(); });
-document.getElementById('bell-list').addEventListener('click', e => {
-  const b = e.target.closest('[data-noti]'); if(!b) return;
-  const n = noti.find(x => x.id === +b.dataset.noti); n.read = true; renderBell();
-  bellPanel.hidden = true;
-  if(n.farm){ location.href = 'farm_detail.html?id=' + encodeURIComponent(n.farm); }
-  else if(n.region && regionInfo[n.region]){ homeRegion = filter.region = n.region; document.getElementById('office').value = n.region; putOffice(n.region); renderHomeTemp(); renderFilters(); renderRows(); }
-});
+   상단 바의 알림 종은 공통 shell.js 가 맡아요 (모든 화면 같은 동작).
+   어가 알림 → 어가 상세, 특보 알림 → '담당' 지역 변경(아래 change 처리)으로 동작해요. */
 
 /* ===== 이벤트 ===== */
 // 신청·주의 그래프: 들어올 때마다 백엔드가 DB에서 새로 그린 그림을 받아요 (브라우저는 DB에 직접 붙지 않음).
@@ -1157,10 +1067,8 @@ document.getElementById('reset').addEventListener('click', () => {
   homeRegion = fillOffice(getOffice());
   filter.region = homeRegion;   // 처음부터 담당 지역 어가만
   showDash(dashKind);           // 그래프도 저장된 담당 지역으로
-  try{ noti = mode === 'db' ? await getJSON(ENDPOINTS.noti) : structuredClone(SAMPLE_NOTI); }
-  catch(e){ noti = []; addNotice(`⚠️ 알림을 불러오지 못했어요. (${e.message})`); }
   document.getElementById('reset').hidden = mode !== 'sample';
-  renderHome(); renderBell();
+  renderHome();
 })();
 </script>
 </body>
