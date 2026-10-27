@@ -1,14 +1,13 @@
 # sea_temperature (우리 바다 안심도우미)
 
-Team project: sea-temperature risk, response guide, and insurance info for aquaculture farmers. Four developers share one repo through forks and PRs, so **team ownership rules come first** (see below).
+Team project: a proactive high-sea-temperature consultation dashboard for staff who contact aquaculture farms (contact list, farm detail, sea-temperature forecast, consultation status). Four developers share one repo through forks and PRs, so **team ownership rules come first** (see below).
 
 Rule files for VS Code live in `.github/instructions/` (GitHub Copilot attaches them by `applyTo`/`description`). Other agents (Claude Code, Codex) must open the file named in each "Details" line when the task matches.
 
 ## Run and test (only what code does not show)
-- HTML screens: open `app.html` directly, or `python -m http.server 8765` and visit `http://localhost:8765/app.html`. No build step, no framework.
+- HTML screens: with the backend running, visit `http://127.0.0.1:8000/` (same as the Render deploy), or run `py -m http.server 8765` at the repo root and visit `http://localhost:8765/consult_home.html`. Opening a file directly (`file://`) shows sample data only. No build step, no framework.
 - Backend: from `backend/`, `..\.venv\Scripts\python.exe -m uvicorn backend.main:app --port 8000` (needs `backend/backend/.env` copied from `team.env.example`).
-- Streamlit version (`app.py`) is separate from the HTML version; changing one does not update the other.
-- Tests: `py backend/run_tests.py` (no DB), `py backend/run_tests.py --db` (temporary schema, rolled back), `py -m unittest discover -s tests -v`.
+- Tests: `py backend/run_tests.py` (no DB), `py backend/run_tests.py --db` (temporary schema, rolled back), `node --test "tests/**/*.cjs"`.
 
 ## Team ownership (non-negotiable)
 Other teammates' code is read-only for you unless the user explicitly approves a specific change.
@@ -37,7 +36,7 @@ Other teammates' code is read-only for you unless the user explicitly approves a
 - When a change adds or changes a screen, API, or run step, update the matching row in `README.md` only if the user asked for docs or the change would leave README wrong. Ask if unsure.
 
 ## Token economy
-- Search before reading: grep or glob first, then read only the needed line ranges. Do not read whole large files (`home_test.py`, `insurance.html`, `app.py`) or re-read unchanged ones.
+- Search before reading: grep or glob first, then read only the needed line ranges. Do not read whole large files (`farm_detail.html`, `consult_home.html`, `backend/backend/farm_detail.py`) or re-read unchanged ones.
 - Never read or print lockfiles, `__pycache__`, `.venv`, logs, images, or `.local/` unless the task is about them.
 - Pipe noisy commands to a file or filter them; never dump full command output into context.
 - Batch independent tool calls in parallel.
@@ -62,5 +61,5 @@ Other teammates' code is read-only for you unless the user explicitly approves a
 - Details: `.github/instructions/github-release.instructions.md`.
 
 ## Frontend and design
-- HTML screen conventions (shared tab bar, sessionStorage, insurance wording): `.github/instructions/frontend.instructions.md`.
+- HTML screen conventions (side menu, localStorage, `API_BASE`, wording): `.github/instructions/frontend.instructions.md`.
 - For UI/UX design or review work, read `DESIGN.md` first. Values marked `UNDECIDED` are unapproved; never choose them without user approval. Details: `.github/instructions/ui-design.instructions.md`.
