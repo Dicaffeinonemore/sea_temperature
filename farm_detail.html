@@ -1593,6 +1593,7 @@ function toast(msg){
 }
 
 function showPage(p){
+  if(p === 'forecast'){ location.href = 'sea_forecast.html?region=' + encodeURIComponent(fcRegion); return; }
   if(p === 'home'){ location.href = 'consult_home.html'; return; }   // 상담 홈은 막대그래프가 있는 consult_home.html로 이동
   if(p === 'consult'){ location.href = 'consult_status.html'; return; }   // 고객 상담 현황은 consult_status.html 한 곳에서 (지역 거르기도 그 파일에서)
   page = p;
