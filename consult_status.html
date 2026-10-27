@@ -99,6 +99,27 @@
   .hist-who b{margin-right:6px}
   .hist-who small{color:var(--muted);font-size:12.5px}
   .hist-memo{margin-top:4px;font-size:14px;color:var(--sub)}
+  /* 상담 기록 삭제: 평소엔 흐리게, 기록에 마우스를 올리면 또렷하게 */
+  .hist-right{display:flex;align-items:center;gap:6px}
+  .hist-del{border:1px solid transparent;background:none;border-radius:6px;padding:0 6px;font-size:12px;color:var(--muted);opacity:.55;transition:opacity .15s,color .15s,border-color .15s}
+  .hist-item:hover .hist-del,.hist-del:focus-visible{opacity:1}
+  .hist-del:hover{color:var(--alert);border-color:#f5b5ae;background:var(--alert-soft)}
+  .hist-item.removing{opacity:.4;pointer-events:none}
+  /* 삭제 확인 창 */
+  .confirm{margin:auto;border:0;border-radius:12px;padding:0;width:min(420px,calc(100vw - 32px));box-shadow:0 18px 48px rgba(20,30,50,.24);color:var(--text)}
+  .confirm::backdrop{background:rgba(22,26,34,.45)}
+  .confirm form{padding:18px 20px 16px;display:flex;flex-direction:column;gap:12px}
+  .confirm h4{font-size:17px;display:flex;align-items:center;gap:8px}
+  .confirm h4 .ic{width:26px;height:26px;border-radius:50%;background:var(--alert-soft);color:var(--alert);display:inline-flex;align-items:center;justify-content:center;font-size:14px}
+  .confirm .sum{border:1px solid var(--line);border-radius:8px;background:var(--soft);padding:10px 12px;font-size:14px;display:grid;grid-template-columns:auto 1fr;gap:3px 12px}
+  .confirm .sum dt{color:var(--muted);font-size:13px}
+  .confirm .sum dd{min-width:0;overflow-wrap:anywhere}
+  .confirm .warn{font-size:13px;color:#7a1a12;background:var(--alert-soft);border:1px solid #f5c2bd;border-radius:8px;padding:8px 10px}
+  .confirm .ack{display:flex;gap:8px;align-items:flex-start;font-size:14px;cursor:pointer}
+  .confirm .ack input{margin-top:4px;width:16px;height:16px;accent-color:var(--alert)}
+  .confirm .btns{display:flex;justify-content:flex-end;gap:8px;margin-top:2px}
+  .btn.danger{background:var(--alert);border-color:var(--alert);color:#fff}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
   @keyframes hist-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
   @media (max-width:1100px){
     .stack{grid-template-columns:1fr}
@@ -192,6 +213,20 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<!-- 상담 기록 삭제 확인 (평소 삭제하지 않으므로 한 번 더 확인) -->
+<dialog class="confirm" id="del-dialog" aria-labelledby="del-title">
+  <form method="dialog">
+    <h4 id="del-title"><span class="ic" aria-hidden="true">!</span>상담 기록을 삭제할까요?</h4>
+    <dl class="sum" id="del-sum"></dl>
+    <p class="warn" id="del-warn">삭제하면 되돌릴 수 없어요. 이 기록의 어종별 결과도 함께 지워지고, 고객의 현재 상태는 남은 기록 중 가장 최근 것으로 바뀌어요.</p>
+    <label class="ack"><input type="checkbox" id="del-ack"><span>되돌릴 수 없다는 것을 확인했어요</span></label>
+    <div class="btns">
+      <button type="submit" class="btn" value="cancel" id="del-cancel" autofocus>취소</button>
+      <button type="button" class="btn danger" id="del-ok" disabled>삭제</button>
+    </div>
+  </form>
+</dialog>
+
 <script>
 /* 서버에 연결하지 못했을 때만 보여 주는 가상 데이터. 형태는 API 응답과 같음 (원본 대시보드 판정값을 옮김) */
 const SAMPLE = {
@@ -240,7 +275,7 @@ const saleCls = t => t === '가능' ? 'sale-open' : t === '이번 달 마감' ? 
 const API = (location.protocol === 'file:' ? 'http://127.0.0.1:8000'
   : location.port === '8765' ? `${location.protocol}//${location.hostname}:8000`
   : location.origin) + '/api/consult';   // 배포(Render) 등 백엔드가 화면을 같이 내보낼 때는 같은 주소
-let customers = [], history = [];
+let customers = [], history = [], dbMode = false;
 let q = '', histFarm = null;
 
 // 담당 지역: 상담 홈·어가 상세·수온 예측 맨 위 '담당'에서 고른 값 (같은 이름으로 이 브라우저에 저장됨)
@@ -299,8 +334,9 @@ function renderConsult(){
   document.getElementById('hist-filter').innerHTML = hf ? `<button type="button" class="chip" data-hist-all aria-pressed="true">${esc(hf.name)} ✕ 전체 보기</button>` : '';
   document.getElementById('hist-empty').hidden = items.length > 0;
   document.getElementById('hist-empty').textContent = hf ? `${hf.name} 고객은 아직 상담 내역이 없어요.` : '상담 내역이 없어요.';
-  document.getElementById('hist-rows').innerHTML = items.map(h => `<li class="hist-item">
-      <div class="hist-top"><span>${esc(h.date)}</span><span class="hist-res">${esc(h.result)}</span></div>
+  document.getElementById('hist-rows').innerHTML = items.map(h => `<li class="hist-item" data-log="${esc(h.log_id)}">
+      <div class="hist-top"><span>${esc(h.date)}</span><span class="hist-right"><span class="hist-res">${esc(h.result)}</span>${h.log_id != null
+        ? `<button type="button" class="hist-del" data-del="${esc(h.log_id)}" aria-label="${esc(h.date)} ${esc(h.name)} 상담 기록 삭제" title="이 상담 기록 삭제">삭제</button>` : ''}</span></div>
       <div class="hist-who">${hf ? '' : `<b>${esc(h.name)}</b>`}<small>${h.species.map(esc).join(' · ')}</small></div>
       <div class="hist-memo">${esc(h.memo)}</div>
     </li>`).join('');
@@ -316,10 +352,13 @@ async function load(){
   const notice = document.getElementById('notice');
   try{
     [customers, history] = await Promise.all([getJSON('/customers'), getJSON('/history')]);
+    dbMode = true;
     document.getElementById('data-mode').textContent = 'DB 연결됨';
     document.getElementById('updated').textContent = `${new Date().toLocaleString('ko-KR')} 조회`;
   }catch(e){
-    ({customers, history} = SAMPLE);
+    customers = structuredClone(SAMPLE.customers);
+    history = SAMPLE.history.map((h, i) => ({...h, log_id:'s' + i}));   // 가상 데이터용 기록 번호
+    dbMode = false;
     notice.textContent = location.protocol === 'file:'
       ? '⚠️ 파일로 열면 서버에 연결할 수 없어 가상 데이터를 보여 주고 있어요. http://localhost:8765/consult_status.html 로 열어 주세요.'
       : `⚠️ 서버에 연결하지 못해 가상 데이터를 보여 주고 있어요. 백엔드(8000 포트)가 켜져 있는지 확인해 주세요. (${e.message})`;
@@ -365,6 +404,65 @@ function pickCustomer(code){
   renderConsult();
   if(histFarm && matchMedia('(max-width:1100px)').matches) document.getElementById('hist-panel').scrollIntoView({behavior:'smooth', block:'start'});
 }
+
+/* ===== 상담 기록 삭제 =====
+   1) 기록의 '삭제' → 2) 확인 창에서 내용 확인 + '되돌릴 수 없다는 것을 확인' 체크 → 3) 삭제
+   서버: DELETE /api/consult/logs/{log_id} (consult_log_items → consult_logs 삭제, consult_cases 를 남은 기록 기준으로 다시 맞춤) */
+const delDialog = document.getElementById('del-dialog'), delAck = document.getElementById('del-ack'), delOk = document.getElementById('del-ok');
+let delTarget = null, delReturn = null;
+function askDelete(logId, opener){
+  const h = history.find(x => String(x.log_id) === String(logId)); if(!h) return;
+  delTarget = h; delReturn = opener;
+  const sameCust = history.filter(x => x.code === h.code);
+  const isLatest = sameCust[0] === h;
+  document.getElementById('del-sum').innerHTML = `
+    <dt>고객</dt><dd>${esc(h.name)} <span class="note">(${esc(h.code)})</span></dd>
+    <dt>날짜</dt><dd>${esc(h.date)}${h.channel ? ' · ' + esc(h.channel) : ''}${h.staff_name ? ' · ' + esc(h.staff_name) : ''}</dd>
+    <dt>결과</dt><dd><b>${esc(h.result)}</b></dd>
+    <dt>내용</dt><dd>${esc(h.memo)}</dd>`;
+  const next = sameCust[1];
+  document.getElementById('del-warn').textContent = '삭제하면 되돌릴 수 없어요. 이 기록의 어종별 결과도 함께 지워져요.' + (isLatest
+    ? (next ? ` 가장 최근 기록이라 고객의 현재 상태가 '${next.result}'(${next.date})로 바뀌어요.` : ' 남은 기록이 없어 고객이 \'미연락\' 상태로 돌아가요.')
+    : '');
+  delAck.checked = false; delOk.disabled = true; delOk.textContent = '삭제';
+  delDialog.showModal();
+}
+delAck.addEventListener('change', () => { delOk.disabled = !delAck.checked; });
+delDialog.addEventListener('close', () => { delTarget = null; if(delReturn && document.contains(delReturn)) delReturn.focus(); delReturn = null; });
+delOk.addEventListener('click', async () => {
+  const h = delTarget; if(!h || !delAck.checked) return;
+  delOk.disabled = true; delOk.textContent = '삭제 중…';
+  const li = document.querySelector(`.hist-item[data-log="${CSS.escape(String(h.log_id))}"]`);
+  if(li) li.classList.add('removing');
+  try{
+    if(dbMode){
+      // 쓰기 요청은 백엔드 규칙상 X-CSRF-Protection: 1 헤더가 필요해요
+      const res = await fetch(`${API}/logs/${encodeURIComponent(h.log_id)}`, {method:'DELETE', headers:{'X-CSRF-Protection':'1'}});
+      if(!res.ok && res.status !== 404){
+        let msg = `HTTP ${res.status}`;
+        try{ const j = await res.json(); if(j.detail) msg += ' · ' + (typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail)); }catch(e){}
+        throw new Error(msg);
+      }
+      // 상태·최근 연락·상담 수가 바뀌므로 서버에서 다시 받아요
+      [customers, history] = await Promise.all([getJSON('/customers'), getJSON('/history')]);
+      toast(res.status === 404 ? '이미 지워진 기록이에요 · 목록을 새로 불러왔어요' : `${h.name} ${h.date} 상담 기록을 삭제했어요`);
+    }else{
+      history = history.filter(x => x !== h);
+      const c = customers.find(x => x.code === h.code), rest = history.filter(x => x.code === h.code);
+      if(c){ c.consult_count = rest.length; c.last_contact = rest[0] ? rest[0].date : null; c.status = rest[0] ? rest[0].result.replace(' · ', '·') : '미연락'; }
+      toast('가상 데이터라 이 화면에서만 지웠어요');
+    }
+    delDialog.close();
+    renderConsult();
+  }catch(e){
+    if(li) li.classList.remove('removing');
+    delOk.disabled = false; delOk.textContent = '삭제';
+    toast('삭제하지 못했어요 · ' + e.message);
+  }
+});
+document.getElementById('hist-rows').addEventListener('click', e => {
+  const b = e.target.closest('[data-del]'); if(b) askDelete(b.dataset.del, b);
+});
 
 load();
 </script>
