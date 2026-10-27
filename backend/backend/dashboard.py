@@ -104,18 +104,28 @@ class Notification(BaseModel):
     farm: str
     at: str
     text: str
+    region: str | None = None
+    owner_name: str | None = None
     read: bool = False
+
+
+def farm_label(region: str | None, owner_name: str | None, household_id: int) -> str:
+    """'통영 - 김○○'; falls back to whichever part exists, then to the household number."""
+    return " - ".join(p for p in (region, owner_name) if p) or f"어가 {household_id}"
 
 
 @router.get("/notifications", response_model=list[Notification],
             summary="최근 상담 예약·가입 완료 알림")
 def notifications(db: DB):
     rows = db.execute("""
-        SELECT log_id, household_id, result_status,
-               contacted_at AT TIME ZONE 'Asia/Seoul' AS contacted_at
-        FROM customer_service.consult_logs
-        WHERE result_status IN (%s, %s)
-        ORDER BY contacted_at DESC, log_id DESC
+        SELECT l.log_id, l.household_id, l.result_status,
+               l.contacted_at AT TIME ZONE 'Asia/Seoul' AS contacted_at,
+               h.owner_name, regexp_replace(r.sigungu_name, '(시|군)$', '') AS region
+        FROM customer_service.consult_logs l
+        JOIN customer_service.fishery_households h ON h.household_id = l.household_id
+        LEFT JOIN public.sigungu_area_coordinates r ON r.region_id = h.region_code
+        WHERE l.result_status IN (%s, %s)
+        ORDER BY l.contacted_at DESC, l.log_id DESC
         LIMIT 50
     """, ("상담 예약", "가입 완료")).fetchall()
     # SMS replies and official alerts need their own event source; consult logs cannot establish them.
@@ -124,7 +134,8 @@ def notifications(db: DB):
         ty="join" if row["result_status"] == "가입 완료" else "apply",
         lbl=row["result_status"], farm=str(row["household_id"]),
         at=row["contacted_at"].strftime("%m/%d %H:%M"),
-        text=f'어가 {row["household_id"]} · {row["result_status"]} 기록이 등록됐어요.',
+        text=f'{farm_label(row["region"], row["owner_name"], row["household_id"])} · {row["result_status"]} 기록이 등록됐어요.',
+        region=row["region"], owner_name=row["owner_name"],
     ) for row in rows]
 
 
