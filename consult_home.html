@@ -264,7 +264,7 @@
   .next{display:block;font-size:11px;color:var(--warn);margin-top:2px;white-space:nowrap}
   .calc .src{grid-column:1/-1;font-size:11px;color:var(--muted);margin-top:-4px}
   .main{grid-template-columns:minmax(0,1.75fr) minmax(340px,1fr)}
-  .who b,.who small,#rows td:nth-child(5){white-space:nowrap}
+  .who b,.who small{white-space:nowrap}
   .who small{display:block}
   #rows td{padding:9px 7px}
   #rows td.reason{min-width:210px}
@@ -329,6 +329,28 @@
   /* 신청·주의 그래프: dash_chart.py가 만든 out/ 그림 */
   .dash-img{display:block;width:100%;height:auto}
   .dash-img[hidden]{display:none}
+
+  /* 연락 순서: 계약별 보험을 상태별 칼럼(가입 · 특약 없음 · 미가입)으로 + 가입 안내 */
+  thead th.grp{padding-bottom:3px;border-left:1px solid var(--line)}
+  thead th.sub{padding-top:4px}
+  thead th.sub.first,td.ins-cell.first,th.col-guide,td.col-guide{border-left:1px solid var(--line)}
+  .ins-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;vertical-align:1px}
+  .ins-dot.ok{background:#17a34a}.ins-dot.gap{background:#d97706}.ins-dot.none{background:var(--alert)}
+  td.ins-cell{min-width:72px}
+  .ins-sp{display:block;font-weight:600;line-height:1.7;white-space:nowrap}
+  .ins-sp small{display:block;font-weight:500;color:var(--muted);font-size:11px;line-height:1.2}
+  th.ins-norider{color:#b45309;font-weight:700}
+  td.ins-norider .ins-sp{color:#b45309;font-weight:700}
+  th.ins-miss{color:var(--alert);font-weight:700}
+  td.ins-miss .ins-sp{color:var(--alert);font-weight:700}
+  .ins-empty{color:#d1d5db}
+  td.col-guide{min-width:170px}
+  .gd-badge{display:inline-block;font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap}
+  .gd-badge.gd-ok{background:#e7f6ec;color:#15803d}
+  .gd-badge.gd-warn{background:#fdecea;color:#c2410c}
+  .gd-badge.gd-later{background:#eef2f7;color:#475569}
+  .gd-det{font-size:12px;color:var(--sub);margin-top:4px;line-height:1.5}
+  .gd-det b{color:var(--text);font-weight:600}
 </style>
 </head>
 <body>
@@ -404,10 +426,15 @@
           <div class="tbl-wrap">
             <table>
               <thead><tr>
-                <th scope="col" class="ck"><input type="checkbox" id="ck-all" aria-label="보이는 어가 모두 선택"></th>
-                <th scope="col">순위</th><th scope="col">어가</th><th scope="col">위험 · 어종 기준</th>
-                <th scope="col">계약별 보험</th>
-                <th scope="col" class="col-st">상태</th>
+                <th scope="col" rowspan="2" class="ck"><input type="checkbox" id="ck-all" aria-label="보이는 어가 모두 선택"></th>
+                <th scope="col" rowspan="2">순위</th><th scope="col" rowspan="2">어가</th>
+                <th scope="colgroup" colspan="3" class="grp">계약별 보험</th>
+                <th scope="col" rowspan="2" class="col-guide">가입 안내</th>
+                <th scope="col" rowspan="2" class="col-st">상태</th>
+              </tr><tr>
+                <th scope="col" class="sub first"><span class="ins-dot ok"></span>가입</th>
+                <th scope="col" class="sub ins-norider"><span class="ins-dot gap"></span>특약 없음</th>
+                <th scope="col" class="sub ins-miss"><span class="ins-dot none"></span>미가입</th>
               </tr></thead>
               <tbody id="rows"></tbody>
             </table>
@@ -445,9 +472,7 @@
    백엔드(FastAPI, 8000 포트)에서 데이터를 받아요. 연결이 안 되면 아래 가상 데이터(SAMPLE)를 쓰고 화면 위에 경고를 띄워요.
    API 응답을 SAMPLE과 같은 모양으로 맞추면 화면 코드는 고치지 않아도 돼요.
    어가 목록은 상담 API 응답을 화면 형식으로 변환해 사용해요. */
-const API_BASE = (location.protocol === 'file:' ? 'http://127.0.0.1:8000'
-  : location.port === '8765' ? `${location.protocol}//${location.hostname}:8000`
-  : location.origin);   // 배포(Render) 등 백엔드가 화면을 같이 내보낼 때는 같은 주소
+const API_BASE = (location.protocol === 'file:' ? 'http://127.0.0.1' : `${location.protocol}//${location.hostname}`) + ':8000';
 const ENDPOINTS = {
   regions: '/api/dashboard/regions',        // 제안 · 지역별 21일 수온 예측
   farms:   '/api/consult/customers',        // 어가 목록 · 어종별 보험 보장 상태
@@ -891,11 +916,45 @@ function pass(f){
   return true;
 }
 
-function ctrLines(f){
-  return items(f).sort(byUrgent).map(x => {
-    const s = saleState(x.p), showSale = GAP.includes(x.ins);
-    return `<div class="ctr-line"><b>${esc(x.species)}</b><span class="${INS[x.ins].cls}">${INS[x.ins].label}</span>${showSale ? `<small class="${s.cls}">${s.text}</small>` : ''}</div>`;
+// 계약별 보험: 가입(full·checkExcl) · 특약 없음(norider) · 미가입(none) 칼럼에 어종 이름만 넣어요.
+// 모름(unknown)은 칼럼 없이 가입 안내에서 '가입 여부 확인'으로 보여줘요.
+const INS_COLS = [
+  {keys:['full','checkExcl'], cls:'first'},
+  {keys:['norider'], cls:'ins-norider'},
+  {keys:['none'], cls:'ins-miss'},
+];
+const EMPTY = '<span class="ins-empty">—</span>';
+function insCells(f){
+  const list = items(f).sort(byUrgent);
+  return INS_COLS.map(col => {
+    const hit = list.filter(x => col.keys.includes(x.ins));
+    const body = hit.length ? hit.map(x =>
+      `<span class="ins-sp">${esc(x.species)}${x.ins === 'full' ? '<small>특약 포함</small>' : ''}</span>`).join('') : EMPTY;
+    return `<td class="ins-cell ${col.cls}">${body}</td>`;
   }).join('');
+}
+
+// 가입 안내: 위 배지 하나(가장 급한 상태) + 아래 어종별 할 일
+const GUIDE_ACT = {none:'신규', norider:'특약 추가', unknown:'가입 여부 확인 후 안내'};
+function guideCell(f){
+  const list = items(f).sort(byUrgent).filter(x => GAP.includes(x.ins));
+  if(!list.length) return `<td class="col-guide">${EMPTY}</td>`;
+  const rows = list.map(x => ({x, s:saleState(x.p)}));
+  const lastDay = new Date(TODAY.y, TODAY.m, 0).getDate();
+  const soon = rows.filter(r => r.s.code === 'soon');
+  const open = rows.filter(r => r.s.code === 'open');
+  const later = rows.filter(r => r.s.code === 'later').sort((a,b) => (a.s.start - TODAY.m + 12) % 12 - (b.s.start - TODAY.m + 12) % 12);
+  const badge = soon.length ? '<span class="gd-badge gd-warn">⚠ 이번 달 마감</span>'
+    : open.length ? `<span class="gd-badge gd-ok">가입 가능${open.length > 1 ? ` ${open.length}건` : ''}</span>`
+    : later.length ? `<span class="gd-badge gd-later">${later[0].s.start}월부터</span>`
+    : '<span class="gd-badge gd-later">판매 기간 확인</span>';
+  const multi = rows.length > 1;
+  const det = rows.map(({x, s}) => {
+    const when = s.code === 'soon' ? `${TODAY.m}/${lastDay}까지`
+      : s.code === 'later' && multi ? `${s.start}월부터` : '';
+    return `<b>${esc(x.species)}</b> ${GUIDE_ACT[x.ins]}${when ? ` · ${when}` : ''}`;
+  }).join('<br>');
+  return `<td class="col-guide">${badge}<div class="gd-det">${det}</div></td>`;
 }
 
 function renderRows(){
@@ -903,19 +962,16 @@ function renderRows(){
   const rows = all.filter(pass);
   document.getElementById('empty').hidden = rows.length > 0;
   document.getElementById('rows').innerHTML = rows.map(f => {
-    const L0 = lead(f), rank = all.indexOf(f) + 1, st = fStage(f), sp = speciesRisk(L0), multi = f.items.length > 1;
+    const rank = all.indexOf(f) + 1, multi = f.items.length > 1;
     const done = !ACTIVE.includes(f.status);
     const stCls = f.status === 'todo' ? 'todo' : f.status === 'book' ? 'book' : f.status === 'win' ? 'win' : '';
-    const spCls = !sp.known ? 'sp-none' : sp.hit ? 'sp-hit' : '';
-    const w = fWhy(f);
-    const whyTag = w === 'soon' ? '<span class="tag-why">마감 임박</span>' : w === 'alert' ? '<span class="tag-why" style="background:var(--alert-soft);color:var(--alert)">특보 발령</span>' : '';
     const nx = f.next && f.status !== 'win' ? `<span class="next">다음 연락 ${f.next.slice(5).replace('-','/')}</span>` : '';
     return `<tr class="pick-row ${done?'done':''}" data-id="${f.id}" tabindex="0">
       <td class="ck"><input type="checkbox" data-ck="${f.id}" ${picked.has(f.id)?'checked':''} aria-label="${esc(f.name)} 선택"></td>
       <td class="rank">${rank}</td>
       <td class="who"><b>${esc(f.name)}</b><small>${f.id} · ${esc(f.region)}${multi ? ` · 계약 ${f.items.length}건` : ''}</small>${f.consent?'':'<small class="consent-n">문자 미동의</small>'}</td>
-      <td><span class="badge s${st}">${STAGE_ICON[st]} ${STAGE[st]}</span>${whyTag}<small class="${spCls}" style="display:block;font-size:12px;white-space:nowrap;margin-top:3px" title="${esc(sp.text)}">${multi ? esc(L0.species) + ' ' : ''}${esc(sp.short)}</small></td>
-      <td>${ctrLines(f)}</td>
+      ${insCells(f)}
+      ${guideCell(f)}
       <td class="col-st"><span class="st ${stCls}">${STATUS[f.status]}</span>${nx}</td>
     </tr>`;
   }).join('');
