@@ -86,7 +86,7 @@
 
 **배포 주소:** https://sea-temperature.onrender.com (접속하면 상담 홈으로 이동)
 
-`main`에 PR이 merge되면 Render가 자동으로 다시 배포합니다. 보통 1~2분 걸립니다.
+배포는 **Render 하나로** 합니다. FastAPI 백엔드가 API와 화면 4개를 같이 내보냅니다(Streamlit 배포는 쓰지 않습니다). `main`에 PR이 merge되면 Render가 자동으로 다시 배포합니다. 보통 1~2분 걸립니다.
 
 ### 화면
 
@@ -143,7 +143,3 @@ HTML 파일을 더블클릭해서 열면(`file://`) 서버에 연결할 수 없�
 4. GitHub에서 `브랜치이름 → main`으로 PR을 엽니다.
 
 PR은 저장소 관리자(sooui9)가 확인하고 merge합니다. merge된 브랜치는 삭제합니다.
-
-## Streamlit 대시보드
-
-`streamlit_app.py`는 신청·주의 그래프를 보여 주는 Streamlit 버전입니다(Streamlit Cloud 배포용). 로컬 실행: `py -m streamlit run streamlit_app.py`
