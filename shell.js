@@ -40,7 +40,7 @@
     <h1>고수온 선제 상담 대시보드</h1>
     <span class="demo" id="data-mode">불러오는 중</span>
     <div class="top-meta">
-      <label>담당 <select id="office" aria-label="담당 지역"></select></label>
+      <label>담당 지역 <select id="office" aria-label="담당 지역"></select></label>
       <span id="updated"></span>
       <button class="ghost" id="reset" type="button" hidden>시연 처음으로</button>
       <div class="bell-wrap">
@@ -56,6 +56,17 @@
     </div>
   </div>
 </header>`);
+
+  /* ===== 담당 지역 선택: 선택지는 지역 이름만 ('사천 지역 담당' → '사천') =====
+     선택지는 각 화면이 채우므로, 채워질 때마다 여기서 글자만 정리해요 (값은 그대로라 화면 동작은 같아요). */
+  const officeSel = document.getElementById('office');
+  const tidyOffice = () => {
+    for(const o of officeSel.options){
+      const t = o.textContent.replace(/\s*지역\s*담당\s*$/, '').trim();
+      if(t && t !== o.textContent) o.textContent = t;
+    }
+  };
+  new MutationObserver(tidyOffice).observe(officeSel, {childList:true, subtree:true, characterData:true});
 
   /* ===== 알림 ===== */
   const API_BASE = location.protocol === 'file:' ? 'http://127.0.0.1:8000'
