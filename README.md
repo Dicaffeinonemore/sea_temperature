@@ -47,7 +47,7 @@
 
 **⑥ 실행·테스트**
 - 백엔드: `backend/` 폴더에서 `..\.venv\Scripts\python.exe -m uvicorn backend.main:app --port 8000`
-- 테스트: `py backend/run_tests.py` (DB 없이), `py backend/run_tests.py --db` (임시 스키마), `py -m unittest discover -s tests -v`
+- 테스트: `py backend/run_tests.py` (DB 없이), `py backend/run_tests.py --db` (임시 스키마), `node --test tests/` (화면 동작)
 
 세부 규칙은 `.github/instructions/` 폴더에 주제별로 있습니다.
 
@@ -86,7 +86,9 @@
 
 **배포 주소:** https://sea-temperature.onrender.com (접속하면 상담 홈으로 이동)
 
-배포는 **Render 하나로** 합니다. FastAPI 백엔드가 API와 화면 4개를 같이 내보냅니다(Streamlit 배포는 쓰지 않습니다). `main`에 PR이 merge되면 Render가 자동으로 다시 배포합니다. 보통 1~2분 걸립니다.
+배포는 **Render 하나로** 합니다. FastAPI 백엔드가 API와 화면 4개를 같이 내보냅니다. 예전 Streamlit 버전은 쓰지 않아 삭제했습니다. `main`에 PR이 merge되면 Render가 자동으로 다시 배포합니다. 보통 1~2분 걸립니다.
+
+Render가 쓰는 파일은 `backend/backend/` 폴더, 화면 HTML 4개, `out/` 폴더입니다. 이 파일들의 이름이나 위치를 바꾸면 배포 사이트가 깨집니다. 새 화면을 추가할 때는 `backend/backend/main.py`의 `SCREENS` 목록에도 넣어야 합니다.
 
 ### 화면
 
