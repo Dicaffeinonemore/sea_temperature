@@ -424,6 +424,7 @@ def find_table(db: Connection, cols: list[str]) -> sql.Composed | None:
         FROM information_schema.columns c
         WHERE btrim(replace(c.column_name, %(bom)s, '')) = ANY(%(c)s)
           AND c.table_schema NOT IN ('pg_catalog', 'information_schema')
+          AND has_schema_privilege(c.table_schema, 'USAGE')
         GROUP BY 1, 2
         HAVING count(DISTINCT btrim(replace(c.column_name, %(bom)s, ''))) = %(n)s
            AND has_table_privilege(format('%%I.%%I', c.table_schema, c.table_name), 'SELECT')
