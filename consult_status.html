@@ -141,8 +141,8 @@
           <div class="list-h">
             <div class="sec-h" style="margin:0"><h3 id="h-cust">고객 목록</h3><p>고객을 누르면 아래 상담 내역이 그 고객만 보여요</p></div>
             <div class="filters" id="prog-filter">
-              <button type="button" class="chip" data-prog="0" aria-pressed="false">전체</button>
-              <button type="button" class="chip" data-prog="1" aria-pressed="true">진행</button>
+              <button type="button" class="chip" data-prog="0" aria-pressed="true">전체</button>
+              <button type="button" class="chip" data-prog="1" aria-pressed="false">진행</button>  
             </div>
           </div>
           <div class="tbl-wrap">
@@ -243,7 +243,7 @@ const inRegion = c => c.region === office;   // 항상 담당 지역 고객만
 
 // 상담 진행 중 = 연락은 했지만 아직 끝나지 않은 상태 (미연락·가입 완료·안내 완료·보류·거절은 제외)
 const IN_PROGRESS = ['부재·재연락', '문자 발송', '상담 예약'];
-let progOnly = true;
+let progOnly = false;
 const inProgress = c => !progOnly || IN_PROGRESS.includes(c.status);
 
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
