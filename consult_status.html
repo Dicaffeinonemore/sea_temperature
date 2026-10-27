@@ -339,7 +339,32 @@ async function load(){
   }
   document.getElementById('loading').hidden = true;
   renderConsult();
+  const want = new URLSearchParams(location.search).get('cust');   // 알림에서 들어온 고객
+  if(want) focusCustomer(want);
 }
+
+/* 알림으로 고른 고객을 보여 줘요: 담당 지역을 그 고객 지역으로 · 검색·'진행' 필터 해제 · 고객 선택(오른쪽 상담 내역) · 그 줄로 스크롤 */
+function focusCustomer(code){
+  const c = customers.find(x => x.code === String(code));
+  if(!c){ toast('알림의 고객을 목록에서 찾지 못했어요'); return; }
+  if(c.region && c.region !== office && OFFICES.includes(c.region)){
+    office = c.region; officeSel.value = office; putOffice(office);
+  }
+  q = ''; document.getElementById('q').value = '';
+  progOnly = false;
+  histFarm = c.code;
+  renderConsult();
+  try{ window.history.replaceState(null, '', location.pathname + '?cust=' + encodeURIComponent(c.code)); }catch(e){}
+  const tr = document.querySelector(`tr[data-cust="${CSS.escape(c.code)}"]`);
+  if(tr){ tr.scrollIntoView({block:'center', behavior:'smooth'}); tr.focus({preventScroll:true}); }
+  if(matchMedia('(max-width:1100px)').matches) document.getElementById('hist-panel').scrollIntoView({behavior:'smooth', block:'start'});
+}
+// 이 화면에 있을 때 알림을 누르면 새로고침 없이 바로 그 고객을 선택해요
+document.addEventListener('shell:noti', e => {
+  if(!e.detail.farm || !customers.some(x => x.code === String(e.detail.farm))) return;   // 목록에 없으면 공통 동작(이동)
+  e.preventDefault();
+  focusCustomer(e.detail.farm);
+});
 
 let toastT;
 function toast(msg){
@@ -373,6 +398,7 @@ consultEl.addEventListener('keydown', e => {
 function pickCustomer(code){
   histFarm = histFarm === code ? null : code;
   renderConsult();
+  try{ window.history.replaceState(null, '', location.pathname + (histFarm ? '?cust=' + encodeURIComponent(histFarm) : '')); }catch(e){}
   if(histFarm && matchMedia('(max-width:1100px)').matches) document.getElementById('hist-panel').scrollIntoView({behavior:'smooth', block:'start'});
 }
 

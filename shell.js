@@ -10,8 +10,9 @@
    화면이 쓸 수 있는 것 (window.Shell)
      Shell.reloadNoti()  알림을 서버에서 다시 받아요 (상담 저장·삭제 뒤 등)
      Shell.push(n)       이 화면에서만 알림을 하나 더해요 (가상 예시용)
+   어가 알림을 누르면 기본으로 consult_status.html?cust=어가번호 로 가서 그 고객이 선택된 화면이 열려요.
    알림을 누르면 document 에 'shell:noti' 이벤트(취소 가능)가 나가요.
-   화면이 e.preventDefault() 하면 기본 동작(어가 상세로 이동 · 담당 지역 바꾸기)을 하지 않아요. */
+   화면이 e.preventDefault() 하면 기본 동작(고객 상담 현황으로 이동 · 담당 지역 바꾸기)을 하지 않아요. */
 (() => {
   const me = document.currentScript, part = me && me.dataset.part;
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -124,7 +125,7 @@
     // 화면이 직접 처리하고 싶으면 이 이벤트에서 preventDefault()
     const ev = new CustomEvent('shell:noti', {detail:n, cancelable:true});
     if(!document.dispatchEvent(ev)) return;
-    if(n.farm){ location.href = 'farm_detail.html?id=' + encodeURIComponent(n.farm); return; }   // 어가 알림 → 그 어가 상세
+    if(n.farm){ location.href = 'consult_status.html?cust=' + encodeURIComponent(n.farm); return; }   // 어가 알림 → 고객 상담 현황에서 그 고객 선택
     if(n.region){   // 특보 알림 → 담당 지역을 그 지역으로 (각 화면의 '담당' 변경 처리가 그대로 동작)
       const sel = $('office');
       if([...sel.options].some(o => o.value === n.region)){ sel.value = n.region; sel.dispatchEvent(new Event('change', {bubbles:true})); }

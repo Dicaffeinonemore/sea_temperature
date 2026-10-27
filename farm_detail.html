@@ -1852,23 +1852,9 @@ document.getElementById('bulk-sms').addEventListener('click', () => {
   renderKpis(); renderRows(); renderBrief();
 });
 /* ===== 알림 =====
-   상단 바의 알림 종은 공통 shell.js 가 맡아요. 이 화면에서는 어가 알림을 누르면
-   새로고침 없이 이 자리에서 그 어가를 열도록 shell:noti 이벤트를 직접 처리해요. */
+   상단 바의 알림 종은 공통 shell.js 가 맡아요. 어가 알림을 누르면 모든 화면에서 같이
+   고객 상담 현황(consult_status.html?cust=어가번호)으로 가서 그 고객이 선택돼요. */
 const pushNoti = n => window.Shell && Shell.push(n);   // 가상 예시 저장 때 이 화면에만 알림 추가
-document.addEventListener('shell:noti', e => {
-  const n = e.detail;
-  if(n.farm){
-    const hid = Number(n.farm), h = apiList.find(x => x.household_id === hid);
-    if(h){
-      e.preventDefault();
-      apiSel = hid; detailMode = 'api';
-      if(h.region !== homeRegion && hasOffice(h.region)) setOffice(h.region);
-      try{ history.replaceState(null, '', '?id=' + hid + '#detail'); }catch(err){}
-      showPage('detail');
-    }else if(farms.some(f => f.id === n.farm)){ e.preventDefault(); openDetail(n.farm); }
-    // 둘 다 아니면 shell 기본 동작(farm_detail.html?id=… 로 이동)
-  }
-});
 rowsEl.addEventListener('keydown', e => {
   const tr = e.target.closest('tr[data-id]'); if(!tr) return;
   if(e.target.closest('td.ck')) return;
