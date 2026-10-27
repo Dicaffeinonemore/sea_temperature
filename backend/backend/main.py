@@ -89,4 +89,32 @@ def database_health(db: Connection = Depends(get_db)):
     return {"status": "ok", "database": "connected", "schema": "ready"}
 app.include_router(insurance_router)
 
-app.include_router(n8n_router)  
+app.include_router(n8n_router)
+
+# --- 배포용: 화면 4개를 이 백엔드에서 같이 내보냄 (Render 등 한 주소로 실행) ---
+# 폴더 전체를 공개하면 backend/backend/.env 까지 열리므로 파일 4개와 out/ 만 지정합니다.
+from pathlib import Path  # noqa: E402
+
+from fastapi.responses import FileResponse, RedirectResponse  # noqa: E402
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+
+ROOT = Path(__file__).resolve().parents[2]   # sea_temperature/
+SCREENS = ("consult_home.html", "consult_status.html", "farm_detail.html", "sea_forecast.html")
+
+
+def _screen(path: Path):
+    def serve():
+        return FileResponse(path)
+    return serve
+
+
+for _name in SCREENS:
+    app.add_api_route(f"/{_name}", _screen(ROOT / _name), include_in_schema=False)
+
+
+@app.get("/", include_in_schema=False)
+def index():
+    return RedirectResponse("/consult_home.html")
+
+
+app.mount("/out", StaticFiles(directory=ROOT / "out", check_dir=False), name="out")   # 상담 홈 예비 그래프
