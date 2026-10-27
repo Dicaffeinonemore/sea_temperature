@@ -1,5 +1,9 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>고수온 선제 상담 대시보드</title>
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>어가 상세 · 고수온 선제 상담 대시보드</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -370,24 +374,22 @@
     .actions,.record{grid-template-columns:1fr}
   }
   @media (prefers-reduced-motion:reduce){.acc>summary .arw,.region,.toast{transition:none}}
+  /* 홈(consult_home.html)과 같은 상단·메뉴 */
+  [hidden]{display:none!important}
+  a.nav{text-decoration:none}
+  .notice{margin:12px 0 0;padding:10px 12px;border-radius:8px;font-size:14px;background:var(--warn-soft);color:#7a3d06;border:1px solid #f3d3ad;white-space:pre-line}
 </style>
+</head>
+<body>
 
 <header class="top">
   <div class="top-in">
     <h1>고수온 선제 상담 대시보드</h1>
     <span class="demo" id="data-mode">불러오는 중</span>
     <div class="top-meta">
-      <label>담당 <select id="office" aria-label="담당 지역">
-        <option value="통영">통영 지역 담당</option>
-        <option value="사천">사천 지역 담당</option>
-        <option value="거제">거제 지역 담당</option>
-        <option value="고성">고성 지역 담당</option>
-        <option value="남해">남해 지역 담당</option>
-        <option value="창원">창원 지역 담당</option>
-        <option value="하동">하동 지역 담당</option>
-      </select></label>
+      <label>담당 <select id="office" aria-label="담당 지역"></select></label>
       <span id="updated"></span>
-      <button class="ghost" id="reset" type="button">시연 처음으로</button>
+      <button class="ghost" id="reset" type="button" hidden>시연 처음으로</button>
       <div class="bell-wrap">
         <button type="button" class="bell" id="bell" aria-label="알림" aria-expanded="false" aria-controls="bell-panel">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
@@ -404,13 +406,14 @@
 
 <div class="shell">
   <nav class="side" aria-label="화면 이동">
-    <button type="button" class="nav" data-page="home"><span class="ic" aria-hidden="true">☎</span>상담 홈<span class="cnt" id="nav-left"></span></button>
-    <button type="button" class="nav" data-page="detail"><span class="ic" aria-hidden="true">☰</span>어가 상세</button>
-    <button type="button" class="nav" data-page="forecast"><span class="ic" aria-hidden="true">〰</span>수온 예측</button>
-    <button type="button" class="nav" data-page="consult"><span class="ic" aria-hidden="true">☷</span>고객 상담 현황</button>
+    <a class="nav" href="consult_home.html"><span class="ic" aria-hidden="true">☎</span>상담 홈<span class="cnt" id="nav-left" hidden></span></a>
+    <a class="nav" href="farm_detail.html" aria-current="page"><span class="ic" aria-hidden="true">☰</span>어가 상세</a>
+    <a class="nav" href="sea_forecast.html"><span class="ic" aria-hidden="true">〰</span>수온 예측</a>
+    <a class="nav" href="consult_status.html"><span class="ic" aria-hidden="true">☷</span>고객 상담 현황</a>
   </nav>
 
   <main class="wrap">
+    <p class="notice" id="notice" role="alert" hidden></p>
 
     <!-- ===== 상담 홈 ===== -->
     <section id="page-home" data-page-section="home">
@@ -609,6 +612,7 @@ function setMode(ok, err){
   mode = ok ? 'db' : 'sample';
   document.getElementById('data-mode').textContent = ok ? 'DB 연결됨' : '가상 데이터 · 서버 연결 실패';
   document.getElementById('updated').textContent = ok ? `${new Date().toLocaleString('ko-KR')} 조회` : '2026.10.22 (목) 06:00 기준';
+  document.getElementById('reset').hidden = ok;   // 홈과 같이 가상 데이터일 때만 보여요
   if(!ok) addNotice(location.protocol === 'file:'
     ? '⚠️ 파일로 열면 서버에 연결할 수 없어 가상 데이터를 보여 주고 있어요. sea_temperature 폴더에서 python -m http.server 8765 를 켜고 http://localhost:8765/farm_detail.html 로 열어 주세요.'
     : `⚠️ 서버에 연결하지 못해 가상 데이터를 보여 주고 있어요. 백엔드(8000 포트)가 켜져 있는지 확인해 주세요. (${err.message})`);
@@ -779,7 +783,7 @@ async function loadFarms(){
     const [rg, fm] = await Promise.all([getJSON(ENDPOINTS.regions), getJSON(ENDPOINTS.farms)]);
     applyRegions(rg); farms = toFarms(fm); setMode(true);
   }catch(e){
-    applyRegions(SAMPLE_REGIONS); farms = loadLocal() || withIds(structuredClone(SAMPLE_FARMS)); setMode(false, e);
+    applyRegions(SAMPLE_REGIONS); farms = loadLocal() || withIds(structuredClone(FARMS0)); setMode(false, e);
   }
   const miss = [...new Set(farms.filter(f => !regionInfo[f.region]).map(f => f.region))];
   if(miss.length){
@@ -1414,7 +1418,8 @@ async function apiGet(path){
   return r.json();
 }
 async function apiPost(path, body){
-  const r = await fetch(API_BASE + path, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  // 쓰기 요청은 백엔드 규칙상 X-CSRF-Protection: 1 헤더가 필요해요 (postJSON 과 동일)
+  const r = await fetch(API_BASE + path, {method:'POST', headers:{'Content-Type':'application/json', 'X-CSRF-Protection':'1'}, body:JSON.stringify(body)});
   const j = await r.json().catch(() => ({}));
   if(!r.ok) throw Object.assign(new Error(typeof j.detail === 'string' ? j.detail : `HTTP ${r.status}`), {body:j});
   return j;
@@ -1632,10 +1637,12 @@ async function saveApiLog(){
   if(!apiData || apiData.household.household_id !== apiSel){ toast('선택한 어가 정보를 다시 불러온 뒤 저장해 주세요.'); return; }
   const householdId = apiSel, savedData = apiData;
   const status = document.getElementById('r-status').value;
-  const nx = document.getElementById('r-next').value;
+  const nx = document.getElementById('r-next').value;   // datetime-local: 'YYYY-MM-DDTHH:MM' (초가 붙을 수도 있음)
+  if(status === '상담 예약' && !nx){ toast('상담 예약은 다음 연락·상담일을 넣어 주세요.'); document.getElementById('r-next').focus(); return; }
+  // 시간대가 없는 값은 서버가 한국 시간(KST)으로 저장해요
   const body = {result_status:status, channel:'전화', memo:document.getElementById('r-memo').value.trim() || null,
                 staff_name:document.getElementById('r-staff').value.trim() || null,
-                next_contact_at: nx ? nx + ':00' : null, items:[]};
+                next_contact_at: nx ? (nx.length === 16 ? nx + ':00' : nx) : null, items:[]};
   document.querySelectorAll('#brief-side [data-ares]').forEach(s => {
     if(s.value) body.items.push({mapping_id:+s.dataset.ares, result:s.value, insurance_id:s.dataset.ins ? +s.dataset.ins : null});
   });
@@ -1779,7 +1786,7 @@ function showPage(p){
   if(p === 'consult'){ location.href = 'consult_status.html'; return; }   // 고객 상담 현황은 consult_status.html 한 곳에서 (지역 거르기도 그 파일에서)
   page = p;
   document.querySelectorAll('[data-page-section]').forEach(s => s.hidden = s.dataset.pageSection !== p);
-  document.querySelectorAll('.nav').forEach(b => { if(b.dataset.page === p) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
+  document.querySelectorAll('.nav[data-page]').forEach(b => { if(b.dataset.page === p) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
   try{ history.replaceState(null, '', '#' + p); }catch(e){}
   if(p === 'detail') renderBrief();
   if(p === 'forecast') renderForecast();
@@ -1805,6 +1812,14 @@ document.querySelector('.home-top').addEventListener('click', e => {
 const OFFICE_KEY = 'heat-dashboard-office';
 function getOffice(){ try{ return localStorage.getItem(OFFICE_KEY) || '통영'; }catch(e){ return '통영'; } }
 function putOffice(id){ try{ localStorage.setItem(OFFICE_KEY, id); }catch(e){} }
+// 담당 지역 목록은 홈과 같이 수온 예측이 있는 지역으로 채워요
+function fillOffice(current){
+  const sel = document.getElementById('office');
+  sel.innerHTML = Object.keys(regionInfo).map(id => `<option value="${esc(id)}">${esc(id)} 지역 담당</option>`).join('');
+  const id = regionInfo[current] ? current : Object.keys(regionInfo)[0];
+  sel.value = id;
+  return id;
+}
 const hasOffice = id => [...document.getElementById('office').options].some(o => o.value === id);
 function setOffice(id){
   putOffice(id);
@@ -1819,6 +1834,11 @@ function setOffice(id){
   }
 }
 document.getElementById('office').addEventListener('change', e => setOffice(e.target.value));
+// 가상 데이터 시연 기록을 지우고 처음 상태로
+document.getElementById('reset').addEventListener('click', () => {
+  try{ localStorage.removeItem(KEY); }catch(e){}
+  location.reload();
+});
 document.getElementById('filters').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
   if(b.hasAttribute('data-clear')) filter.region = null;
@@ -1921,6 +1941,21 @@ detailEl.addEventListener('click', async e => {
   const g = e.target.closest('[data-goto-fc]');
   if(g){ fcRegion = g.dataset.gotoFc; fcPick = 0; showPage('forecast'); return; }
   const a = e.target.closest('[data-act]'); if(!a) return;
+  // DB 어가: 결과 기록 → POST /api/households/{id}/consult-logs (consult_cases · consult_logs · consult_log_items)
+  if(a.dataset.act === 'api-save'){
+    if(a.disabled) return;
+    a.disabled = true;
+    try{ await saveApiLog(); } finally { a.disabled = false; }
+    return;
+  }
+  if(a.dataset.act === 'call' && detailMode === 'api'){
+    const H = apiData && apiData.household;
+    toast(`${H ? H.owner_name + (H.phone_masked ? ` (${H.phone_masked})` : '') : '어가'}에게 전화 연결 · 시연이라 실제로 걸리지 않아요`);
+    openSecs.add('record'); document.getElementById('acc-record').open = true;
+    document.getElementById('r-status').focus();
+    return;
+  }
+  const f = farms.find(x => x.id === selected); if(!f) return;   // 가상 예시 어가
   if(a.dataset.act === 'call'){
     toast(`${f.name} (${f.phone})에게 전화 연결 · 시연이라 실제로 걸리지 않아요`);
     openSecs.add('record'); document.getElementById('acc-record').open = true;
@@ -1985,8 +2020,8 @@ consultEl.addEventListener('keydown', e => {
 /* ===== 시작 ===== */
 (async () => {
   await loadFarms();
-  const savedOffice = getOffice();
-  if(hasOffice(savedOffice)) setOffice(savedOffice);
+  const startOffice = fillOffice(getOffice());
+  if(startOffice) setOffice(startOffice);
   if(!selected && sorted().length) selected = sorted()[0].id;
   renderHome();
   initApi();
