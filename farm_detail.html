@@ -554,7 +554,9 @@
 
 <script>
 /* ===== 데이터 연결 ===== */
-const DATA_API_BASE = (location.protocol === 'file:' ? 'http://127.0.0.1' : `${location.protocol}//${location.hostname}`) + ':8000';
+const DATA_API_BASE = (location.protocol === 'file:' ? 'http://127.0.0.1:8000'
+  : location.port === '8765' ? `${location.protocol}//${location.hostname}:8000`
+  : location.origin);   // 배포(Render) 등 백엔드가 화면을 같이 내보낼 때는 같은 주소
 const ENDPOINTS = {
   regions: '/api/dashboard/regions',
   farms:   '/api/consult/customers',
@@ -1093,7 +1095,9 @@ function ctrCard(x, k){
    API(household_detail_api.py)가 연결되면 DB 어가(fishery_households)를 기준으로 그리고,
    연결이 안 되면(파일로 열었을 때 등) 위의 가상 예시 어가로 그려요.
    왼쪽: 어가 · 수온 · 계약별 보험 / 오른쪽: 상담 시 확인 사항 · 전화 · 결과 기록 · 상담 기록 · 안내처 */
-const API_BASE = window.DETAIL_API_BASE ?? ((location.protocol === 'file:' ? 'http://127.0.0.1' : `${location.protocol}//${location.hostname}`) + ':8000');   // 다른 화면과 같이 항상 8000 백엔드로
+const API_BASE = window.DETAIL_API_BASE ?? ((location.protocol === 'file:' ? 'http://127.0.0.1:8000'
+  : location.port === '8765' ? `${location.protocol}//${location.hostname}:8000`
+  : location.origin));   // 배포(Render) 등 백엔드가 화면을 같이 내보낼 때는 같은 주소 (다른 화면과 동일)
 let apiOk = false, apiList = [], apiSel = null, apiData = null, apiErr = null, detailMode = 'mock';
 let apiRequestId = 0;
 const apiQuotes = {};   // mapping_id → 견적(만 원)

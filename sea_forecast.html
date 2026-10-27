@@ -401,7 +401,9 @@
    백엔드(FastAPI, 8000 포트)에서 데이터를 받아요. 연결이 안 되면 아래 가상 데이터(SAMPLE)를 쓰고 화면 위에 경고를 띄워요.
    API 응답을 SAMPLE과 같은 모양으로 맞추면 화면 코드는 고치지 않아도 돼요.
    지금 백엔드에 있는 경로는 /api/consult/logs (상담 결과 저장) 하나예요. '제안' 경로는 API를 만들면서 이름을 맞춰 주세요. */
-const API_BASE = (location.protocol === 'file:' ? 'http://127.0.0.1' : `${location.protocol}//${location.hostname}`) + ':8000';
+const API_BASE = (location.protocol === 'file:' ? 'http://127.0.0.1:8000'
+  : location.port === '8765' ? `${location.protocol}//${location.hostname}:8000`
+  : location.origin);   // 배포(Render) 등 백엔드가 화면을 같이 내보낼 때는 같은 주소
 const ENDPOINTS = {
   regions: '/api/dashboard/regions',  // 제안 · 지역별 21일 수온 예측 (상담 홈과 같음)
 };
