@@ -75,6 +75,7 @@
   .badge.s1{color:#7a5a00;background:#fff1b8}
   .badge.s2{color:#7a3300;background:#fbcf9c}
   .badge.s3{color:var(--alert);background:var(--alert-soft)}
+  .badge.ref{opacity:.75;border:1px dashed currentColor;padding:0 6px}
 
   /* 홈 2단 */
   .main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
@@ -527,7 +528,9 @@ function applyRegions(data){
     const t = series.filter(p => p.src === 'ROMS').map(p => p.max);
     const st = t.map((v,i,a) => stageOfDay(v,i,a));
     const top = Math.max(...st), maxT = Math.max(...t);
-    regionInfo[r.id] = {...r, t, series, st, top, d:st.indexOf(top), maxT, dMax:t.indexOf(maxT)};
+    // 21일 전체 단계(표시용): 8~21일은 참고만이라 top·첫 예상일 등 판정에는 쓰지 않아요. 7일→8일 경보 연속일은 이어서 계산해요.
+    const stAll = series.map((p,i,a) => stageOfDay(p.max, i, a.map(q => q.max)));
+    regionInfo[r.id] = {...r, t, series, st, stAll, top, d:st.indexOf(top), maxT, dMax:t.indexOf(maxT)};
   });
 }
 
@@ -628,12 +631,13 @@ function renderForecastSide(I){
       + '</div>';
   }).join('');
 
-  const table = (rows, stage) => `<div class="tbl-wrap"><table><thead><tr><th>날짜</th>${stage?'<th>단계</th>':''}<th class="num">최고℃</th><th class="num">평균℃</th><th class="num">최저℃</th></tr></thead><tbody>${
-    rows.map(r => `<tr><td>${mdw(r.i)}</td>${stage?`<td><span class="badge s${I.st[r.i]}">${STAGE[I.st[r.i]]}</span></td>`:''}<td class="num"><b>${r.max.toFixed(1)}</b></td><td class="num">${r.mean.toFixed(1)}</td><td class="num">${r.min.toFixed(1)}</td></tr>`).join('')
+  // ref = 8~21일 표: 같은 기준으로 단계를 보여 주되 '참고'로 표시
+  const table = (rows, ref) => `<div class="tbl-wrap"><table><thead><tr><th>날짜</th><th>${ref?'단계(참고)':'단계'}</th><th class="num">최고℃</th><th class="num">평균℃</th><th class="num">최저℃</th></tr></thead><tbody>${
+    rows.map(r => `<tr><td>${mdw(r.i)}</td><td><span class="badge s${I.stAll[r.i]}${ref?' ref':''}">${STAGE[I.stAll[r.i]]}</span></td><td class="num"><b>${r.max.toFixed(1)}</b></td><td class="num">${r.mean.toFixed(1)}</td><td class="num">${r.min.toFixed(1)}</td></tr>`).join('')
   }</tbody></table></div>`;
   document.getElementById('fc-tables').innerHTML =
-    `<div><h3>1~7일 · ROMS (대응 검토)</h3>${table(pts.filter(p => p.src==='ROMS'), true)}</div>
-     <div><h3>8~21일 · ECMWF 보정 (참고만)</h3>${table(pts.filter(p => p.src==='ECMWF'), false)}</div>`;
+    `<div><h3>1~7일 · ROMS (대응 검토)</h3>${table(pts.filter(p => p.src==='ROMS'), false)}</div>
+     <div><h3>8~21일 · ECMWF 보정 (참고만)</h3>${table(pts.filter(p => p.src==='ECMWF'), true)}<p class="note" style="margin-top:6px">8~21일 단계는 같은 기준을 ECMWF 보정값에 적용한 참고 표시예요. 예상 단계·연락 대상 판단에는 쓰지 않아요.</p></div>`;
 }
 
 /* ===== 이벤트 ===== */
