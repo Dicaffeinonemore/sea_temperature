@@ -5,7 +5,9 @@
   - gov24.gov24_service_detail  상세 (구비서류·문의처 등) — 서비스ID로 합침. 표가 없으면 목록만 씀
   - insurance.insurance_products.government_subsidy   보험료 국가 보조(%)
 
-  GET /api/v1/gov-support/services?region=통영&species=조피볼락&keyword=&disaster_only=false&limit=20
+  GET /api/v1/gov-support/services?region=통영&species=조피볼락&keyword=&disaster_only=false&after_damage=false&limit=20
+      after_damage=true : 피해 뒤 받는 보상금·지원금만 (백신·방역·보험료·장비 같은 사전 지원은 뺌)
+      heat_only=true    : 고수온(이상수온)이 들어간 사업만
   GET /api/v1/gov-support/services/{service_id}
   GET /api/v1/gov-support/summary?region=&species=          상위 3건 짧은 카드
   GET /api/v1/gov-support/insurance-subsidy?species=&region=&method=   국가 보조 + 지자체 추가 지원
@@ -41,7 +43,10 @@ router = APIRouter(prefix="/api/v1/gov-support", tags=["정부지원금"])
 # ---------------------------------------------------------------------------
 FISHERY = "양식|어업인|어업|어가|수산|어촌|어장"
 DISASTER = "재해|보험|고수온|저수온|적조|피해|복구"
-HEAT = "고수온|이상수온"
+HEAT = r"고수온|이상\s*수온"
+# 피해가 난 뒤 받는 보상·지원 (사후)  ↔  미리 하는 예방·보험료·장비 지원 (사전)
+AFTER = r"피해|재해|재난|복구|보상금|위로금|구호|폐사|회생|상환\s*(연기|유예)|이자\s*감면|긴급\s*경영"
+BEFORE = r"백신|예방|방역|구제|장비|보험료|보험|교육|예찰|인증|보급|현대화|설치|시설|직불|부표|기술"
 # 앱·n8n에서 쓰는 짧은 지역 이름 → 시·군 (locations.py 의 7개 시·군 + 별칭)
 CITY = {"통영": "통영시", "산양": "통영시", "욕지": "통영시", "거제": "거제시", "고성": "고성군",
         "남해": "남해군", "미조": "남해군", "하동": "하동군", "사천": "사천시",
@@ -244,7 +249,8 @@ def _service(row: dict, city: str | None, words: list[str]) -> dict:
 # 파이썬에서 바로 쓰는 함수 (API도 이 함수를 그대로 부름)
 # ---------------------------------------------------------------------------
 def search_services(db: Connection, region: str | None = None, species: str | None = None,
-                    keyword: str | None = None, disaster_only: bool = False, limit: int = 20) -> list[dict]:
+                    keyword: str | None = None, disaster_only: bool = False, limit: int = 20,
+                    after_damage: bool = False, heat_only: bool = False) -> list[dict]:
     city = city_of(region)
     agencies = ["해양수산부", "경상남도"] + ([f"경상남도 {city}"] if city else [])
     where = ['l."소관기관명" = ANY(%(agencies)s)',
@@ -253,6 +259,13 @@ def search_services(db: Connection, region: str | None = None, species: str | No
     if disaster_only:
         where.append("""concat_ws(' ', l."서비스명", l."지원내용", l."서비스목적요약") ~ %(disaster)s""")
         params["disaster"] = DISASTER
+    if after_damage:   # 이름·목적·대상에 사후 단어가 있고, 이름이 예방·보험료·장비 사업이 아닌 것
+        where.append("""concat_ws(' ', l."서비스명", l."서비스목적요약", l."지원대상") ~ %(after)s""")
+        where.append("""coalesce(l."서비스명", '') !~ %(before)s""")
+        params.update(after=AFTER, before=BEFORE)
+    if heat_only:      # 고수온 관련 사업만 (이름·목적·대상·지원내용·선정기준 어디든)
+        where.append("""concat_ws(' ', l."서비스명", l."서비스목적요약", l."지원대상", l."지원내용", l."선정기준") ~ %(heat)s""")
+        params["heat"] = HEAT
     if keyword:
         where.append("""concat_ws(' ', l."서비스명", l."지원내용", l."지원대상", l."서비스목적요약") ILIKE %(kw)s""")
         params["kw"] = f"%{escape_like(keyword)}%"
@@ -315,9 +328,10 @@ def insurance_subsidy(db: Connection, species: str, region: str | None = None,
 
 
 # ---------------------------------------------------------------------------
-# 고수온 피해 시 지원 (팀 CSV 4개: 제도 · 복구 단가 · 상환연기 · 출처)
-# 1) DB에 같은 칸 이름의 표가 있으면 그 표 (표 이름은 상관없음)
-# 2) 없으면 backend/backend/data/damage/*.csv 파일 (DB를 바꾸지 않아도 되게)
+# 고수온 피해 시 지원 (팀 자료 4개 표: 제도 · 복구 단가 · 상환연기 · 출처)
+# 1) Super DB에 같은 칸 이름의 표가 있으면 그 표 (표 이름은 상관없음)
+# 2) 없으면 backend/backend/data/damage/ 의 CSV 4개 (programs · prices · relief · sources)
+# 제도는 고수온 관련 사후 지원·피해보상만 남긴다.
 # ---------------------------------------------------------------------------
 DAMAGE_TABLES = {
     "programs": ["제도ID", "제도명", "지원내용"],
@@ -382,8 +396,7 @@ class DamageSupport(BaseModel):
     relief: list[ReliefRule]
     split: dict[str, Any]
     sources: list[DamageSource]
-    missing: list[str]            # DB에도 CSV 파일에도 없는 표 (programs · prices · relief · sources)
-    origin: dict[str, str] = {}   # 표마다 어디서 읽었는지: db · csv
+    missing: list[str]            # DB에도 CSV에도 없는 표 (programs · prices · relief · sources)
 
 
 def _num(v: Any) -> float | None:
@@ -420,30 +433,33 @@ def find_table(db: Connection, cols: list[str]) -> sql.Composed | None:
     return sql.SQL("{}.{}").format(sql.Identifier(r["table_schema"]), sql.Identifier(r["table_name"])) if r else None
 
 
-DAMAGE_DIR = Path(__file__).resolve().parent / "data" / "damage"   # programs.csv · prices.csv · relief.csv · sources.csv
+DAMAGE_DIR = Path(__file__).resolve().parent / "data" / "damage"
 
 
 def _csv_rows(key: str) -> list[dict] | None:
+    """DB에 표가 없을 때 쓰는 CSV (엑셀 UTF-8 BOM 있어도 됨). 칸 이름이 안 맞으면 None"""
     path = DAMAGE_DIR / f"{key}.csv"
     if not path.is_file():
         return None
     with path.open(encoding="utf-8-sig", newline="") as f:
-        rows = [{_key(k): (v if v != "" else None) for k, v in row.items() if k is not None} for row in csv.DictReader(f)]
+        rows = [{_key(k): (v if v != "" else None) for k, v in row.items() if k is not None}
+                for row in csv.DictReader(f)]
+    rows = [r for r in rows if any(v for v in r.values())]
     return rows if rows and all(c in rows[0] for c in DAMAGE_TABLES[key]) else None
 
 
-def _table_rows(db: Connection, key: str, missing: list[str], origin: dict[str, str]) -> list[dict]:
+def _table_rows(db: Connection, key: str, missing: list[str]) -> list[dict]:
     t = find_table(db, DAMAGE_TABLES[key])
     if t is not None:
-        origin[key] = "db"
-        return [{_key(k): v for k, v in r["row"].items()}
+        rows = [{_key(k): v for k, v in r["row"].items()}
                 for r in db.execute(sql.SQL("SELECT to_jsonb(t) AS row FROM {} t").format(t)).fetchall()]
-    rows = _csv_rows(key)
+        if rows:
+            return rows
+    rows = _csv_rows(key)   # DB에 없거나 비어 있으면 CSV
     if rows is None:
         missing.append(key)
         return []
-    origin[key] = "csv"
-    return [r for r in rows if any(v for v in r.values())]
+    return rows
 
 
 def _item_words(item: str) -> set[str]:
@@ -453,9 +469,8 @@ def _item_words(item: str) -> set[str]:
 
 def damage_support(db: Connection, species: list[str] | None = None) -> dict:
     missing: list[str] = []
-    origin: dict[str, str] = {}
     programs = []
-    for r in _table_rows(db, "programs", missing, origin):
+    for r in _table_rows(db, "programs", missing):
         programs.append({
             "id": str(r.get("제도ID") or ""), "kind": _txt(r.get("구분")), "name": _txt(r.get("제도명")) or "(이름 없음)",
             "agency": _txt(r.get("운영기관")), "target": _txt(r.get("대상")), "content": _txt(r.get("지원내용")),
@@ -464,25 +479,27 @@ def damage_support(db: Connection, species: list[str] | None = None) -> dict:
             "to_check": [x.strip() for x in str(r.get("확인필요_항목") or "").split(";") if x.strip()],
             "link": _txt(r.get("공식링크")), "basis": _txt(r.get("근거_법령고시")), "checked": _txt(r.get("확인일")),
         })
+    # 고수온과 관련된 제도만 (대상·지원내용·2026년 현황 등에 '고수온'이 있는 것. '확인 필요' 칸은 보지 않음)
+    programs = [x for x in programs if re.search(HEAT, " ".join(str(v) for v in x.values() if isinstance(v, str)))]
     order = {"지원금": 0, "대출": 1, "보증": 2}
     programs.sort(key=lambda x: (order.get(x["kind"] or "", 9), x["id"]))
     prices = [{"item": str(r.get("품목") or "").strip(), "size": _txt(r.get("규격")), "price": _num(r.get("단가_원")),
                "unit": _txt(r.get("단위")), "raise_pct": _txt(r.get("전년대비_인상률_퍼센트")),
                "since": _txt(r.get("시행일")), "note": _txt(r.get("비고"))}
-              for r in _table_rows(db, "prices", missing, origin)]
+              for r in _table_rows(db, "prices", missing)]
     relief = sorted(({"min_rate": _num(r.get("피해율_이상")) or 0, "max_rate": _num(r.get("피해율_미만")) or 0,
                       "years": _num(r.get("상환연기_년")) or 0, "interest": _txt(r.get("이자감면")),
                       "apply_to": _txt(r.get("신청처")), "note": _txt(r.get("비고"))}
-                     for r in _table_rows(db, "relief", missing, origin)), key=lambda x: x["min_rate"])
+                     for r in _table_rows(db, "relief", missing)), key=lambda x: x["min_rate"])
     sources = [{"kind": _txt(r.get("분류")), "name": _txt(r.get("기관_자료명")) or "", "use": _txt(r.get("용도")),
                 "link": _txt(r.get("링크")), "read": _txt(r.get("내용_열람확인"))}
-               for r in _table_rows(db, "sources", missing, origin)]
+               for r in _table_rows(db, "sources", missing)]
     by_species = {}
     for sp in species or []:
         words = set(species_words(sp)) - {"어류", "가두리"}
         by_species[sp] = [p for p in prices if p["price"] is not None and words & _item_words(p["item"])]
     return {"programs": programs, "prices": by_species, "all_prices": prices, "relief": relief,
-            "split": RECOVERY_SPLIT, "sources": sources, "missing": missing, "origin": origin}
+            "split": RECOVERY_SPLIT, "sources": sources, "missing": missing}
 
 
 # ---------------------------------------------------------------------------
@@ -495,8 +512,9 @@ Species = Annotated[str | None, Query(max_length=50, description="조피볼락 �
 @router.get("/services", response_model=list[GovService])
 def services(db: DB, region: Region = None, species: Species = None,
              keyword: Annotated[str | None, Query(max_length=30)] = None,
-             disaster_only: bool = False, limit: Annotated[int, Query(ge=1, le=100)] = 20):
-    return search_services(db, region, species, keyword, disaster_only, limit)
+             disaster_only: bool = False, limit: Annotated[int, Query(ge=1, le=100)] = 20,
+             after_damage: bool = False, heat_only: bool = False):
+    return search_services(db, region, species, keyword, disaster_only, limit, after_damage, heat_only)
 
 
 @router.get("/services/{service_id}", response_model=GovServiceDetail)
@@ -542,6 +560,8 @@ def main():
     s = sub.add_parser("services", help="지원사업 목록")
     s.add_argument("--region"); s.add_argument("--species"); s.add_argument("--keyword")
     s.add_argument("--disaster-only", action="store_true"); s.add_argument("--limit", type=int, default=20)
+    s.add_argument("--after-damage", action="store_true", help="피해 뒤 보상금·지원금만")
+    s.add_argument("--heat-only", action="store_true", help="고수온 관련 사업만")
     d = sub.add_parser("detail", help="지원사업 한 건"); d.add_argument("service_id")
     b = sub.add_parser("subsidy", help="보험료 지원(국가+지자체)")
     b.add_argument("--species", required=True); b.add_argument("--region"); b.add_argument("--method", choices=["가두리", "육상"])
@@ -551,7 +571,7 @@ def main():
         with connect() as conn:
             conn.read_only = True
             if a.cmd == "services":
-                out = search_services(conn, a.region, a.species, a.keyword, a.disaster_only, a.limit)
+                out = search_services(conn, a.region, a.species, a.keyword, a.disaster_only, a.limit, a.after_damage, a.heat_only)
             elif a.cmd == "detail":
                 out = service_detail(conn, a.service_id)
             elif a.cmd == "damage":

@@ -199,10 +199,6 @@
   .gov-calc select{border:1px solid var(--line-strong);border-radius:6px;padding:3px 6px;background:#fff}
   .gov-calc input{width:110px;border:1px solid var(--line-strong);border-radius:6px;padding:3px 6px;text-align:right;background:#fff}
   .gov-out dd{text-align:right;font-variant-numeric:tabular-nums}
-  .gov-ai{margin-bottom:12px}
-  .gov-ai .btn{min-height:0;padding:6px 12px;font-size:13px}
-  .gov-ai .script{margin-top:8px;font-size:13.5px;line-height:1.6;white-space:pre-wrap}
-  .gov-ai-foot{display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap}
 
   /* 수온 예측 */
   .fc-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(260px,.7fr);gap:16px;align-items:start;margin-bottom:16px}
@@ -1233,7 +1229,7 @@ async function loadGov(ctx){
       const dq = new URLSearchParams(); sp.forEach(x => dq.append('species', x));
       const [dmg, lists] = await Promise.all([
         apiGet(`/api/v1/gov-support/damage?${dq}`),
-        Promise.allSettled((sp.length ? sp : [null]).map(x => apiGet(`/api/v1/gov-support/services?${qs({region:ctx.region, species:x, limit:8})}`))),
+        Promise.allSettled((sp.length ? sp : [null]).map(x => apiGet(`/api/v1/gov-support/services?${qs({region:ctx.region, species:x, limit:8, after_damage:'true', heat_only:'true'})}`))),
       ]);
       // 어종마다 찾은 정부24 지원사업을 하나로 (점수는 높은 쪽, 태그는 합침)
       const byId = new Map();
@@ -1242,7 +1238,7 @@ async function loadGov(ctx){
         if(!o) byId.set(s.service_id, {...s, tags:[...s.tags]});
         else { o.score = Math.max(o.score, s.score); s.tags.forEach(t => { if(!o.tags.includes(t)) o.tags.push(t); }); }
       });
-      govCache[ctx.key] = {state:'ok', region:ctx.region, species:sp, dmg, ai:null,
+      govCache[ctx.key] = {state:'ok', region:ctx.region, species:sp, dmg,
         services:[...byId.values()].sort((a, b) => b.score - a.score)};
     }catch(e){
       govCache[ctx.key] = {state:'err', err:e.message};
@@ -1257,7 +1253,10 @@ async function loadGov(ctx){
     return;
   }
   const P = g.species.map(sp => [sp, (g.dmg.prices[sp] || [])[0]]).find(([, x]) => x);
-  sum.textContent = `정부24 지원사업 ${g.services.length}건 · 피해 지원 제도 ${g.dmg.programs.length}개${P ? ` · ${P[0]} 복구 단가 ${money(P[1].price)}원/${P[1].unit || ''}` : ''}`;
+  const parts = [g.services.length && `고수온 피해 지원 ${g.services.length}건`,
+                 g.dmg.programs.length && `고수온 피해 지원 제도 ${g.dmg.programs.length}개`,
+                 P && `${P[0]} 복구 단가 ${money(P[1].price)}원/${P[1].unit || ''}`].filter(Boolean);
+  sum.textContent = parts.join(' · ') || '사후 지원 확인 안됨';
   box.innerHTML = govBody(g);
   govCalc();
 }
@@ -1333,32 +1332,6 @@ function govProgram(x){
     ${url ? `<a class="linkish" href="${esc(url)}" target="_blank" rel="noopener noreferrer">공식 자료 보기 →</a>` : ''}${x.checked ? ` <span class="note">· ${esc(x.checked)} 확인</span>` : ''}
   </div>`;
 }
-// n8n '정부 지원사업 조회 API (gov24)' 워크플로우 → 어민에게 읽어 줄 안내문 (AI 실패 시 규칙 문장)
-function govAiBox(g){
-  const A = g.ai;
-  const body = !A ? '' : A.loading ? '<p class="note" style="margin-top:6px">n8n에서 안내문을 만드는 중… (AI라 최대 2분)</p>'
-    : A.err ? `<p class="note ng" style="margin-top:6px">${esc(A.err)}</p>`
-    : `<div class="script" id="gov-ai-text">${esc(A.answer)}</div>
-       <div class="gov-ai-foot"><button type="button" class="btn" data-act="gov-ai-copy">복사</button>
-       <span class="note">${A.by === 'ai' ? 'AI 요약' : 'AI 없이 규칙으로 만든 문장'} · n8n 워크플로우 · 정부24 자료 ${A.count ?? 0}건</span></div>`;
-  return `<div class="gov-ai" id="gov-ai">
-    <button type="button" class="btn" data-act="gov-ai" ${A && A.loading ? 'disabled' : ''}>📝 어민용 지원사업 안내문 만들기${A && !A.loading && !A.err ? ' (다시)' : ''}</button>
-    ${body}</div>`;
-}
-async function runGovAi(){
-  const key = govShown, g = govCache[key]; if(!g || g.state !== 'ok') return;
-  const draw = () => { if(govShown !== key) return; const el = document.getElementById('gov-ai'); if(el) el.outerHTML = govAiBox(g); };
-  g.ai = {loading:true}; draw();
-  const q = new URLSearchParams(Object.entries({region:g.region, species:g.species[0]}).filter(([, v]) => v));
-  try{
-    const r = await apiGet(`/api/v1/n8n/gov-support?${q}`);
-    g.ai = {answer:r.answer || (r.screen && r.screen.text) || '안내문이 비어 있어요.', by:r.answer_by, count:r.count};
-  }catch(e){
-    g.ai = {err:`안내문을 만들지 못했어요 · ${e.message} (n8n에서 '정부 지원사업 조회 API (gov24)'를 Active로 켜 주세요)`};
-  }
-  draw();
-}
-
 function govBody(g){
   const D = g.dmg, S = D.split || {};
   const spRows = g.species.map((sp, i) => {
@@ -1376,20 +1349,21 @@ function govBody(g){
   const progs = D.programs, top = progs.filter(x => x.kind === '지원금'), rest = progs.filter(x => x.kind !== '지원금');
   const srcs = (D.sources || []).filter(x => safeUrl(x.link));
   const sv = g.services, svTop = sv.slice(0, 3), svMore = sv.slice(3);
-  return `${govAiBox(g)}
-    <h4>${esc(g.region || '')} 어가가 받을 수 있는 정부24 지원사업 ${sv.length}건 (가까운 순)</h4>
-    ${sv.length ? `<div class="gov-list">${svTop.map(govCard).join('')}</div>
-      ${svMore.length ? `<details class="est"><summary>정부24 지원사업 ${svMore.length}건 더 보기</summary><div class="gov-list" style="margin-top:8px">${svMore.map(govCard).join('')}</div></details>` : ''}`
-      : '<p class="note">이 지역·어종에 맞는 정부24 지원사업을 DB에서 찾지 못했어요.</p>'}
-    ${D.missing.length ? `<p class="note need" style="display:block;margin:12px 0 8px">피해 지원 자료를 찾지 못한 항목: ${D.missing.map(esc).join(', ')}</p>` : ''}
-    <div class="gov-sub" style="margin-top:14px"><h4>고수온 피해가 나면 · 재해복구비(재난지원금) 계산</h4>
+  // 피해 지원 자료(단가·상환연기·제도)가 없으면 그 부분은 통째로 숨김
+  const hasPrices = !D.missing.includes('prices') || !D.missing.includes('relief');
+  const none = !sv.length && !hasPrices && !progs.length;   // 사후 지원을 하나도 확인하지 못함
+  return `    ${none ? '<p class="note" style="margin-top:4px"><b>사후 지원 확인 안됨</b> · DB에서 이 지역·어종의 고수온 피해 보상금·지원금을 찾지 못했어요. 시·군청 수산과와 수협에 확인해 주세요.</p>' : ''}
+    ${sv.length ? `<h4>고수온 피해가 나면 받을 수 있는 지원 · 정부24 ${sv.length}건</h4>
+      <div class="gov-list">${svTop.map(govCard).join('')}</div>
+      ${svMore.length ? `<details class="est"><summary>${svMore.length}건 더 보기</summary><div class="gov-list" style="margin-top:8px">${svMore.map(govCard).join('')}</div></details>` : ''}` : ''}
+    ${hasPrices ? `<div class="gov-sub" style="margin-top:14px"><h4>고수온 피해가 나면 · 재해복구비(재난지원금) 계산</h4>
       ${spRows || '<p class="note">어종 정보가 없어요.</p>'}
       <div class="gov-calc"><label>피해율 (시·군 조사) <input id="gov-rate" type="number" min="0" max="100" inputmode="numeric" placeholder="입력"> %</label></div>
       <dl class="facts gov-out" id="gov-res"></dl>
       <p class="note" style="margin-top:6px">복구비 = 폐사 마릿수 × 정부 복구 단가 · 비율·한도는 ${esc(S.source || '')} 기준이라 ${S.confirmed ? '' : '<b>확인 필요</b> · '}보험금과 함께 받을 수 있는지는 시·군청과 수협에 확인해 주세요.</p>
-    </div>
-    <h4>피해 지원 제도 ${progs.length}개</h4>
-    <div class="gov-list">${top.map(govProgram).join('')}</div>
+    </div>` : ''}
+    ${progs.length ? `<h4 style="margin-top:14px">고수온 피해 지원 제도 ${progs.length}개</h4>
+    <div class="gov-list">${top.map(govProgram).join('')}</div>` : ''}
     ${rest.length ? `<details class="est"><summary>대출·보증 등 ${rest.length}개 더 보기</summary><div class="gov-list" style="margin-top:8px">${rest.map(govProgram).join('')}</div></details>` : ''}
     ${srcs.length ? `<details class="est"><summary>자료 출처 ${srcs.length}개</summary><ul class="links" style="margin:6px 0 0 16px">${srcs.map(x => `<li><a class="linkish" href="${esc(safeUrl(x.link))}" target="_blank" rel="noopener noreferrer">${esc(x.name)}</a> <span class="note">${esc(x.use || '')}</span></li>`).join('')}</ul></details>` : ''}`;
 }
@@ -1947,12 +1921,6 @@ detailEl.addEventListener('click', async e => {
   const g = e.target.closest('[data-goto-fc]');
   if(g){ fcRegion = g.dataset.gotoFc; fcPick = 0; showPage('forecast'); return; }
   const a = e.target.closest('[data-act]'); if(!a) return;
-  if(a.dataset.act === 'gov-ai') return runGovAi();
-  if(a.dataset.act === 'gov-ai-copy'){
-    const t = document.getElementById('gov-ai-text');
-    try{ await navigator.clipboard.writeText(t.textContent); toast('안내문을 복사했어요'); }catch(err){ toast('복사하지 못했어요 · 직접 선택해 복사해 주세요'); }
-    return;
-  }
   if(a.dataset.act === 'call'){
     toast(`${f.name} (${f.phone})에게 전화 연결 · 시연이라 실제로 걸리지 않아요`);
     openSecs.add('record'); document.getElementById('acc-record').open = true;
