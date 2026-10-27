@@ -1631,11 +1631,27 @@ def add_consult_log(household_id: int, body: ConsultLogIn):
         if cur.fetchone() is None:
             raise HTTPException(404, "어가 정보를 찾을 수 없어요")
         if body.items:
+            # consult_log_items 는 (log_id, mapping_id) UNIQUE → 한 번에 같은 어종을 두 번 보내면 안 됨
+            ids = [i.mapping_id for i in body.items]
+            dup = sorted({m for m in ids if ids.count(m) > 1})
+            if dup:
+                raise HTTPException(422, f"같은 어종 결과가 두 번 들어왔어요: mapping_id {dup}")
             cur.execute("SELECT mapping_id FROM customer_service.household_species WHERE household_id = %s", (household_id,))
             own = {r["mapping_id"] for r in cur.fetchall()}
             bad = [i.mapping_id for i in body.items if i.mapping_id not in own]
             if bad:
                 raise HTTPException(422, f"이 어가의 어종이 아니에요: mapping_id {bad}")
+            # insurance_id 는 이 어가 계약이면서 그 어종(mapping_id)이 보험목적으로 걸린 계약이어야 함
+            ins_pairs = [(i.insurance_id, i.mapping_id) for i in body.items if i.insurance_id is not None]
+            if ins_pairs:
+                cur.execute("""SELECT t.insurance_id, t.mapping_id
+                               FROM customer_service.insurance_targets t
+                               JOIN customer_service.insurance_contracts c ON c.insurance_id = t.insurance_id
+                               WHERE c.household_id = %s""", (household_id,))
+                valid = {(r["insurance_id"], r["mapping_id"]) for r in cur.fetchall()}
+                bad_ins = [p for p in ins_pairs if p not in valid]
+                if bad_ins:
+                    raise HTTPException(422, f"이 어가·어종의 계약이 아니에요: (insurance_id, mapping_id) {bad_ins}")
         cur.execute("""
             INSERT INTO customer_service.consult_cases (household_id, season, status, next_contact_at, last_contact_at)
             VALUES (%s, %s, %s, %s, now())
