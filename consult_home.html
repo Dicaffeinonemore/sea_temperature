@@ -351,6 +351,46 @@
   .gd-badge.gd-later{background:#eef2f7;color:#475569}
   .gd-det{font-size:12px;color:var(--sub);margin-top:4px;line-height:1.5}
   .gd-det b{color:var(--text);font-weight:600}
+  /* ===== 홈 상단 (개편): 한 패널 3칸 · 오늘 연락할 어가 | 지역 수온 | 신청·주의 추이 ===== */
+  :root{--teal:#0f7c8c;--teal-soft:#e3f3f5;--teal-line:#b8dfe4}
+  .home-top{display:grid;grid-template-columns:minmax(230px,.9fr) minmax(230px,.8fr) minmax(0,1.6fr);gap:0;margin:18px 0 16px;padding:0;align-items:stretch}
+  .home-top>.ht-col{padding:14px 18px;display:flex;flex-direction:column;gap:10px;min-width:0}
+  .home-top>.ht-col+.ht-col{border-left:1px solid var(--line)}
+  .ht-title{font-size:15px;font-weight:700}
+  .ht-sub{font-size:12px;color:var(--muted)}
+  .ht-hl{display:flex;align-items:center;gap:12px;background:var(--teal-soft);border-radius:8px;padding:9px 14px}
+  .ht-hl b{font-size:26px;font-weight:700;line-height:1;color:var(--teal);font-variant-numeric:tabular-nums}
+  .ht-hl span{display:block;font-size:14px;font-weight:700}
+  .ht-hl small{display:block;font-size:12px;color:var(--muted)}
+  .ht-list{display:flex;flex-direction:column;font-size:13.5px}
+  .ht-list>div{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--line)}
+  .ht-list>div:last-child{border-bottom:0}
+  .ht-list dt{color:var(--sub)}
+  .ht-list dd{font-weight:700;font-variant-numeric:tabular-nums}
+  .ht-list dd small{font-weight:500;color:var(--muted)}
+  .ht-temp-h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .ht-pill{font-size:12px;font-weight:700;border-radius:4px;padding:1px 8px;white-space:nowrap;border:1px solid transparent}
+  .ht-pill.s0{background:var(--normal-soft);color:var(--normal);border-color:#c3e2cd}
+  .ht-pill.s1{background:#fff8d6;color:#7a5a00;border-color:#f0d873}
+  .ht-pill.s2{background:var(--warn-soft);color:var(--warn);border-color:#f3d3ad}
+  .ht-pill.s3{background:var(--alert-soft);color:var(--alert);border-color:#f5c2bd}
+  .ht-now{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .ht-now .tp{font-size:30px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+  .ht-link{font-size:12.5px;font-weight:700;color:var(--teal);text-decoration:none;white-space:nowrap}
+  .ht-link:hover{text-decoration:underline}
+  .ht-list dd.t1{color:#8a6d00}.ht-list dd.t2{color:var(--warn)}
+  .ht-list dd.on{color:var(--alert)}
+  .ht-chart-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .seg{display:inline-flex;gap:4px;flex-shrink:0}
+  .seg button{border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:2px 12px;font-size:12.5px;color:var(--sub)}
+  .seg button[aria-pressed="true"]{background:var(--teal);border-color:var(--teal);color:#fff;font-weight:700}
+  .ht-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--sub);margin-top:-4px}
+  .ht-legend i{display:inline-block;width:16px;vertical-align:middle;margin-right:5px;border-top:2px solid}
+  .ht-legend .l-apply{border-color:var(--teal)}.ht-legend .l-warn{border-color:#c2620a}.ht-legend .l-fc{border-top:2px dotted var(--muted)}
+  .ht-note{font-size:11.5px;color:var(--muted)}
+  .home-top .dash-img{flex:1;min-height:0;object-fit:contain}
+  @media (max-width:1240px){.home-top{grid-template-columns:1fr 1fr}.home-top>.fc-card{grid-column:1/-1;border-left:0;border-top:1px solid var(--line)}}
+  @media (max-width:640px){.home-top{grid-template-columns:1fr}.home-top>.ht-col+.ht-col{border-left:0;border-top:1px solid var(--line)}}
 </style>
 </head>
 <body>
@@ -390,29 +430,32 @@
   <main class="wrap">
     <p class="notice" id="notice" role="alert" hidden></p>
     <section id="page-home">
-      <div class="home-top">
-        <section class="panel fc-card" aria-labelledby="h-hfc">
-          <div class="sec-h"><h3 id="h-hfc">신청·주의 추이</h3><p>과거 2년 · 올해 · 1년 후 예측 (가데이터)</p></div>
-          <div class="reg-pick" role="group" aria-label="그래프 단위">
-            <button type="button" class="chip" data-dash="연도별" aria-pressed="true">연도별</button>
-            <button type="button" class="chip" data-dash="월별" aria-pressed="false">월별</button>
+      <section class="panel home-top" aria-label="오늘 요약">
+        <div class="ht-col" aria-labelledby="h-kpi">
+          <h3 class="ht-title" id="h-kpi">오늘 연락할 어가</h3>
+          <div class="ht-hl"><b id="k-left">0</b><div><span>안내 필요</span><small>기준: 미연락·부재</small></div></div>
+          <dl class="ht-list">
+            <div><dt>오늘 연락 대상</dt><dd id="k-all">0</dd></div>
+            <div><dt>특보 전 연락 완료</dt><dd id="k-pre">0</dd></div>
+            <div><dt>상담 예약</dt><dd id="k-book">0</dd></div>
+            <div><dt>가입 전환 (계약)</dt><dd id="k-win">0</dd></div>
+          </dl>
+        </div>
+        <div class="ht-col" id="home-temp" aria-label="선택 지역 수온"></div>
+        <div class="ht-col fc-card" aria-labelledby="h-hfc">
+          <div class="ht-chart-h">
+            <div><h3 class="ht-title" id="h-hfc">신청·주의 추이</h3><p class="ht-sub" id="dash-sub"></p></div>
+            <div class="seg" role="group" aria-label="그래프 단위">
+              <button type="button" data-dash="연도별" aria-pressed="true">연도별</button>
+              <button type="button" data-dash="월별" aria-pressed="false">월별</button>
+            </div>
           </div>
+          <div class="ht-legend" aria-hidden="true"><span><i class="l-apply"></i>신청</span><span><i class="l-warn"></i>주의</span><span><i class="l-fc"></i>예측 (점선)</span></div>
           <img class="dash-img" id="dash-img" alt="연도별 신청·주의 건수와 1년 후 예측 그래프">
-          <p class="note" id="dash-src"></p>
-          <p class="note" id="dash-miss" hidden>그래프를 불러오지 못했어요. 백엔드(8000 포트)를 켜거나, sea_temperature 폴더에서 python dash_chart.py 를 실행해 out 폴더에 그림을 만들어 주세요.</p>
-        </section>
-        <section class="panel temp-now" id="home-temp" aria-label="선택 지역 수온"></section>
-        <section class="panel" aria-labelledby="h-kpi">
-          <div class="sec-h"><h3 id="h-kpi">오늘 연락할 어가</h3></div>
-          <div class="kpis kpi-list">
-            <div class="kpi hl"><b id="k-left">0</b><span>안내 필요 (미연락·부재)</span></div>
-            <div class="kpi"><b id="k-all">0</b><span>오늘 연락 대상</span></div>
-            <div class="kpi"><b id="k-pre">0</b><span>특보 전 연락 완료</span></div>
-            <div class="kpi"><b id="k-book">0</b><span>상담 예약</span></div>
-            <div class="kpi"><b id="k-win">0</b><span>가입 전환 (계약)</span></div>
-          </div>
-        </section>
-      </div>
+          <p class="ht-note" id="dash-src"></p>
+          <p class="ht-note" id="dash-miss" hidden>그래프를 불러오지 못했어요. 백엔드(8000 포트)를 켜거나, sea_temperature 폴더에서 python dash_chart.py 를 실행해 out 폴더에 그림을 만들어 주세요.</p>
+        </div>
+      </section>
 
       <div class="main">
         <section class="panel" aria-labelledby="h-list">
@@ -877,24 +920,23 @@ function renderKpis(){
   document.getElementById('k-book').textContent = L.filter(f => f.status==='book').length;
   document.getElementById('k-win').textContent = farms.reduce((n,f) => n + f.items.filter(c => c.res === 'win').length, 0);
   const pre = L.filter(f => !alerted(f) && f.items.some(c => c.ins !== 'full'));
-  document.getElementById('k-pre').innerHTML = `${pre.filter(f => f.status !== 'todo').length}<small style="font-size:15px;color:var(--muted)"> / ${pre.length}</small>`;
+  document.getElementById('k-pre').innerHTML = `${pre.filter(f => f.status !== 'todo').length}<small> / ${pre.length}</small>`;
   document.getElementById('nav-left').textContent = left || '';
   document.getElementById('nav-left').hidden = !left;
 }
 function renderHomeTemp(){
   const I = regionInfo[homeRegion];
   const first = I.top >= 1 ? `${mdw(I.d)} (D-${I.d})` : '없음';
+  const maxCls = I.maxT >= 28 ? 't2' : I.maxT >= 25 ? 't1' : '';
   document.getElementById('home-temp').innerHTML = `
-    <span class="rg">${homeRegion} 오늘 수온</span>
-    <span class="tp">${I.t[0].toFixed(1)}℃</span>
-    <span class="badge s${I.top}">${STAGE_ICON[I.top]} 7일 안 ${STAGE[I.top]}</span>
-    <ul class="mini">
-      <li><span>7일 최고</span><b>${I.maxT.toFixed(1)}℃ · ${md(I.dMax)}</b></li>
-      <li><span>${STAGE[I.top]} 첫 예상</span><b>${first}</b></li>
-      <li><span>2~3주 흐름</span><b>${TREND[I.trend]}</b></li>
-    </ul>
-    ${I.alert ? `<span class="alert-tag on">공식 특보: ${I.alert.type.replace('고수온 ','')} (${I.alert.since}~)</span>` : `<span class="alert-tag off">공식 특보: 미발령</span>`}
-    <a class="linkish" href="sea_forecast.html?region=${encodeURIComponent(homeRegion)}" style="align-self:flex-start">수온 예측 자세히 →</a>`;
+    <div class="ht-temp-h"><h3 class="ht-title">${esc(homeRegion)} 오늘 수온</h3><span class="ht-pill s${I.top}">7일 안 ${STAGE[I.top]}</span></div>
+    <div class="ht-now"><span class="tp">${I.t[0].toFixed(1)}℃</span><a class="ht-link" href="sea_forecast.html?region=${encodeURIComponent(homeRegion)}">수온 예측 보기 →</a></div>
+    <dl class="ht-list">
+      <div><dt>7일 최고</dt><dd class="${maxCls}">${I.maxT.toFixed(1)}℃ · ${md(I.dMax)}</dd></div>
+      <div><dt>${I.top >= 1 ? STAGE[I.top] : '관심'} 첫 예상</dt><dd>${first}</dd></div>
+      <div><dt>2~3주 흐름</dt><dd>${TREND[I.trend]}</dd></div>
+      <div><dt>공식 특보</dt>${I.alert ? `<dd class="on">${esc(I.alert.type.replace('고수온 ',''))} (${esc(I.alert.since)}~)</dd>` : '<dd>미발령</dd>'}</div>
+    </dl>`;
 }
 
 function renderFilters(){
@@ -1039,25 +1081,34 @@ document.getElementById('bell-list').addEventListener('click', e => {
 const DASH_KIND = {'연도별':'yearly', '월별':'monthly'};
 const dashImg = document.getElementById('dash-img');
 let dashKind = '연도별', dashFallback = false, dashRegion = '전체';
-const dashUrl = region => `${API_BASE}/api/v1/dashboard/chart/${DASH_KIND[dashKind]}.svg?region=${encodeURIComponent(region)}`;
+const dashUrl = region => `${API_BASE}/api/v1/dashboard/chart/${DASH_KIND[dashKind]}.svg?region=${encodeURIComponent(region)}&compact=true`;
 function showDash(kind){
   dashKind = kind; dashFallback = false; dashRegion = homeRegion;   // 담당 지역 그래프부터
   dashImg.alt = `${homeRegion} ${kind} 신청·주의 건수와 1년 후 예측 그래프`;
   dashImg.src = dashUrl(dashRegion);
+  dashSub();
+}
+// 그래프 범위: 과거 2년 · 올해 · 1년 후 예측 (dash_chart_* 뷰와 같은 기간)
+function dashSub(){
+  const y0 = TODAY.y - 2, y1 = TODAY.y + 1;
+  const range = dashKind === '연도별' ? `${y0}~${y1}` : `${y0}.01~${y1}.12`;
+  document.getElementById('dash-sub').textContent = `${dashRegion} · ${range} (${y1}년 예측)`;
 }
 dashImg.addEventListener('load', () => {
   dashImg.hidden = false; document.getElementById('dash-miss').hidden = true;
+  dashSub();
+  const y1 = TODAY.y + 1;
   document.getElementById('dash-src').textContent = dashFallback
     ? '⚠️ 서버에 연결하지 못해 저장해 둔 그림(out 폴더)을 보여 주고 있어요.'
-    : (dashRegion === '전체' ? `⚠️ ${homeRegion} 지역 그래프 데이터가 없어 전체 지역 그래프를 보여 줘요. ` : `${dashRegion} 지역 · `)
-      + `DB에서 ${new Date().toLocaleString('ko-KR')}에 새로 그린 그래프예요.`;
+    : (dashRegion === '전체' && homeRegion !== '전체' ? `⚠️ ${homeRegion} 지역 데이터가 없어 전체 지역을 보여 줘요 · ` : `${dashRegion} 지역 · `)
+      + `DB 가데이터 기반 시연용 · ${y1}년은 예측 참고값(신청·주의 판단 기준 아님)`;
 });
 dashImg.addEventListener('error', () => {
   if(!dashFallback && dashRegion !== '전체'){ dashRegion = '전체'; dashImg.src = dashUrl('전체'); return; }   // 담당 지역 데이터가 없으면 전체 지역으로
   if(!dashFallback){ dashFallback = true; dashImg.src = `out/신청주의_${dashKind}.svg`; return; }
   dashImg.hidden = true; document.getElementById('dash-src').textContent = ''; document.getElementById('dash-miss').hidden = false;
 });
-document.querySelector('.fc-card .reg-pick').addEventListener('click', e => {
+document.querySelector('.fc-card .seg').addEventListener('click', e => {
   const b = e.target.closest('[data-dash]');
   if(!b) return;
   document.querySelectorAll('[data-dash]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
