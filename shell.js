@@ -43,6 +43,10 @@
       <label>담당 지역 <select id="office" aria-label="담당 지역"></select></label>
       <span id="updated"></span>
       <button class="ghost" id="reset" type="button" hidden>시연 처음으로</button>
+      <!-- 오른쪽 버튼 순서: 돋보기 · 달력 · 알림 -->
+      <button type="button" class="bell magnifier-toggle" id="magnifier-toggle" aria-label="돋보기 켜기" aria-pressed="false" title="돋보기 켜기">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></svg>
+      </button>
       <div class="bell-wrap" id="cal-wrap">
         <button type="button" class="bell" id="cal-btn" aria-label="상담 일정" aria-expanded="false" aria-controls="cal-panel" title="상담 일정">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
@@ -73,9 +77,6 @@
           <ul class="bell-list" id="bell-list"><li class="empty">불러오는 중이에요…</li></ul>
         </div>
       </div>
-      <button type="button" class="bell magnifier-toggle" id="magnifier-toggle" aria-label="돋보기 켜기" aria-pressed="false" title="돋보기 켜기">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></svg>
-      </button>
     </div>
   </div>
 </header>`);
