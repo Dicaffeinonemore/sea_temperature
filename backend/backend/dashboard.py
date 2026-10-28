@@ -139,6 +139,50 @@ def notifications(db: DB):
     ) for row in rows]
 
 
+class ScheduleItem(BaseModel):
+    household_id: int
+    date: str           # YYYY-MM-DD (한국 시간)
+    time: str           # HH:MM
+    status: str         # 상담 상태 (상담 예약 · 부재·재연락 ...)
+    region: str | None = None
+    owner_name: str | None = None
+    label: str          # '통영 - 김○○'
+    memo: str | None = None
+    staff_name: str | None = None
+
+
+@router.get("/schedule", response_model=list[ScheduleItem],
+            summary="상단 캘린더: 한 달 동안의 다음 연락·상담 일정")
+def schedule(db: DB, month: Annotated[str, Query(pattern=r"^\d{4}-(0[1-9]|1[0-2])$",
+                                                  description="YYYY-MM")]):
+    # consult_cases.next_contact_at is the latest planned contact per household and season
+    # (every consultation save overwrites it), so it is the schedule; the memo comes from the latest log.
+    start = date.fromisoformat(f"{month}-01")
+    end = date(start.year + start.month // 12, start.month % 12 + 1, 1)
+    rows = db.execute("""
+        SELECT c.household_id, c.status,
+               c.next_contact_at AT TIME ZONE 'Asia/Seoul' AS at,
+               h.owner_name, regexp_replace(r.sigungu_name, '(시|군)$', '') AS region,
+               lg.memo, lg.staff_name
+        FROM customer_service.consult_cases c
+        JOIN customer_service.fishery_households h ON h.household_id = c.household_id
+        LEFT JOIN public.sigungu_area_coordinates r ON r.region_id = h.region_code
+        LEFT JOIN LATERAL (
+            SELECT l.memo, l.staff_name FROM customer_service.consult_logs l
+            WHERE l.case_id = c.case_id
+            ORDER BY l.contacted_at DESC, l.log_id DESC LIMIT 1) lg ON true
+        WHERE c.next_contact_at >= (%(start)s::timestamp AT TIME ZONE 'Asia/Seoul')
+          AND c.next_contact_at <  (%(end)s::timestamp AT TIME ZONE 'Asia/Seoul')
+        ORDER BY c.next_contact_at, c.household_id
+    """, {"start": start, "end": end}).fetchall()
+    return [ScheduleItem(
+        household_id=row["household_id"], date=row["at"].strftime("%Y-%m-%d"), time=row["at"].strftime("%H:%M"),
+        status=row["status"], region=row["region"], owner_name=row["owner_name"],
+        label=farm_label(row["region"], row["owner_name"], row["household_id"]),
+        memo=row["memo"], staff_name=row["staff_name"],
+    ) for row in rows]
+
+
 def trend_of(series: list[Point]) -> str:
     om = [p.max for p in series if p.src == "ECMWF"]
     if len(om) < 2:

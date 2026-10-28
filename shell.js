@@ -43,7 +43,27 @@
       <label>담당 지역 <select id="office" aria-label="담당 지역"></select></label>
       <span id="updated"></span>
       <button class="ghost" id="reset" type="button" hidden>시연 처음으로</button>
-      <div class="bell-wrap">
+      <div class="bell-wrap" id="cal-wrap">
+        <button type="button" class="bell" id="cal-btn" aria-label="상담 일정" aria-expanded="false" aria-controls="cal-panel" title="상담 일정">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
+          <span class="bell-n cal-n" id="cal-n" hidden></span>
+        </button>
+        <div class="bell-panel cal-panel" id="cal-panel" role="dialog" aria-label="상담 일정" hidden>
+          <div class="cal-h">
+            <b id="cal-title"></b>
+            <div class="cal-nav">
+              <button type="button" data-cal-move="-1" aria-label="이전 달">‹</button>
+              <button type="button" data-cal-move="0">오늘</button>
+              <button type="button" data-cal-move="1" aria-label="다음 달">›</button>
+            </div>
+          </div>
+          <div class="cal-sub"><span id="cal-scope"></span><button type="button" class="cal-all" id="cal-all" aria-pressed="false">전체 지역</button></div>
+          <div class="cal-week" aria-hidden="true"><span class="sun">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="sat">토</span></div>
+          <div class="cal-grid" id="cal-grid"></div>
+          <div class="cal-day" id="cal-day" aria-live="polite"></div>
+        </div>
+      </div>
+      <div class="bell-wrap" id="bell-wrap">
         <button type="button" class="bell" id="bell" aria-label="알림" aria-expanded="false" aria-controls="bell-panel">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
           <span class="bell-n" id="bell-n" hidden></span>
@@ -105,6 +125,7 @@
 
   async function loadNoti(){
     loadErr = null;
+    if(typeof resetCal === 'function') resetCal();   // 상담 저장·삭제 뒤 일정도 새로 받아요
     let list;
     try{
       const r = await fetch(API_BASE + '/api/dashboard/notifications');
@@ -123,10 +144,11 @@
 
   $('bell').addEventListener('click', e => {
     e.stopPropagation();
+    closeCal();
     $('bell-panel').hidden = !$('bell-panel').hidden;
     $('bell').setAttribute('aria-expanded', String(!$('bell-panel').hidden));
   });
-  document.addEventListener('click', e => { if(!$('bell-panel').hidden && !e.target.closest('.bell-wrap')) closePanel(); });
+  document.addEventListener('click', e => { if(!$('bell-panel').hidden && !e.target.closest('#bell-wrap')) closePanel(); });
   document.addEventListener('keydown', e => { if(e.key === 'Escape' && !$('bell-panel').hidden){ closePanel(); $('bell').focus(); } });
   $('bell-read').addEventListener('click', () => { markRead(noti.filter(n => !n.read)); renderBell(); });
   $('bell-list').addEventListener('click', e => {
@@ -143,6 +165,138 @@
     }
   });
 
+  /* ===== 상담 일정 캘린더 =====
+     GET /api/dashboard/schedule?month=YYYY-MM  →  [{household_id, date, time, status, region, label, memo, staff_name}]
+     consult_cases.next_contact_at(다음 연락·상담일)을 달력에 보여 줘요. 기본은 '담당 지역'만, '전체 지역'으로 모두.
+     일정을 누르면 고객 상담 현황에서 그 고객이 선택돼요 (알림과 같은 동작). */
+  const pad2 = v => String(v).padStart(2, '0');
+  const WEEK = ['일','월','화','수','목','금','토'];
+  const dstr = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  const STATUS_CLS = {'상담 예약':'book', '부재·재연락':'again'};
+  let calCache = {}, calY, calM, calSel, calAll = false;
+
+  // 서버에 닿지 못할 때(가상 데이터 시연) 보여 주는 예시 일정: 오늘 기준 앞뒤 며칠
+  function sampleSchedule(y, m){
+    const base = new Date(); base.setHours(0, 0, 0, 0);
+    const seed = [[0,'10:00','상담 예약','통영','김○○','A-012','견적 요청 · 방문 상담'], [0,'14:30','부재·재연락','통영','류○○','A-082','부재 2회 · 오후에 다시'],
+                  [2,'11:00','상담 예약','통영','배○○','A-060','조피볼락 특약 상담'], [3,'09:30','부재·재연락','거제','이○○','B-007','부재'],
+                  [6,'15:00','상담 예약','고성','최○○','C-019','굴 판매 시작 후 상담'], [-2,'16:00','상담 예약','통영','박○○','A-031','창구 방문']];
+    return seed.map(([off, time, status, region, name, id, memo]) => {
+      const d = new Date(base); d.setDate(d.getDate() + off);
+      return {household_id:id, date:dstr(d), time, status, region, owner_name:name, label:`${region} - ${name}`, memo, staff_name:null};
+    }).filter(it => it.date.startsWith(`${y}-${pad2(m + 1)}`));
+  }
+
+  async function loadMonth(y, m){
+    const key = `${y}-${pad2(m + 1)}`;
+    if(calCache[key]) return calCache[key];
+    const entry = calCache[key] = {items:null, err:null};
+    try{
+      const r = await fetch(`${API_BASE}/api/dashboard/schedule?month=${key}`);
+      if(r.ok) entry.items = await r.json();
+      else{ entry.items = []; entry.err = r.status === 404 ? '일정 API가 아직 서버에 없어요 (dashboard.py 배포 확인)' : `일정을 불러오지 못했어요 (HTTP ${r.status})`; }
+    }catch(e){
+      entry.items = sampleSchedule(y, m);   // 서버에 닿지 못함 = 가상 데이터 시연
+    }
+    return entry;
+  }
+  const officeNow = () => $('office').value;
+  const inScope = it => calAll || !officeNow() || it.region === officeNow();
+
+  function updateCalBadge(){
+    const t = new Date(), entry = calCache[`${t.getFullYear()}-${pad2(t.getMonth() + 1)}`];
+    const n = entry && entry.items ? entry.items.filter(it => it.date === dstr(t) && inScope(it)).length : 0;
+    $('cal-n').textContent = n; $('cal-n').hidden = !n;
+    $('cal-btn').setAttribute('aria-label', n ? `상담 일정 · 오늘 ${n}건` : '상담 일정');
+  }
+
+  function renderCal(){
+    const entry = calCache[`${calY}-${pad2(calM + 1)}`];
+    const items = entry && entry.items ? entry.items.filter(inScope) : [];
+    const byDay = {};
+    items.forEach(it => (byDay[it.date] = byDay[it.date] || []).push(it));
+    const today = dstr(new Date());
+
+    $('cal-title').textContent = `${calY}년 ${calM + 1}월`;
+    $('cal-scope').textContent = calAll || !officeNow() ? `전체 지역 · ${items.length}건` : `${officeNow()} 지역 · ${items.length}건`;
+    $('cal-all').setAttribute('aria-pressed', String(calAll));
+
+    const first = new Date(calY, calM, 1).getDay(), last = new Date(calY, calM + 1, 0).getDate();
+    let html = '';
+    for(let i = 0; i < first; i++) html += '<span class="cal-blank"></span>';
+    for(let d = 1; d <= last; d++){
+      const ds = `${calY}-${pad2(calM + 1)}-${pad2(d)}`, list = byDay[ds] || [], wd = (first + d - 1) % 7;
+      const cls = ['cal-d', wd === 0 ? 'sun' : wd === 6 ? 'sat' : '', ds === today ? 'today' : '', ds === calSel ? 'sel' : '', ds < today ? 'past' : ''].filter(Boolean).join(' ');
+      const dots = list.slice(0, 3).map(it => `<i class="${STATUS_CLS[it.status] || 'etc'}"></i>`).join('') + (list.length > 3 ? '<em>+</em>' : '');
+      html += `<button type="button" class="${cls}" data-cal-day="${ds}" aria-label="${calM + 1}월 ${d}일${list.length ? ` 일정 ${list.length}건` : ''}"${ds === calSel ? ' aria-pressed="true"' : ''}>`
+            + `<span>${d}</span><span class="cal-dots">${dots}</span></button>`;
+    }
+    $('cal-grid').innerHTML = html;
+
+    const sd = new Date(calSel + 'T00:00:00'), list = byDay[calSel] || [];
+    const head = `<div class="cal-day-h">${sd.getMonth() + 1}월 ${sd.getDate()}일 (${WEEK[sd.getDay()]})${calSel === today ? ' · 오늘' : ''}<span>${list.length ? list.length + '건' : ''}</span></div>`;
+    let body;
+    if(!entry || !entry.items) body = '<p class="cal-empty">불러오는 중이에요…</p>';
+    else if(entry.err) body = `<p class="cal-empty err">${esc(entry.err)}</p>`;
+    else if(!list.length) body = '<p class="cal-empty">이 날은 일정이 없어요</p>';
+    else body = '<ul class="cal-list">' + list.map(it => `<li><button type="button" class="cal-ev${calSel < today ? ' past' : ''}" data-cal-cust="${esc(it.household_id)}" data-cal-region="${esc(it.region || '')}">
+        <b class="tm">${esc(it.time)}</b>
+        <span class="who">${esc(it.label)}</span>
+        <span class="cal-st ${STATUS_CLS[it.status] || 'etc'}">${esc(it.status)}</span>
+        ${it.memo || it.staff_name ? `<small>${esc([it.memo, it.staff_name && '상담자 ' + it.staff_name].filter(Boolean).join(' · '))}</small>` : ''}
+      </button></li>`).join('') + '</ul>';
+    $('cal-day').innerHTML = head + body;
+    updateCalBadge();
+  }
+
+  async function showMonth(y, m, sel){
+    calY = y; calM = m;
+    const today = new Date();
+    calSel = sel || (y === today.getFullYear() && m === today.getMonth() ? dstr(today) : `${y}-${pad2(m + 1)}-01`);
+    renderCal();                     // 먼저 칸부터 (불러오는 중)
+    await loadMonth(y, m);
+    if(calY === y && calM === m) renderCal();
+  }
+  function closeCal(){ $('cal-panel').hidden = true; $('cal-btn').setAttribute('aria-expanded', 'false'); }
+  function openCal(){
+    closePanel();
+    $('cal-panel').hidden = false; $('cal-btn').setAttribute('aria-expanded', 'true');
+    const t = new Date();
+    showMonth(calY ?? t.getFullYear(), calM ?? t.getMonth(), calSel);
+  }
+  function resetCal(){
+    calCache = {};
+    const t = new Date();
+    loadMonth(t.getFullYear(), t.getMonth()).then(() => { if(!$('cal-panel').hidden && calY != null) showMonth(calY, calM, calSel); else updateCalBadge(); });
+  }
+
+  $('cal-btn').addEventListener('click', e => { e.stopPropagation(); $('cal-panel').hidden ? openCal() : closeCal(); });
+  document.addEventListener('click', e => { if(!$('cal-panel').hidden && !e.target.closest('#cal-wrap')) closeCal(); });
+  document.addEventListener('keydown', e => { if(e.key === 'Escape' && !$('cal-panel').hidden){ closeCal(); $('cal-btn').focus(); } });
+  $('cal-panel').addEventListener('click', e => {
+    const mv = e.target.closest('[data-cal-move]');
+    if(mv){
+      const k = +mv.dataset.calMove, t = new Date();
+      if(k === 0) showMonth(t.getFullYear(), t.getMonth(), dstr(t));
+      else{ const d = new Date(calY, calM + k, 1); showMonth(d.getFullYear(), d.getMonth()); }
+      return;
+    }
+    if(e.target.closest('#cal-all')){ calAll = !calAll; renderCal(); return; }
+    const day = e.target.closest('[data-cal-day]');
+    if(day){ calSel = day.dataset.calDay; renderCal(); return; }
+    const ev = e.target.closest('[data-cal-cust]');
+    if(ev){
+      closeCal();
+      // 알림과 같은 길: 고객 상담 현황에서 그 고객 선택 (그 화면에 있으면 새로고침 없이)
+      const n = {farm:ev.dataset.calCust, from:'calendar'};
+      if(!document.dispatchEvent(new CustomEvent('shell:noti', {detail:n, cancelable:true}))) return;
+      location.href = 'consult_status.html?cust=' + encodeURIComponent(n.farm);
+    }
+  });
+  // 담당 지역이 바뀌면 오늘 건수·달력도 그 지역으로
+  $('office').addEventListener('change', () => { if(!$('cal-panel').hidden) renderCal(); else updateCalBadge(); });
+  new MutationObserver(updateCalBadge).observe($('office'), {childList:true});
+
   window.Shell = {
     reloadNoti: loadNoti,
     push(n){
@@ -152,5 +306,5 @@
       renderBell();
     },
   };
-  loadNoti();
+  loadNoti();   // 안에서 resetCal() 로 이번 달 일정도 받아요 (오늘 건수 배지)
 })();
