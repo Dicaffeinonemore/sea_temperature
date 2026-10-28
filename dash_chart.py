@@ -17,6 +17,7 @@
   python dash_chart.py --schema 스키마명        dash 뷰가 public 이 아닐 때 (또는 환경변수 DASH_SCHEMA)
   python dash_chart.py --url http://localhost:5678/webhook/dash-forecast   n8n Webhook 응답에서
   python dash_chart.py --json 응답.json        저장해 둔 n8n 응답 파일에서 (DB 없이 시험용)
+  python dash_chart.py --with-forecast         예측 해·달까지 (기본은 상담 홈처럼 실적만)
 DB 접속은 팀 백엔드와 같습니다: backend/backend/.env 또는 환경변수 DATABASE_URL
 """
 
@@ -31,7 +32,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent          # sea_temperature/
 sys.path.insert(0, str(ROOT / "backend"))       # backend 패키지를 불러오기 위해
 
-from backend.dashboard import NotReady, fetch, monthly_figure, render, yearly_figure  # noqa: E402
+from backend.dashboard import NotReady, actual_only, fetch, monthly_figure, render, yearly_figure  # noqa: E402
 
 
 def load(args) -> tuple[list[dict], list[dict]]:
@@ -71,9 +72,12 @@ def main():
     p.add_argument("--schema", default=os.getenv("DASH_SCHEMA", "public"), help="dash 뷰가 있는 스키마 (기본 public)")
     p.add_argument("--out", default=str(ROOT / "out"), help="저장 폴더 (기본 sea_temperature/out — 상담 홈이 읽는 곳)")
     p.add_argument("--format", choices=["svg", "png", "both"], default="both")
+    p.add_argument("--with-forecast", action="store_true", help="예측 해·달도 그림 (기본은 상담 홈처럼 실적만)")
     a = p.parse_args()
 
     yearly, monthly = load(a)
+    if not a.with_forecast:   # 상담 홈 그래프는 예측 없이 실적만 보여 줌
+        yearly, monthly = actual_only(yearly), actual_only(monthly)
     if not yearly:
         sys.exit(f"'{a.region}' 데이터가 없습니다. n8n '대시보드 신청·주의 예측'을 먼저 실행했는지, --region 값을 확인하세요.")
     try:
