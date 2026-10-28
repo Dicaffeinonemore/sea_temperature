@@ -89,16 +89,22 @@
   lens.inert = true;
   lens.setAttribute('aria-hidden', 'true');
   document.body.append(lens);
+  const caption = document.createElement('div');
+  caption.className = 'magnifier-caption';
+  caption.hidden = true;
+  caption.inert = true;
+  caption.setAttribute('aria-hidden', 'true');
+  document.body.append(caption);
   const glass = lens.attachShadow({mode:'closed'});
   const viewport = document.createElement('div');
   viewport.style.cssText = 'position:absolute;overflow:hidden;transform-origin:0 0;pointer-events:none;';
-  const zoom = 1.8, diameter = 240;
+  let zoom = 1.8, diameter = 240;
   let magnifying = false, dirty = true, frame = 0, pointer = null, copies = [];
 
   function rebuildMagnifier(){
     const styles = [...document.head.querySelectorAll('style, link[rel="stylesheet"]')].map(node => node.cloneNode(true));
     const body = document.body.cloneNode(true);
-    const excluded = 'script, iframe, object, embed, .magnifier-lens';
+    const excluded = 'script, iframe, object, embed, .magnifier-lens, .magnifier-caption';
     body.querySelectorAll(excluded).forEach(node => node.remove());
     [body, ...body.querySelectorAll('*')].forEach(node => {
       for(const attr of [...node.attributes]){
@@ -117,10 +123,15 @@
     frame = 0;
     if(!magnifying || !pointer) return;
     if(dirty) rebuildMagnifier();
-    const size = Math.min(diameter, window.innerWidth, window.innerHeight);
+    const text = `${zoom.toFixed(1)}배 · 지름 ${diameter}px\nQ / E 배율 · A / D 지름`;
+    if(caption.textContent !== text) caption.textContent = text;
+    caption.hidden = false;
+    const size = Math.min(diameter, window.innerWidth - 8, Math.max(1, window.innerHeight - caption.offsetHeight - 16));
     const left = Math.max(0, Math.min(pointer.x - size / 2, window.innerWidth - size));
-    const top = Math.max(0, Math.min(pointer.y - size / 2, window.innerHeight - size));
+    const top = Math.max(4, Math.min(pointer.y - size / 2, window.innerHeight - size - caption.offsetHeight - 12));
     lens.style.cssText = `width:${size}px;height:${size}px;left:${left}px;top:${top}px;`;
+    caption.style.left = `${Math.max(8, Math.min(left + size / 2 - caption.offsetWidth / 2, window.innerWidth - caption.offsetWidth - 8))}px`;
+    caption.style.top = `${top + size + 8}px`;
     viewport.style.width = `${document.documentElement.clientWidth}px`;
     viewport.style.height = `${window.innerHeight}px`;
     viewport.style.transform = `translate(${pointer.x - left - pointer.x * zoom}px,${pointer.y - top - pointer.y * zoom}px) scale(${zoom})`;
@@ -155,6 +166,7 @@
     else {
       cancelAnimationFrame(frame); frame = 0;
       lens.hidden = true;
+      caption.hidden = true;
       viewport.replaceChildren(); copies = [];
     }
   }
@@ -164,15 +176,29 @@
     pointer = {x:event.clientX, y:event.clientY};
     requestMagnifier();
   });
-  document.addEventListener('pointerleave', () => { pointer = null; lens.hidden = true; });
-  window.addEventListener('blur', () => { pointer = null; lens.hidden = true; });
-  document.addEventListener('keydown', event => { if(event.key === 'Escape' && magnifying) setMagnifier(false); });
+  document.addEventListener('pointerleave', () => { pointer = null; lens.hidden = true; caption.hidden = true; });
+  window.addEventListener('blur', () => { pointer = null; lens.hidden = true; caption.hidden = true; });
+  document.addEventListener('keydown', event => {
+    if(!magnifying) return;
+    if(event.key === 'Escape'){ setMagnifier(false); return; }
+    if(event.defaultPrevented || event.isComposing || event.ctrlKey || event.altKey || event.metaKey) return;
+    if(event.target.isContentEditable || event.target.closest?.('input, textarea, select, [role="textbox"]')) return;
+    switch(event.code){
+      case 'KeyQ': zoom = Math.max(1, Math.round((zoom - 0.2) * 10) / 10); break;
+      case 'KeyE': zoom = Math.min(4, Math.round((zoom + 0.2) * 10) / 10); break;
+      case 'KeyA': diameter = Math.max(120, diameter - 20); break;
+      case 'KeyD': diameter = Math.min(480, diameter + 20); break;
+      default: return;
+    }
+    event.preventDefault();
+    requestMagnifier();
+  });
   document.addEventListener('scroll', requestMagnifier, true);
   document.addEventListener('input', requestMagnifier);
   document.addEventListener('change', requestMagnifier);
   window.addEventListener('resize', () => { dirty = true; requestMagnifier(); });
   new MutationObserver(records => {
-    if(!magnifying || records.every(record => record.target === lens)) return;
+    if(!magnifying || records.every(record => record.target === lens || record.target === caption || caption.contains(record.target))) return;
     dirty = true;
     requestMagnifier();
   }).observe(document.body, {childList:true, subtree:true, characterData:true, attributes:true});

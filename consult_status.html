@@ -163,6 +163,7 @@
               <tbody id="cust-rows"></tbody>
             </table>
           </div>
+          <nav class="hist-pager" id="cust-pager" aria-label="고객 목록 페이지" hidden></nav>
           <div class="empty" id="loading">불러오는 중이에요…</div>
           <div class="empty" id="cust-empty" hidden></div>
         </section>
@@ -251,8 +252,10 @@ const API = (location.protocol === 'file:' ? 'http://127.0.0.1:8000'
   : location.origin) + '/api/consult';   // 배포(Render) 등 백엔드가 화면을 같이 내보낼 때는 같은 주소
 let customers = [], history = [], dbMode = false;
 let q = '', histFarm = null;
-const HIST_PER_PAGE = 8;
+const HIST_PER_PAGE = 6;
 let histPage = 1, histKey = '';
+const CUST_PER_PAGE = 8;
+let custPage = 1, custKey = '', custSelected = null;
 
 // 담당 지역: 상담 홈·어가 상세·수온 예측 맨 위 '담당'에서 고른 값 (같은 이름으로 이 브라우저에 저장됨)
 const OFFICE_KEY = 'heat-dashboard-office';
@@ -292,7 +295,21 @@ function renderConsult(){
       ? `${office} 지역에 상담 진행 중인 고객이 없어요. '전체'를 누르면 모든 고객을 볼 수 있어요.`
       : `${office} 지역 고객이 없어요. 맨 위 '담당'에서 다른 지역을 골라 주세요.`;
   document.getElementById('cust-empty').hidden = custs.length > 0;
-  document.getElementById('cust-rows').innerHTML = custs.map(c => `<tr class="pick-row" data-cust="${esc(c.code)}" tabindex="0" aria-selected="${histFarm===c.code}">
+  const customerKey = [office, progOnly, q].join('|');
+  if(customerKey !== custKey){ custKey = customerKey; custPage = 1; }
+  // 알림에서 목록 밖 고객을 선택한 경우 그 고객이 있는 페이지를 열어요.
+  if(histFarm && histFarm !== custSelected){
+    custPage = Math.floor(custs.findIndex(c => c.code === histFarm) / CUST_PER_PAGE) + 1;
+  }
+  custSelected = histFarm;
+  const customerPages = Math.max(1, Math.ceil(custs.length / CUST_PER_PAGE));
+  custPage = Math.max(1, Math.min(custPage, customerPages));
+  const customerPager = document.getElementById('cust-pager');
+  customerPager.hidden = customerPages < 2;
+  customerPager.innerHTML = `<button type="button" class="btn sm" data-cust-page="${custPage - 1}"${custPage === 1 ? ' disabled' : ''}>‹ 이전</button>
+      <span aria-current="page">${custPage} / ${customerPages}</span>
+      <button type="button" class="btn sm" data-cust-page="${custPage + 1}"${custPage === customerPages ? ' disabled' : ''}>다음 ›</button>`;
+  document.getElementById('cust-rows').innerHTML = custs.slice((custPage - 1) * CUST_PER_PAGE, custPage * CUST_PER_PAGE).map(c => `<tr class="pick-row" data-cust="${esc(c.code)}" tabindex="0" aria-selected="${histFarm===c.code}">
       <td class="who"><b>${esc(c.name)}</b><small>${esc(c.code)}</small></td>
       <td>${c.phone_masked ? esc(c.phone_masked) : '–'}</td>
       <td>${!c.phone_masked ? '–' : c.sms_consent ? '<span class="consent-y">○</span>' : '<span class="consent-n">× 미동의</span>'}</td>
@@ -481,6 +498,11 @@ document.getElementById('hist-pager').addEventListener('click', e => {
   histPage = Number(b.dataset.histPage);
   renderConsult();
   document.getElementById('hist-rows').scrollTop = 0;
+});
+document.getElementById('cust-pager').addEventListener('click', e => {
+  const b = e.target.closest('[data-cust-page]'); if(!b || b.disabled) return;
+  custPage = Number(b.dataset.custPage);
+  renderConsult();
 });
 
 load();
