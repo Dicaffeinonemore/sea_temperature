@@ -98,7 +98,7 @@
   const glass = lens.attachShadow({mode:'closed'});
   const viewport = document.createElement('div');
   viewport.style.cssText = 'position:absolute;overflow:hidden;transform-origin:0 0;pointer-events:none;';
-  let zoom = 1.8, diameter = 240;
+  let zoom = 1.4, diameter = 240;
   let magnifying = false, dirty = true, frame = 0, pointer = null, copies = [];
 
   function rebuildMagnifier(){
