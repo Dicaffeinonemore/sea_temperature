@@ -349,6 +349,16 @@
   }
   @media (prefers-reduced-motion:reduce){.acc>summary .arw,.region,.toast{transition:none}}
   .notice{margin:12px 0 0;padding:10px 12px;border-radius:8px;font-size:14px;background:var(--warn-soft);color:#7a3d06;border:1px solid #f3d3ad;white-space:pre-line}
+  /* 계약별 보험: 어종이 2개 이상이면 탭으로 한 장씩 */
+  .sl-bar{display:flex;align-items:center;gap:6px;margin:2px 0 8px;flex-wrap:wrap}
+  .sl-tabs{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
+  .sl-tab{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line-strong);background:#fff;border-radius:999px;padding:3px 12px;font-size:13px;font-weight:700;color:var(--sub);cursor:pointer}
+  .sl-tab i{display:inline-block;width:8px;height:8px;border-radius:50%;padding:0;border:0;min-width:0;font-size:0;line-height:0}
+  .sl-tab[aria-selected="true"]{background:var(--text);border-color:var(--text);color:#fff}
+  .sl-n{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:38px;text-align:right}
+  .sl-nav{border:1px solid var(--line-strong);background:#fff;border-radius:8px;width:30px;height:28px;font-size:16px;line-height:1;cursor:pointer}
+  .sl-nav:disabled{opacity:.35;cursor:default}
+  .ctr-card[hidden]{display:none}
 </style>
 <link rel="stylesheet" href="shell.css">
 </head>
@@ -2003,6 +2013,45 @@ consultEl.addEventListener('keydown', e => {
   const startPage = ['home','detail','forecast','consult'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'detail';   // 다른 화면의 '어가 상세' 메뉴로 들어오므로 기본은 어가 상세
   showPage(startPage);
 })();
+
+/* ===== 계약별 보험: 어종이 2개 이상이면 한 장씩 넘겨 보기 (탭 · ‹ › 버튼 · 키보드 ← →, 옆으로 밀어 넘기기는 없음) ===== */
+let ctrSlideAt = {};   // 어가별로 마지막에 보던 카드 번호 (다시 그려져도 유지)
+function initCtrSlider(){
+  const box = document.querySelector('#brief .ctr-cards');
+  if(!box || box.dataset.slider) return;
+  const cards = [...box.children].filter(c => c.classList.contains('ctr-card'));
+  if(cards.length < 2) return;
+  box.dataset.slider = '1';
+  const key = (document.querySelector('#brief .b-head h2') || {}).textContent || '';
+  const bar = document.createElement('div'); bar.className = 'sl-bar';
+  bar.innerHTML = `<div class="sl-tabs" role="tablist" aria-label="계약별 보험">${cards.map((c, i) => {
+      const nm = c.querySelector('.ctr-h b')?.textContent || `계약 ${i + 1}`;
+      const st = c.querySelector('.ctr-h [class^="ins"]');
+      return `<button type="button" class="sl-tab" role="tab" data-sl="${i}"><i class="${st ? st.className : ''}"></i>${esc(nm)}</button>`; }).join('')}</div>
+    <span class="sl-n" aria-live="polite"></span>
+    <button type="button" class="sl-nav" data-sl-step="-1" aria-label="이전 계약">‹</button><button type="button" class="sl-nav" data-sl-step="1" aria-label="다음 계약">›</button>`;
+  box.before(bar);
+  const show = i => {
+    i = Math.max(0, Math.min(cards.length - 1, i)); ctrSlideAt[key] = i;
+    cards.forEach((c, k) => { c.hidden = k !== i; c.setAttribute('role', 'tabpanel'); });
+    bar.querySelectorAll('.sl-tab').forEach((t, k) => { t.setAttribute('aria-selected', String(k === i)); t.tabIndex = k === i ? 0 : -1; });
+    bar.querySelector('.sl-n').textContent = `${i + 1} / ${cards.length}`;
+    bar.querySelector('[data-sl-step="-1"]').disabled = i === 0;
+    bar.querySelector('[data-sl-step="1"]').disabled = i === cards.length - 1;
+    return i;
+  };
+  let at = show(ctrSlideAt[key] || 0);
+  bar.addEventListener('click', e => {
+    const t = e.target.closest('[data-sl]'); if(t){ at = show(+t.dataset.sl); return; }
+    const s = e.target.closest('[data-sl-step]'); if(s) at = show(at + +s.dataset.slStep);
+  });
+  bar.addEventListener('keydown', e => {
+    if(e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault(); at = show(at + (e.key === 'ArrowLeft' ? -1 : 1));
+    bar.querySelector(`.sl-tab[data-sl="${at}"]`).focus();
+  });
+}
+new MutationObserver(initCtrSlider).observe(document.getElementById('brief'), {childList:true});
 </script>
 
 </body></html>
