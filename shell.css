@@ -29,6 +29,7 @@
 .magnifier-toggle[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
 .magnifier-toggle:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .magnifier-lens{--magnifier-border:#CBD5E1;position:fixed;z-index:2147483647;overflow:hidden;border-radius:50%;outline:3px solid var(--magnifier-border);background:var(--bg);pointer-events:none;contain:strict}
+.magnifier-caption{position:fixed;z-index:2147483647;max-width:calc(100vw - 16px);padding:6px 10px;border:1px solid var(--line-strong);border-radius:6px;background:var(--panel);color:var(--text);font-size:12px;line-height:1.55;text-align:center;white-space:pre-line;pointer-events:none}
 .bell-n{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:999px;background:var(--alert);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 5px;border:2px solid #fff}
 .bell-panel{position:absolute;right:0;top:46px;width:360px;max-width:calc(100vw - 32px);background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(20,30,50,.16);z-index:50;overflow:hidden}
 .bell-h{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);font-weight:700;color:var(--text)}
