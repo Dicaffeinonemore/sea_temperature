@@ -47,12 +47,15 @@ def fetch(db, region: str, schema: str = "public") -> tuple[list[dict], list[dic
                 response_class=Response, responses={200: {"content": {"image/svg+xml": {}}}})
 def chart_svg(kind: Literal["yearly", "monthly"], db: DB,
               region: Annotated[str, Query(min_length=1, max_length=40)] = "전체",
-              compact: bool = False):
+              compact: bool = False,
+              forecast: Annotated[bool, Query(description="false 면 예측 해·달을 빼고 실적만 그림 (상담 홈)")] = True):
     try:
         yearly, monthly = fetch(db, region)
     except NotReady as exc:
         raise HTTPException(503, str(exc)) from None
     rows = yearly if kind == "yearly" else monthly
+    if not forecast:
+        rows = actual_only(rows)
     if not rows:
         raise HTTPException(404, "해당 지역의 그래프 데이터가 없습니다.")
     # Matplotlib figures and font settings are shared across request threads.
@@ -292,6 +295,11 @@ def _legend(fig, items):
                frameon=False, handlelength=1.8, columnspacing=1.6, fontsize=12)
 
 
+def actual_only(rows: list[dict]) -> list[dict]:
+    """예측 해·달을 뺀 실적 행만 (상담 홈 그래프는 예측 없이 보여 줌)"""
+    return [r for r in rows if r.get("kind") != "예측"]
+
+
 def yearly_figure(rows: list[dict], compact: bool = False):
     Figure = _mpl()
     C = COMPACT_COLOR if compact else COLOR
@@ -338,10 +346,10 @@ def yearly_figure(rows: list[dict], compact: bool = False):
         if cur and prev and float(prev["value"]):
             growth.append(f"{mt} {(float(cur['value']) / float(prev['value']) - 1) * 100:+.0f}%")
     _header(fig, "연도별 신청·주의 건수", f"{fc_year}년 예상 " + " · ".join(growth) if growth else "")
-    _legend(fig, [("신청", COLOR["신청"], "-", 6), ("주의", COLOR["주의"], "-", 6),
-                  ("예측 (점선 · 범위)", MUTED, (0, (4, 3)), 1.6)])
-    fig.text(0.012, 0.015, "※ 가데이터 기반 시연용 · 예측은 연간 증가율 기하평균, 막대 위 선 = 예상 범위. 신청·주의 판단 기준이 아닌 참고값이에요.",
-             color=MUTED, fontsize=11)
+    _legend(fig, [("신청", COLOR["신청"], "-", 6), ("주의", COLOR["주의"], "-", 6)]
+            + ([("예측 (점선 · 범위)", MUTED, (0, (4, 3)), 1.6)] if fc_year is not None else []))
+    fig.text(0.012, 0.015, "※ 가데이터 기반 시연용 · 예측은 연간 증가율 기하평균, 막대 위 선 = 예상 범위. 신청·주의 판단 기준이 아닌 참고값이에요."
+             if fc_year is not None else "※ 가데이터 기반 시연용 · 실적만 표시해요.", color=MUTED, fontsize=11)
     fig.tight_layout(rect=(0, 0.05, 1, 0.84))
     return fig
 
@@ -381,8 +389,8 @@ def monthly_figure(rows: list[dict], compact: bool = False):
         fig.tight_layout(pad=0.4)
         return fig
     _header(fig, "월별 신청·주의 건수", f"{labels[0].replace('-', '.')} ~ {labels[-1].replace('-', '.')} · 전체 지역 합계" if labels else "")
-    _legend(fig, [("신청", COLOR["신청"], "-", 3), ("주의", COLOR["주의"], "-", 3),
-                  ("예측 (점선 · 범위)", MUTED, (0, (4, 3)), 2)])
+    _legend(fig, [("신청", COLOR["신청"], "-", 3), ("주의", COLOR["주의"], "-", 3)]
+            + ([("예측 (점선 · 범위)", MUTED, (0, (4, 3)), 2)] if first_fc is not None else []))
     fig.tight_layout(rect=(0, 0, 1, 0.84))
     return fig
 

@@ -385,8 +385,8 @@
               <button type="button" data-dash="월별" aria-pressed="false">월별</button>
             </div>
           </div>
-          <div class="ht-legend" aria-hidden="true"><span><i class="l-apply"></i>신청</span><span><i class="l-warn"></i>주의</span><span><i class="l-fc"></i>예측 (점선)</span></div>
-          <img class="dash-img" id="dash-img" alt="연도별 신청·주의 건수와 1년 후 예측 그래프">
+          <div class="ht-legend" aria-hidden="true"><span><i class="l-apply"></i>신청</span><span><i class="l-warn"></i>주의</span></div>
+          <img class="dash-img" id="dash-img" alt="연도별 신청·주의 건수 그래프">
           <p class="ht-note" id="dash-src"></p>
           <p class="ht-note" id="dash-miss" hidden>그래프를 불러오지 못했어요. 백엔드(8000 포트)를 켜거나, sea_temperature 폴더에서 python dash_chart.py 를 실행해 out 폴더에 그림을 만들어 주세요.</p>
         </div>
@@ -964,27 +964,27 @@ function renderHome(){ renderKpis(); renderHomeTemp(); renderFilters(); renderRo
 const DASH_KIND = {'연도별':'yearly', '월별':'monthly'};
 const dashImg = document.getElementById('dash-img');
 let dashKind = '연도별', dashFallback = false, dashRegion = '전체';
-const dashUrl = region => `${API_BASE}/api/v1/dashboard/chart/${DASH_KIND[dashKind]}.svg?region=${encodeURIComponent(region)}&compact=true`;
+// forecast=false: 예측 해·달은 빼고 실적만 (상담 홈에서는 예측을 보여 주지 않기로 함)
+const dashUrl = region => `${API_BASE}/api/v1/dashboard/chart/${DASH_KIND[dashKind]}.svg?region=${encodeURIComponent(region)}&compact=true&forecast=false`;
 function showDash(kind){
   dashKind = kind; dashFallback = false; dashRegion = homeRegion;   // 담당 지역 그래프부터
-  dashImg.alt = `${homeRegion} ${kind} 신청·주의 건수와 1년 후 예측 그래프`;
+  dashImg.alt = `${homeRegion} ${kind} 신청·주의 건수 그래프`;
   dashImg.src = dashUrl(dashRegion);
   dashSub();
 }
-// 그래프 범위: 과거 2년 · 올해 · 1년 후 예측 (dash_chart_* 뷰와 같은 기간)
+// 그래프 범위: 과거 2년 · 올해 (실적만 · 예측 없음)
 function dashSub(){
-  const y0 = TODAY.y - 2, y1 = TODAY.y + 1;
-  const range = dashKind === '연도별' ? `${y0}~${y1}` : `${y0}.01~${y1}.12`;
-  document.getElementById('dash-sub').textContent = `${dashRegion} · ${range} (${y1}년 예측)`;
+  const y0 = TODAY.y - 2;
+  const range = dashKind === '연도별' ? `${y0}~${TODAY.y}` : `${y0}.01~${TODAY.y}.${String(TODAY.m).padStart(2, '0')}`;
+  document.getElementById('dash-sub').textContent = `${dashRegion} · ${range} 실적`;
 }
 dashImg.addEventListener('load', () => {
   dashImg.hidden = false; document.getElementById('dash-miss').hidden = true;
   dashSub();
-  const y1 = TODAY.y + 1;
   document.getElementById('dash-src').textContent = dashFallback
     ? '⚠️ 서버에 연결하지 못해 저장해 둔 그림(out 폴더)을 보여 주고 있어요.'
     : (dashRegion === '전체' && homeRegion !== '전체' ? `⚠️ ${homeRegion} 지역 데이터가 없어 전체 지역을 보여 줘요 · ` : `${dashRegion} 지역 · `)
-      + `DB 가데이터 기반 시연용 · ${y1}년은 예측 참고값(신청·주의 판단 기준 아님)`;
+      + 'DB 가데이터 기반 시연용';
 });
 dashImg.addEventListener('error', () => {
   if(!dashFallback && dashRegion !== '전체'){ dashRegion = '전체'; dashImg.src = dashUrl('전체'); return; }   // 담당 지역 데이터가 없으면 전체 지역으로
