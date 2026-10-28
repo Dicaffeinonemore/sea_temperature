@@ -148,7 +148,7 @@
     $('bell-panel').hidden = !$('bell-panel').hidden;
     $('bell').setAttribute('aria-expanded', String(!$('bell-panel').hidden));
   });
-  document.addEventListener('click', e => { if(!$('bell-panel').hidden && !e.target.closest('#bell-wrap')) closePanel(); });
+  document.addEventListener('click', e => { if(!$('bell-panel').hidden && !e.composedPath().includes($('bell-wrap'))) closePanel(); });
   document.addEventListener('keydown', e => { if(e.key === 'Escape' && !$('bell-panel').hidden){ closePanel(); $('bell').focus(); } });
   $('bell-read').addEventListener('click', () => { markRead(noti.filter(n => !n.read)); renderBell(); });
   $('bell-list').addEventListener('click', e => {
@@ -271,7 +271,9 @@
   }
 
   $('cal-btn').addEventListener('click', e => { e.stopPropagation(); $('cal-panel').hidden ? openCal() : closeCal(); });
-  document.addEventListener('click', e => { if(!$('cal-panel').hidden && !e.target.closest('#cal-wrap')) closeCal(); });
+  // 바깥 클릭 판단은 클릭 순간의 경로로 해요 (날짜를 누르면 달력을 다시 그려 누른 버튼이 사라지므로 e.target.closest 로는 '바깥'으로 잘못 판단)
+  const clickedInside = (e, id) => e.composedPath().includes($(id));
+  document.addEventListener('click', e => { if(!$('cal-panel').hidden && !clickedInside(e, 'cal-wrap')) closeCal(); });
   document.addEventListener('keydown', e => { if(e.key === 'Escape' && !$('cal-panel').hidden){ closeCal(); $('cal-btn').focus(); } });
   $('cal-panel').addEventListener('click', e => {
     const mv = e.target.closest('[data-cal-move]');
@@ -283,7 +285,7 @@
     }
     if(e.target.closest('#cal-all')){ calAll = !calAll; renderCal(); return; }
     const day = e.target.closest('[data-cal-day]');
-    if(day){ calSel = day.dataset.calDay; renderCal(); return; }
+    if(day){ calSel = day.dataset.calDay; renderCal(); $('cal-grid').querySelector(`[data-cal-day="${calSel}"]`)?.focus(); return; }
     const ev = e.target.closest('[data-cal-cust]');
     if(ev){
       closeCal();
