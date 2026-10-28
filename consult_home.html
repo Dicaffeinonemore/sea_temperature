@@ -396,7 +396,7 @@
         <section class="panel" aria-labelledby="h-list">
           <div class="list-h">
             <div class="sec-h" style="margin:0">
-              <h3 id="h-list">연락 순서</h3>
+              <h3 id="h-list"><span id="list-region"></span>연락 순서</h3>
               <p>어가를 누르면 어가 상세로 이동해요 · 체크하면 오른쪽에서 문자를 한 번에 보내요</p>
             </div>
             <div class="filters" id="filters" role="group" aria-label="목록 거르기"></div>
@@ -840,7 +840,7 @@ function renderHomeTemp(){
   const first = I.top >= 1 ? `${mdw(I.d)} (D-${I.d})` : '없음';
   const maxCls = I.maxT >= 28 ? 't2' : I.maxT >= 25 ? 't1' : '';
   document.getElementById('home-temp').innerHTML = `
-    <div class="ht-temp-h"><h3 class="ht-title">${esc(homeRegion)} 오늘 수온</h3><span class="ht-pill s${I.top}">7일 안 ${STAGE[I.top]}</span></div>
+    <div class="ht-temp-h"><h3 class="ht-title">${esc(homeRegion)} 오늘 수온</h3><span class="ht-pill s${I.top}">7일 내 ${STAGE[I.top]}</span></div>
     <div class="ht-now"><span class="tp">${I.t[0].toFixed(1)}℃</span><a class="ht-link" href="sea_forecast.html?region=${encodeURIComponent(homeRegion)}">수온 예측 보기 →</a></div>
     <dl class="ht-list">
       <div><dt>7일 최고</dt><dd class="${maxCls}">${I.maxT.toFixed(1)}℃ · ${md(I.dMax)}</dd></div>
@@ -852,9 +852,9 @@ function renderHomeTemp(){
 
 function renderFilters(){
   const opts = [['all','전체'],['active','안내 필요만'],['none','미가입 계약'],['book','예약']];
-  const reg = filter.region ? `<button type="button" class="chip" data-clear aria-pressed="true">${esc(filter.region)} ✕</button>`
-                            : `<button type="button" class="chip" data-reg="${homeRegion}" aria-pressed="false">${esc(homeRegion)} 어가만</button>`;
-  document.getElementById('filters').innerHTML = reg + opts.map(([k,t]) =>
+  // 지역은 상단 담당 지역 선택으로만 바꿔요 · 제목에 지역명 표시
+  document.getElementById('list-region').textContent = filter.region ? filter.region + ' ' : '';
+  document.getElementById('filters').innerHTML = opts.map(([k,t]) =>
     `<button type="button" class="chip" data-only="${k}" aria-pressed="${filter.only===k}">${t}</button>`).join('');
 }
 
@@ -1001,14 +1001,12 @@ showDash('연도별');
 const openDetail = id => { location.href = 'farm_detail.html?id=' + encodeURIComponent(id); };
 document.getElementById('office').addEventListener('change', e => {
   homeRegion = e.target.value; putOffice(homeRegion);
-  filter.region = homeRegion;   // 담당을 바꾸면 연락 목록도 그 지역만 (✕로 전체 보기)
+  filter.region = homeRegion;   // 담당을 바꾸면 연락 목록도 그 지역만
   renderHomeTemp(); renderFilters(); renderRows(); showDash(dashKind);
 });
 document.getElementById('filters').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
-  if(b.hasAttribute('data-clear')) filter.region = null;
-  else if(b.dataset.reg) filter.region = b.dataset.reg;
-  else filter.only = b.dataset.only;
+  filter.only = b.dataset.only;
   renderFilters(); renderRows();
 });
 document.getElementById('bulk-preview').addEventListener('input', e => {
