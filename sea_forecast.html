@@ -198,7 +198,22 @@
   .s-om{stroke:var(--om);fill:none;stroke-width:3;stroke-dasharray:7 5;stroke-linejoin:round}
   .pt{stroke:#fff;stroke-width:2;cursor:pointer}
   .pt.r{fill:var(--accent)} .pt.o{fill:var(--om)}
-  .pick{border:1px solid var(--line);border-radius:8px;background:var(--soft);padding:10px 12px;font-size:13px;margin-top:8px}
+  /* 점에 커서를 올리면 뜨는 툴팁 */
+  .chart-box{position:relative}
+  .chart .pt[data-dot]{pointer-events:none}
+  .chart .tc-hit{fill:transparent;cursor:crosshair}
+  .legend .hint{margin-left:auto;color:var(--muted)}
+  .chart .tc-hit:focus{outline:none}
+  .chart .tc-guide{stroke:#8a96a3;stroke-width:1.2;stroke-dasharray:4 4;opacity:0;pointer-events:none}
+  .chart .pt.on{fill:#fff;stroke-width:3}
+  .chart .pt.r.on{stroke:var(--accent)} .chart .pt.o.on{stroke:var(--om)}
+  .ttip{position:absolute;left:0;top:0;z-index:5;pointer-events:none;background:#fff;border:1px solid var(--line-strong);border-radius:10px;padding:9px 13px;box-shadow:0 6px 18px rgba(22,26,34,.13);font-size:13px;white-space:nowrap;display:flex;flex-direction:column;gap:3px;transform:translate(-50%,calc(-100% - 14px))}
+  .ttip[hidden]{display:none}
+  .ttip.below{transform:translate(-50%,14px)}
+  .ttip .d{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .ttip .v{color:var(--sub)} .ttip .v b{color:var(--text);font-size:15px;margin-left:4px;font-variant-numeric:tabular-nums}
+  .ttip .badge{font-weight:500}
+  .ttip .sub{font-size:12.5px;color:var(--sub);font-variant-numeric:tabular-nums}
   .mini{list-style:none;display:flex;flex-direction:column;gap:7px;font-size:14px}
   .mini li{display:flex;justify-content:space-between;gap:10px}
   .mini li span{color:var(--muted)}
@@ -329,10 +344,12 @@
             <span><i></i>ROMS 1~7일 · 대응 검토</span>
             <span class="om"><i></i>ECMWF 보정 8~21일 · 참고만</span>
             <span class="th"><i></i>기준선 25℃ · 28℃</span>
+            <span class="hint">그래프에 커서를 올리면 날짜별 수온이 보여요</span>
           </div>
-          <div class="chart" id="fc-chart"><div class="empty">불러오는 중이에요…</div></div>
-          <div class="pick" id="fc-pick" aria-live="polite"></div>
-          <p class="note" style="margin-top:8px">ECMWF 보정값으로는 위험 단계·연락 대상·보험금 지급 여부를 판단하지 않아요. ROMS도 관측값이 아닌 모델 예측값이에요.</p>
+          <div class="chart-box" id="fc-box">
+            <div class="chart" id="fc-chart"><div class="empty">불러오는 중이에요…</div></div>
+            <div class="ttip" id="fc-tip" role="tooltip" hidden></div>
+          </div>
         </section>
         <div class="fc-side">
           <section class="panel panel-in" aria-labelledby="h-fcs">
@@ -346,14 +363,12 @@
               <li><span>주의 (주의보 수준)</span><b>28℃ 도달 예상</b></li>
               <li><span>경보</span><b>28℃ 이상 3일 연속</b></li>
             </ul>
-            <p class="note" style="margin-top:8px">예보값에 적용한 앱 자체 판정이에요. 수과원 공식 특보 기준과 같은지는 <span class="need">출처 확인 중</span><span class="chg">8</span> 공식 특보는 수과원 발표로 확인하세요.</p>
           </section>
         </div>
       </div>
       <section class="panel panel-in sig-panel" aria-labelledby="h-sig">
         <div class="sec-h"><h3 id="h-sig">어종 신호등</h3><p id="sig-sub"></p></div>
         <div class="sig-rows" id="fc-signal"></div>
-        <p class="note" style="margin-top:12px">앞으로 7일(ROMS) 일최고 수온이 어종 한계 수온에 도달하면 주의, 한계 1℃ 이내까지 오르면 관심이에요. 예보값에 적용한 앱 판정(참고)이에요.</p>
       </section>
       <section class="panel panel-in" aria-labelledby="h-fct">
         <div class="sec-h"><h3 id="h-fct">예측 상세 값</h3><p>날짜별 모델값 · 최고 / 평균 / 최저 수온</p></div>
@@ -361,9 +376,9 @@
       </section>
     </section>
     <p class="foot">
-      위험 단계는 예보값에 앱 기준(관심 25℃ · 주의 28℃ · 경보 28℃ 이상 3일)을 적용한 앱 자체 판정(참고)이며, 공식 특보나 보험금 지급 기준이 아닙니다. 수과원 공식 특보 기준과의 일치 여부는 확인 중입니다.
-      상담 홈 수온 칸의 '공식 특보'는 수과원 발표를 옮겨 적는 칸이며, 이 화면의 발령 내용은 가상 예시입니다.
-      1~7일은 국립해양조사원 ROMS 모델값, 8~21일은 ECMWF EC46 예측을 지역별로 보정한 참고값입니다(Weather data by Open-Meteo.com).      보장 내용·판매기간·분납 조건은 양식수산물재해보험 상품요약서·사업방법서(2026.5.13) 기준이고, 수온·어가·상담 기록은 모두 화면 설명을 위한 가상 예시입니다. 전화·문자는 실제로 발송되지 않습니다.
+      위험 단계는 예보값에 앱 기준(관심 25℃ · 주의 28℃ · 경보 28℃ 이상 3일)을 적용한 앱 자체 판정(참고)이며, 공식 특보나 보험금 지급 기준이 아닙니다. 수과원 공식 특보 기준과의 일치 여부는 확인 중이니, 공식 특보는 수과원 발표로 확인하세요.
+      어종 신호등은 앞으로 7일(ROMS) 일최고 수온이 어종 한계 수온에 도달하면 주의, 한계 1℃ 이내까지 오르면 관심으로 표시합니다.
+      1~7일은 국립해양조사원 ROMS 모델 예측값(관측값 아님), 8~21일은 ECMWF EC46 예측을 지역별로 보정한 참고값입니다(Weather data by Open-Meteo.com). ECMWF 보정값(8~21일 표의 참고 단계 포함)으로는 위험 단계·연락 대상·보험금 지급 여부를 판단하지 않습니다.
     </p>
   </main>
 </div>
@@ -526,6 +541,7 @@ function chartSvg(I, pick, o = {}){
     svg += `<line class="${c}" x1="${L}" y1="${y(v)}" x2="${W-R}" y2="${y(v)}"/><text class="${c}t" x="${L+6}" y="${y(v)-5}" text-anchor="start" font-weight="700">${v === 25 ? '관심 25℃' : '주의 28℃'}</text>`;
   });
   for(let i = 0; i <= 20; i += 2) svg += `<text class="g-txt" x="${x(i)}" y="${H - B + 20}" text-anchor="middle">${md(i)}</text>`;
+  if(!o.still) svg += `<line class="tc-guide" x1="0" y1="${T}" x2="0" y2="${T + pH}"/>`;
   const line = arr => arr.map(p => `${x(p.i)},${y(p.max)}`).join(' ');
   svg += `<polyline class="s-roms" points="${line(pts.filter(p => p.src==='ROMS'))}"/>`;
   // 7일→8일 사이 끊김 없이 이어 그림
@@ -534,13 +550,17 @@ function chartSvg(I, pick, o = {}){
     const on = p.i === fcPick;
     svg += o.still
       ? `<circle class="pt ${p.src==='ROMS'?'r':'o'}" style="cursor:default" cx="${x(p.i)}" cy="${y(p.max)}" r="3.5"><title>${mdw(p.i)} ${p.max.toFixed(1)}℃ · ${p.src}</title></circle>`
-      : `<circle class="pt ${p.src==='ROMS'?'r':'o'}" data-pt="${p.i}" tabindex="0" cx="${x(p.i)}" cy="${y(p.max)}" r="${on?7:4.5}"><title>${mdw(p.i)} ${p.max.toFixed(1)}℃ · ${p.src}</title></circle>`;
+      : `<circle class="pt ${p.src==='ROMS'?'r':'o'}" data-dot="${p.i}" data-r="${on?7:4.5}" cx="${x(p.i)}" cy="${y(p.max)}" r="${on?7:4.5}"/>`;
+  });
+  // 날짜마다 세로 칸: 칸 어디에 커서를 올려도 그 날짜 툴팁이 떠요 (터치는 누르기, 키보드는 Tab)
+  if(!o.still) pts.forEach(p => {
+    svg += `<rect class="tc-hit" data-pt="${p.i}" tabindex="0" aria-label="${mdw(p.i)} 최고 ${p.max.toFixed(1)}℃" x="${x(p.i) - pW / 40}" y="${T}" width="${pW / 20}" height="${pH}"/>`;
   });
   return svg + '</svg>';
 }
 
 /* ===== 화면 상태 ===== */
-let homeRegion = '통영', fcRegion = '통영', fcPick = 0;
+let homeRegion = '통영', fcRegion = '통영', fcPick = 0;   // 0 = 오늘 점을 크게 표시
 
 /* ===== 수온 예측 ===== */
 function renderForecast(){
@@ -553,10 +573,6 @@ function renderForecast(){
 
 function renderForecastSide(I){
   const pts = I.series;
-  const p = pts[fcPick];
-  document.getElementById('fc-pick').innerHTML = `<b>${mdw(p.i)} · 최고 ${p.max.toFixed(1)}℃</b> (평균 ${p.mean.toFixed(1)}℃ · 최저 ${p.min.toFixed(1)}℃)　<span class="note">${p.src==='ROMS'
-    ? `ROMS 모델값 · 대응 검토 · ${STAGE[I.st[p.i]]}`
-    : 'ECMWF 지역별 보정값 · 흐름 참고만'}</span> · 그래프의 점을 누르면 날짜별 값이 보여요`;
 
   const first = I.top >= 1 ? `${mdw(I.d)} (D-${I.d})` : '없음';
   document.getElementById('fc-summary').innerHTML = `
@@ -588,23 +604,52 @@ function renderForecastSide(I){
   }</tbody></table></div>`;
   document.getElementById('fc-tables').innerHTML =
     `<div><h3>1~7일 · ROMS (대응 검토)</h3>${table(pts.filter(p => p.src==='ROMS'), false)}</div>
-     <div><h3>8~21일 · ECMWF 보정 (참고만)</h3>${table(pts.filter(p => p.src==='ECMWF'), true)}<p class="note" style="margin-top:6px">8~21일 단계는 같은 기준을 ECMWF 보정값에 적용한 참고 표시예요. 예상 단계·연락 대상 판단에는 쓰지 않아요.</p></div>`;
+     <div><h3>8~21일 · ECMWF 보정 (참고만)</h3>${table(pts.filter(p => p.src==='ECMWF'), true)}</div>`;
 }
+
+/* ===== 그래프 툴팁 ===== */
+function showTip(i){
+  const I = regionInfo[fcRegion], p = I && I.series[i], box = document.getElementById('fc-box'), tip = document.getElementById('fc-tip');
+  const svg = box.querySelector('svg'); if(!p || !svg) return;
+  svg.querySelectorAll('.pt.on').forEach(c => { c.classList.remove('on'); c.setAttribute('r', c.dataset.r); });
+  const dot = svg.querySelector(`[data-dot="${i}"]`), guide = svg.querySelector('.tc-guide');
+  dot.classList.add('on'); dot.setAttribute('r', 7);
+  guide.setAttribute('x1', dot.getAttribute('cx')); guide.setAttribute('x2', dot.getAttribute('cx')); guide.style.opacity = 1;
+  const st = I.stAll[p.i];
+  // 단계 배지는 날짜 옆에 · 8~21일(ECMWF)은 점선 테두리로 참고값임을 구분
+  const badge = p.src === 'ROMS' ? `<span class="badge s${I.st[p.i]}">${STAGE[I.st[p.i]]}</span>` : `<span class="badge s${st} ref">${STAGE[st]}</span>`;
+  tip.innerHTML = `<span class="d">${mdw(p.i)}${badge}</span><span class="v">예상 최고<b>${p.max.toFixed(1)}℃</b></span><span class="sub">평균 ${p.mean.toFixed(1)}℃ · 최저 ${p.min.toFixed(1)}℃</span>`;
+  tip.hidden = false;
+  const br = box.getBoundingClientRect(), dr = dot.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+  const left = Math.min(Math.max(dr.left + dr.width / 2 - br.left, w / 2 + 2), br.width - w / 2 - 2);
+  const top = dr.top + dr.height / 2 - br.top;
+  tip.classList.toggle('below', top < h + 16);   // 위쪽 공간이 모자라면 점 아래로
+  tip.style.left = left + 'px'; tip.style.top = top + 'px';
+}
+function hideTip(){
+  document.getElementById('fc-tip').hidden = true;
+  const svg = document.querySelector('#fc-chart svg'); if(!svg) return;
+  svg.querySelector('.tc-guide').style.opacity = 0;
+  svg.querySelectorAll('.pt.on').forEach(c => { c.classList.remove('on'); c.setAttribute('r', c.dataset.r); });
+}
+const fcBox = document.getElementById('fc-box');
+['pointermove','pointerdown'].forEach(ev => fcBox.addEventListener(ev, e => {
+  const h = e.target.closest('[data-pt]'); if(h) showTip(+h.dataset.pt);
+}));
+fcBox.addEventListener('pointerleave', hideTip);
+// 점을 누르면 그래프를 다시 그려서 pointerleave 를 놓칠 수 있어, 그래프 밖으로 나가면 한 번 더 확인해 숨겨요
+document.addEventListener('pointermove', e => {
+  if(!document.getElementById('fc-tip').hidden && !fcBox.contains(e.target)) hideTip();
+});
+fcBox.addEventListener('focusin', e => { const h = e.target.closest('[data-pt]'); if(h) showTip(+h.dataset.pt); });
+fcBox.addEventListener('focusout', e => { if(!fcBox.contains(e.relatedTarget)) hideTip(); });
+document.getElementById('fc-chart').addEventListener('scroll', hideTip);   // 좁은 화면에서 가로로 밀면 숨겨요
 
 /* ===== 이벤트 ===== */
 document.getElementById('office').addEventListener('change', e => {
   homeRegion = fcRegion = e.target.value; fcPick = 0; putOffice(homeRegion);
   try{ history.replaceState(null, '', location.pathname); }catch(e){}
   renderForecast();
-});
-const fcEl = document.getElementById('page-forecast');
-fcEl.addEventListener('click', e => {
-  const p = e.target.closest('[data-pt]');
-  if(p){ fcPick = +p.dataset.pt; renderForecast(); document.querySelector(`[data-pt="${fcPick}"]`)?.focus(); }
-});
-fcEl.addEventListener('keydown', e => {
-  const p = e.target.closest('[data-pt]');
-  if(p && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); fcPick = +p.dataset.pt; renderForecast(); document.querySelector(`[data-pt="${fcPick}"]`)?.focus(); }
 });
 
 /* ===== 시작 ===== */
