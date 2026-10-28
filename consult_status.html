@@ -92,6 +92,8 @@
   .hist-item:hover .hist-del,.hist-del:focus-visible{opacity:1}
   .hist-del:hover{color:var(--alert);border-color:#f5b5ae;background:var(--alert-soft)}
   .hist-item.removing{opacity:.4;pointer-events:none}
+  .hist-pager{display:flex;align-items:center;justify-content:center;gap:10px;padding:10px 16px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+  .hist-pager[hidden]{display:none}
   /* 삭제 확인 창 */
   .confirm{margin:auto;border:0;border-radius:12px;padding:0;width:min(420px,calc(100vw - 32px));box-shadow:0 18px 48px rgba(20,30,50,.24);color:var(--text)}
   .confirm::backdrop{background:rgba(22,26,34,.45)}
@@ -171,6 +173,7 @@
           </div>
           <ul class="hist-list" id="hist-rows" aria-live="polite"></ul>
           <div class="empty" id="hist-empty" hidden>상담 내역이 없어요.</div>
+          <nav class="hist-pager" id="hist-pager" aria-label="상담 내역 페이지" hidden></nav>
         </section>
       </div>
     </section>
@@ -248,6 +251,8 @@ const API = (location.protocol === 'file:' ? 'http://127.0.0.1:8000'
   : location.origin) + '/api/consult';   // 배포(Render) 등 백엔드가 화면을 같이 내보낼 때는 같은 주소
 let customers = [], history = [], dbMode = false;
 let q = '', histFarm = null;
+const HIST_PER_PAGE = 8;
+let histPage = 1, histKey = '';
 
 // 담당 지역: 상담 홈·어가 상세·수온 예측 맨 위 '담당'에서 고른 값 (같은 이름으로 이 브라우저에 저장됨)
 const OFFICE_KEY = 'heat-dashboard-office';
@@ -305,7 +310,17 @@ function renderConsult(){
   document.getElementById('hist-filter').innerHTML = hf ? `<button type="button" class="chip" data-hist-all aria-pressed="true">${esc(hf.name)} ✕ 전체 보기</button>` : '';
   document.getElementById('hist-empty').hidden = items.length > 0;
   document.getElementById('hist-empty').textContent = hf ? `${hf.name} 고객은 아직 상담 내역이 없어요.` : '상담 내역이 없어요.';
-  document.getElementById('hist-rows').innerHTML = items.map(h => `<li class="hist-item" data-log="${esc(h.log_id)}">
+  // 지역·필터·검색·고객이 바뀌면 1페이지부터, 삭제로 마지막 페이지가 비면 앞 페이지로
+  const key = [office, progOnly, q, histFarm].join('|');
+  if(key !== histKey){ histKey = key; histPage = 1; }
+  const pages = Math.max(1, Math.ceil(items.length / HIST_PER_PAGE));
+  histPage = Math.min(histPage, pages);
+  const pager = document.getElementById('hist-pager');
+  pager.hidden = pages < 2;
+  pager.innerHTML = `<button type="button" class="btn sm" data-hist-page="${histPage - 1}"${histPage === 1 ? ' disabled' : ''}>‹ 이전</button>
+      <span aria-current="page">${histPage} / ${pages}</span>
+      <button type="button" class="btn sm" data-hist-page="${histPage + 1}"${histPage === pages ? ' disabled' : ''}>다음 ›</button>`;
+  document.getElementById('hist-rows').innerHTML = items.slice((histPage - 1) * HIST_PER_PAGE, histPage * HIST_PER_PAGE).map(h => `<li class="hist-item" data-log="${esc(h.log_id)}">
       <div class="hist-top"><span>${esc(h.date)}</span><span class="hist-right"><span class="hist-res">${esc(h.result)}</span>${h.log_id != null
         ? `<button type="button" class="hist-del" data-del="${esc(h.log_id)}" aria-label="${esc(h.date)} ${esc(h.name)} 상담 기록 삭제" title="이 상담 기록 삭제">삭제</button>` : ''}</span></div>
       <div class="hist-who">${hf ? '' : `<b>${esc(h.name)}</b>`}<small>${h.species.map(esc).join(' · ')}</small></div>
@@ -460,6 +475,12 @@ delOk.addEventListener('click', async () => {
 });
 document.getElementById('hist-rows').addEventListener('click', e => {
   const b = e.target.closest('[data-del]'); if(b) askDelete(b.dataset.del, b);
+});
+document.getElementById('hist-pager').addEventListener('click', e => {
+  const b = e.target.closest('[data-hist-page]'); if(!b) return;
+  histPage = Number(b.dataset.histPage);
+  renderConsult();
+  document.getElementById('hist-rows').scrollTop = 0;
 });
 
 load();
