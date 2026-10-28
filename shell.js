@@ -53,9 +53,108 @@
           <ul class="bell-list" id="bell-list"><li class="empty">불러오는 중이에요…</li></ul>
         </div>
       </div>
+      <button type="button" class="bell magnifier-toggle" id="magnifier-toggle" aria-label="돋보기 켜기" aria-pressed="false" title="돋보기 켜기">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></svg>
+      </button>
     </div>
   </div>
 </header>`);
+
+  /* ===== 돋보기: 복제 화면은 별도 DOM에 격리해 원본 ID와 클릭 동작을 보존해요 ===== */
+  const magnifierButton = document.getElementById('magnifier-toggle');
+  const lens = document.createElement('div');
+  lens.className = 'magnifier-lens';
+  lens.hidden = true;
+  lens.inert = true;
+  lens.setAttribute('aria-hidden', 'true');
+  document.body.append(lens);
+  const glass = lens.attachShadow({mode:'closed'});
+  const viewport = document.createElement('div');
+  viewport.style.cssText = 'position:absolute;overflow:hidden;transform-origin:0 0;pointer-events:none;';
+  const zoom = 1.8, diameter = 240;
+  let magnifying = false, dirty = true, frame = 0, pointer = null, copies = [];
+
+  function rebuildMagnifier(){
+    const styles = [...document.head.querySelectorAll('style, link[rel="stylesheet"]')].map(node => node.cloneNode(true));
+    const body = document.body.cloneNode(true);
+    const excluded = 'script, iframe, object, embed, .magnifier-lens';
+    body.querySelectorAll(excluded).forEach(node => node.remove());
+    [body, ...body.querySelectorAll('*')].forEach(node => {
+      for(const attr of [...node.attributes]){
+        if(attr.name.startsWith('on') || attr.name === 'autofocus') node.removeAttribute(attr.name);
+      }
+    });
+    const originals = [document.body, ...document.body.querySelectorAll('*')].filter(node => !node.closest(excluded));
+    const clones = [body, ...body.querySelectorAll('*')];
+    copies = originals.map((source, index) => [source, clones[index]]);
+    viewport.replaceChildren(body);
+    glass.replaceChildren(...styles, viewport);
+    dirty = false;
+  }
+
+  function drawMagnifier(){
+    frame = 0;
+    if(!magnifying || !pointer) return;
+    if(dirty) rebuildMagnifier();
+    const size = Math.min(diameter, window.innerWidth, window.innerHeight);
+    const left = Math.max(0, Math.min(pointer.x - size / 2, window.innerWidth - size));
+    const top = Math.max(0, Math.min(pointer.y - size / 2, window.innerHeight - size));
+    lens.style.cssText = `width:${size}px;height:${size}px;left:${left}px;top:${top}px;`;
+    viewport.style.width = `${document.documentElement.clientWidth}px`;
+    viewport.style.height = `${window.innerHeight}px`;
+    viewport.style.transform = `translate(${pointer.x - left - pointer.x * zoom}px,${pointer.y - top - pointer.y * zoom}px) scale(${zoom})`;
+    viewport.scrollTo(window.scrollX, window.scrollY);
+    for(const [source, copy] of copies){
+      if(!copy) continue;
+      // 폼의 현재 값과 캔버스 픽셀은 cloneNode로 복사되지 않아요.
+      if(source.tagName === 'CANVAS'){
+        const context = copy.getContext('2d');
+        if(context){ context.clearRect(0, 0, copy.width, copy.height); context.drawImage(source, 0, 0); }
+      } else if(source.tagName === 'SELECT') copy.selectedIndex = source.selectedIndex;
+      else if(source.tagName === 'INPUT' || source.tagName === 'TEXTAREA'){
+        copy.value = source.value; copy.checked = source.checked;
+      }
+      if(copy.scrollTop !== source.scrollTop) copy.scrollTop = source.scrollTop;
+      if(copy.scrollLeft !== source.scrollLeft) copy.scrollLeft = source.scrollLeft;
+    }
+    lens.hidden = false;
+  }
+
+  function requestMagnifier(){
+    if(magnifying && !frame) frame = requestAnimationFrame(drawMagnifier);
+  }
+
+  function setMagnifier(active){
+    magnifying = active;
+    magnifierButton.setAttribute('aria-pressed', String(active));
+    const label = active ? '돋보기 끄기 (Esc)' : '돋보기 켜기';
+    magnifierButton.setAttribute('aria-label', label);
+    magnifierButton.title = label;
+    if(active){ dirty = true; requestMagnifier(); }
+    else {
+      cancelAnimationFrame(frame); frame = 0;
+      lens.hidden = true;
+      viewport.replaceChildren(); copies = [];
+    }
+  }
+  magnifierButton.addEventListener('click', () => setMagnifier(!magnifying));
+  document.addEventListener('pointermove', event => {
+    if(event.pointerType === 'touch') return;
+    pointer = {x:event.clientX, y:event.clientY};
+    requestMagnifier();
+  });
+  document.addEventListener('pointerleave', () => { pointer = null; lens.hidden = true; });
+  window.addEventListener('blur', () => { pointer = null; lens.hidden = true; });
+  document.addEventListener('keydown', event => { if(event.key === 'Escape' && magnifying) setMagnifier(false); });
+  document.addEventListener('scroll', requestMagnifier, true);
+  document.addEventListener('input', requestMagnifier);
+  document.addEventListener('change', requestMagnifier);
+  window.addEventListener('resize', () => { dirty = true; requestMagnifier(); });
+  new MutationObserver(records => {
+    if(!magnifying || records.every(record => record.target === lens)) return;
+    dirty = true;
+    requestMagnifier();
+  }).observe(document.body, {childList:true, subtree:true, characterData:true, attributes:true});
 
   /* ===== 담당 지역 선택: 선택지는 지역 이름만 ('사천 지역 담당' → '사천') =====
      선택지는 각 화면이 채우므로, 채워질 때마다 여기서 글자만 정리해요 (값은 그대로라 화면 동작은 같아요). */

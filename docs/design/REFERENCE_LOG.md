@@ -16,3 +16,4 @@ Verification status: `read` = content actually read; `partial` = only part read;
 
 | Service | Source URL | Pattern referenced | Why chosen | Part to redesign independently | Status | Date |
 |---|---|---|---|---|---|---|
+| sinuSHOE | 사용자 제공 `sinuSHOE-feature-main.zip`, `src/Detail.js` | 커서를 따르는 원형 확대 영역(1.8배, 240px) | 사용자 지정 참고 자료 | 이미지 전용 React 컴포넌트 대신 대시보드 DOM을 격리 복제하여 글자·이미지·차트 확대; 원본 코드·이미지 미사용 | read (해당 컴포넌트 사용 부분) | 2026-10-28 |
