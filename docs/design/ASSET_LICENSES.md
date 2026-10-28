@@ -16,3 +16,4 @@ Approval status values: `not approved` (default), `approved`, `rejected`.
 
 | 돋보기 SVG 아이콘 | Icon | 이번 요청에서 직접 작성, `shell.js` | 외부 자산 미사용 | 외부 라이선스 조건 없음 | 프로젝트 코드와 함께 관리 | 2026-10-28: 사용자 돋보기 버튼 요청 및 `shell.js` 변경 승인 | approved |
 | 화면 돋보기 구현 | Code | 이번 요청에서 독립 구현, `shell.js`, `shell.css` | 참고 프로젝트 코드·패키지 미사용 | 외부 라이선스 조건 없음 | 프로젝트 코드와 함께 관리 | 2026-10-28: 사용자 기능 요청 및 두 파일 변경 승인 | approved |
+| 시연 사이트·수온 조작부·설명 모달 | Code / UI | 이번 요청에서 직접 작성, `demo/`, `backend/backend/demo.py` | 외부 자산 미사용, 원본 화면·계산 함수 재사용 | 외부 라이선스 조건 없음 | 프로젝트 코드와 함께 관리 | 2026-10-28: 사용자 별도 시연 사이트 요청 및 경로 연결 승인 | approved |
