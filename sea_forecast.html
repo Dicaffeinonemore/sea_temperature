@@ -338,6 +338,7 @@
   .bm-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
   .bm-tile{border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:var(--soft)}
   .bm-tile.big{background:var(--alert-soft);border-color:#f5c2bd}
+  .bm-tile.mid{background:#fff8d6;border-color:#f0d873}
   .bm-tile .k{font-size:12px;color:var(--muted)}
   .bm-tile .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.35}
   .bm-tile .v.sm{font-size:15px}
@@ -695,7 +696,7 @@ document.getElementById('office').addEventListener('change', e => {
 /* ===== 8~21일 보정값: 예측 상세 값 표의 꼬리표 + 설명 모달 =====
    bias.diff = ECMWF − ROMS (℃, 음수면 ECMWF가 낮게 나와 올려서 보여 줌) · bias.own = 이 지역 자료로 계산했는지
    → /api/dashboard/regions 가 이미 주는 값. 관측 지점 상태만 화면에 적어 둠(roms_regions.status · note 와 같은 내용) */
-const BIAS_BIG = 3;   // 보정값이 이 이상(℃)이면 경고
+const BIAS_MID = 1, BIAS_BIG = 2;   // 보정값 크기(℃): 1 미만 회색 · 1~2 노랑 · 2 이상 빨강(경고)
 const STATION = {'통영':['통영 영운','확정'], '거제':['거제 가배','확정'], '남해':['남해 강진','확정'],
                  '고성':['통영 풍화','임시','고성 안에 관측소가 없어 인접 관측소를 써요'],
                  '하동':['남해 강진','임시','하동 안에 관측소가 없어 인접 관측소를 써요'],
@@ -704,13 +705,13 @@ const STATION = {'통영':['통영 영운','확정'], '거제':['거제 가배',
 function biasInfo(I){
   const b = I.bias || {}, d = b.diff;
   if(d == null) return null;
-  return { d, a:Math.abs(d).toFixed(1), up:d < 0, own:!!b.own, big:Math.abs(d) >= BIAS_BIG };
+  return { d, a:Math.abs(d).toFixed(1), up:d < 0, own:!!b.own, mid:Math.abs(d) >= BIAS_MID, big:Math.abs(d) >= BIAS_BIG };
 }
-// 꼬리표: 평소 회색 · 다른 지역 평균이면 노랑 · 보정값이 크면 빨강
+// 꼬리표 색 = 보정값 크기: 1℃ 미만 회색 · 1~2℃ 노랑 · 2℃ 이상 빨강 (다른 지역 평균 사용 여부는 모달의 '계산 기준'에서)
 function biasChip(I){
   const B = biasInfo(I);
   if(!B) return '<button type="button" class="bias-chip" data-bias-open aria-haspopup="dialog">보정 없음 ⓘ</button>';
-  const cls = B.big ? 'big' : B.own ? '' : 'ref';
+  const cls = B.big ? 'big' : B.mid ? 'ref' : '';
   return `<button type="button" class="bias-chip ${cls}" data-bias-open aria-haspopup="dialog" title="8~21일 보정값 설명 보기">보정 ${B.up ? '+' : '−'}${B.a}℃ ${B.big ? '⚠' : 'ⓘ'}</button>`;
 }
 function openBias(){
@@ -719,14 +720,14 @@ function openBias(){
   const e = I.series.find(p => p.src === 'ECMWF');
   const body = !B ? '<p>이 지역은 보정값이 없어 8~21일 ECMWF 예측을 그대로 보여 줘요.</p>' : `
     <div class="bm-tiles">
-      <div class="bm-tile${B.big ? ' big' : ''}"><div class="k">이 지역 보정값</div><div class="v">${B.up ? '+' : '−'}${B.a}℃</div>
+      <div class="bm-tile${B.big ? ' big' : B.mid ? ' mid' : ''}"><div class="k">이 지역 보정값</div><div class="v">${B.up ? '+' : '−'}${B.a}℃</div>
         <div class="s">ECMWF가 ROMS보다 ${B.a}℃ ${B.up ? '낮게' : '높게'} 나와서, 8~21일 값을 ${B.a}℃ ${B.up ? '올려' : '낮춰'} 보여 줘요</div></div>
       <div class="bm-tile"><div class="k">계산 기준</div><div class="v sm">${B.own ? '이 지역 1~7일 비교' : '7개 지역 평균 사용'}</div>
         <div class="s">${B.own ? '겹치는 7일 동안 두 예측의 차이로 직접 계산했어요' : '이 지역 비교 자료가 부족해 다른 지역 평균을 썼어요 · 흐름만 참고'}</div></div>
       <div class="bm-tile"><div class="k">기준 관측 지점</div><div class="v sm">${esc(st[0])} <span class="bm-tag ${st[1] === '확정' ? 'ok' : 'ref'}">${esc(st[1])}</span></div>
         <div class="s">${esc(st[2] || 'ROMS 값을 뽑는 기준 지점이에요')}</div></div>
     </div>
-    ${B.big ? `<p class="bm-warn">⚠ 보정값이 ${B.a}℃로 커요. ECMWF 격자가 육지 가장자리에 걸렸을 수 있어, 8~21일 값은 참고하지 마세요.</p>` : ''}
+    ${B.big ? `<p class="bm-warn">⚠ 보정값이 ${B.a}℃로 커요(2℃ 이상). 8~21일 값은 오차가 클 수 있어 흐름만 참고하세요${Math.abs(B.d) >= 3 ? ' · 3℃ 이상이면 ECMWF 격자가 육지 가장자리에 걸렸을 수 있어요' : ''}.</p>` : ''}
     ${e ? `<p class="bm-ex">예) ${mdw(e.i)} 일최고 &nbsp;ECMWF 원래 ${(e.max + B.d).toFixed(1)}℃ → 보정 ${B.up ? '+' : '−'}${B.a}℃ → <b>화면 표시 ${e.max.toFixed(1)}℃</b></p>` : ''}`;
   document.getElementById('bias-modal-title').textContent = `${I.id} · 8~21일 보정값`;
   document.getElementById('bias-modal-body').innerHTML = body;
