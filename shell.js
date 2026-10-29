@@ -39,7 +39,7 @@
   <div class="top-in">
     <img class="logo" src="suhyup-logo.png" alt="수협" width="92" height="30">
     <span class="logo-div" aria-hidden="true"></span>
-    <h1>고수온 선제 상담</h1>
+    <h1>고수온 위험 어가 관리 시스템</h1>
     <span class="demo" id="data-mode">불러오는 중</span>
     <div class="top-meta">
       <label>담당 지역 <select id="office" aria-label="담당 지역"></select></label>
