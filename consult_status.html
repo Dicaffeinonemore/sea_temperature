@@ -139,7 +139,7 @@
 
   <main class="wrap">
     <section id="page-consult">
-      <div class="page-h"><h2>고객 상담 현황</h2><p>상담 홈에서 저장한 결과가 바로 쌓여요</p></div>
+      <div class="page-h"><h2>고객 상담 현황</h2></div>
       <p class="notice" id="notice" role="alert" hidden></p>
       <div class="search">
         <label for="q">검색</label>
@@ -149,7 +149,7 @@
       <div class="stack">
         <section class="panel" aria-labelledby="h-cust">
           <div class="list-h">
-            <div class="sec-h" style="margin:0"><h3 id="h-cust">고객 목록</h3><p>고객을 누르면 오른쪽에 그 고객의 상담 내역이 보여요</p></div>
+            <div class="sec-h" style="margin:0"><h3 id="h-cust">고객 목록</h3></div>
             <div class="filters" id="prog-filter">
               <button type="button" class="chip" data-prog="0" aria-pressed="true">전체</button>
               <button type="button" class="chip" data-prog="1" aria-pressed="false">진행</button>  
@@ -195,7 +195,7 @@
     <h4 id="del-title"><span class="ic" aria-hidden="true">!</span>상담 기록을 삭제할까요?</h4>
     <dl class="sum" id="del-sum"></dl>
     <p class="warn" id="del-warn">삭제하면 되돌릴 수 없어요. 이 기록의 어종별 결과도 함께 지워지고, 고객의 현재 상태는 남은 기록 중 가장 최근 것으로 바뀌어요.</p>
-    <label class="ack"><input type="checkbox" id="del-ack"><span>되돌릴 수 없다는 것을 확인했어요</span></label>
+    <label class="ack"><input type="checkbox" id="del-ack"><span>확인함</span></label>
     <div class="btns">
       <button type="submit" class="btn" value="cancel" id="del-cancel" autofocus>취소</button>
       <button type="button" class="btn danger" id="del-ok" disabled>삭제</button>
@@ -313,7 +313,7 @@ function renderConsult(){
   document.getElementById('cust-rows').innerHTML = custs.slice((custPage - 1) * CUST_PER_PAGE, custPage * CUST_PER_PAGE).map(c => `<tr class="pick-row" data-cust="${esc(c.code)}" tabindex="0" aria-selected="${histFarm===c.code}">
       <td class="who"><b>${esc(c.name)}</b><small>${esc(c.code)}</small></td>
       <td>${c.phone_masked ? esc(c.phone_masked) : '–'}</td>
-      <td>${!c.phone_masked ? '–' : c.sms_consent ? '<span class="consent-y">○</span>' : '<span class="consent-n">× 미동의</span>'}</td>
+      <td>${!c.phone_masked ? '–' : c.sms_consent ? '<span class="consent-y">○</span>' : '<span class="consent-n" title="수신 미동의" aria-label="수신 미동의">×</span>'}</td>
       <td>${ctrLines(c)}</td>
       <td><span class="st ${STATUS_CLS[c.status] || ''}">${esc(c.status)}</span></td>
       <td>${c.last_contact ? esc(c.last_contact) : '–'}</td>
@@ -325,7 +325,7 @@ function renderConsult(){
   const items = history.filter(h => codes.has(h.code));
   const hf = customers.find(c => c.code === histFarm);
   document.getElementById('hist-sub').textContent = hf ? `${hf.name} (${hf.code}) · ${items.length}건 · 최근 순` : `${items.length}건 · 최근 순`;
-  document.getElementById('hist-filter').innerHTML = hf ? `<button type="button" class="chip" data-hist-all aria-pressed="true">${esc(hf.name)} ✕ 전체 보기</button>` : '';
+  document.getElementById('hist-filter').innerHTML = hf ? `<button type="button" class="chip" data-hist-all aria-pressed="true" aria-label="${esc(hf.name)} 선택 해제, 전체 보기">${esc(hf.name)} ✕</button>` : '';
   document.getElementById('hist-empty').hidden = items.length > 0;
   document.getElementById('hist-empty').textContent = hf ? `${hf.name} 고객은 아직 상담 내역이 없어요.` : '상담 내역이 없어요.';
   // 지역·필터·검색·고객이 바뀌면 1페이지부터, 삭제로 마지막 페이지가 비면 앞 페이지로
@@ -453,7 +453,7 @@ function askDelete(logId, opener){
   const next = sameCust[1];
   document.getElementById('del-warn').textContent = '삭제하면 되돌릴 수 없어요. 이 기록의 어종별 결과도 함께 지워져요.' + (isLatest
     ? (next ? ` 가장 최근 기록이라 고객의 현재 상태가 '${next.result}'(${next.date})로 바뀌어요.` : ' 남은 기록이 없어 고객이 \'미연락\' 상태로 돌아가요.')
-    : '');
+    : '') + ' 삭제의 책임은 해당 담당자에게 있습니다.';
   delAck.checked = false; delOk.disabled = true; delOk.textContent = '삭제';
   delDialog.showModal();
 }
