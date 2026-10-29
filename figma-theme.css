@@ -37,7 +37,7 @@
 .ty.join{background:#eaf5ef;color:#157c3c}
 
 /* 왼쪽 메뉴: 청록 바탕, 선택한 메뉴는 흰 바탕 */
-.side{background:var(--side);align-self:stretch;padding:18px 0}
+.side{background:var(--side);align-self:start;padding:18px 0}
 /* 화면이 1440px보다 넓으면 .shell 이 가운데 놓여 왼쪽에 빈 띠가 생겨서, 청록을 화면 왼쪽 끝까지 이어요 */
 .side::before{content:"";position:absolute;top:0;bottom:0;right:100%;width:100vw;background:var(--side)}
 .top h1{font-size:20px;color:#0070bf}
@@ -64,4 +64,16 @@
 @media (min-width:901px){
   .nav[aria-current="page"]{position:relative}
   .nav[aria-current="page"]::before{content:"";position:absolute;top:0;bottom:0;right:100%;width:100vw;background:#fff}
+  .top{position:sticky;top:0;z-index:30}
+  /* 여백까지 메뉴 너비에 포함하면 내부 스크롤에도 왼쪽 배경과 선택 표시가 잘리지 않아요. */
+  .side{
+    --side-gutter:max(0px,calc((100vw - 1440px)/2));
+    top:var(--header-height,0px);
+    height:max(0px,calc(100dvh - var(--header-height,0px)));
+    width:calc(100% + var(--side-gutter));
+    margin-left:calc(-1 * var(--side-gutter));
+    overflow-y:auto;
+  }
+  .side::before,.nav[aria-current="page"]::before{display:none}
+  .side .nav{flex-shrink:0;padding-left:calc(12px + var(--side-gutter))}
 }
