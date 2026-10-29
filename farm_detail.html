@@ -359,6 +359,28 @@
   .sl-nav{border:1px solid var(--line-strong);background:#fff;border-radius:8px;width:30px;height:28px;font-size:16px;line-height:1;cursor:pointer}
   .sl-nav:disabled{opacity:.35;cursor:default}
   .ctr-card[hidden]{display:none}
+  /* 계약별 보험: 항목을 표처럼 보여 주고 제목은 굵게 */
+  .ctr-card .facts{gap:0;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff;font-size:13.5px}
+  .ctr-card .facts dt{font-weight:700;color:var(--text);background:var(--soft);padding:8px 12px;white-space:nowrap;border-top:1px solid var(--line)}
+  .ctr-card .facts dd{padding:8px 12px;border-top:1px solid var(--line);border-left:1px solid var(--line);min-width:0}
+  .ctr-card .facts dt:first-of-type,.ctr-card .facts dd:first-of-type{border-top:0}
+  .ctr-card .facts .more{margin-top:2px;font-size:12px}
+  .ctr-card .facts .more summary{color:var(--accent);cursor:pointer;font-weight:400;list-style:none}
+  .ctr-card .facts .more summary::-webkit-details-marker{display:none}
+  .ctr-card .facts .more p{color:var(--muted);margin-top:2px}
+  /* 피해 정도별 예상 보험금 막대 (막대 전체 = 손해액) */
+  .sc-ins{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 10px}
+  .scb-h{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700}
+  .scb-sub{font-size:12px;color:var(--muted);margin:2px 0 8px}
+  .scb-lg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--sub);margin-bottom:8px}
+  .scb-lg i{display:inline-block;width:12px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+  .scb-row{display:grid;grid-template-columns:40px 1fr;gap:8px;align-items:center;margin-bottom:6px}
+  .scb-row > span{font-size:13px}
+  .scb-line{display:flex;align-items:center;gap:8px;min-width:0}
+  .scb-bar{display:flex;height:22px;border-radius:3px;overflow:hidden;flex:none}
+  .scb-bar .p{background:#2f8f5b}.scb-bar .d{background:#c9ced8}
+  .scb-val{font-size:12.5px;white-space:nowrap;color:var(--muted)}
+  .scb-val b{color:#2f8f5b;font-size:13.5px}
 </style>
 <link rel="stylesheet" href="shell.css">
 <link rel="stylesheet" href="figma-theme.css">
@@ -1497,13 +1519,42 @@ async function renderApiDetail(force){
   updateApiCalc();
 }
 
+// 주계약에 포함이면 그 사실만, 보장이 안 될 때만 '고수온 보장 X'로 표시
+function apiHeatLine(Hh){
+  if(Hh.ok === true) return Hh.via === '주계약' ? '<b class="ok">주계약에 포함</b>' : `<b class="ok">${esc(Hh.text)}</b>`;
+  if(Hh.ok === false || Hh.via === '특약'){
+    const why = /고수온 보장(\(주계약·특약\))?이 없어요$/.test(Hh.text || '') ? '' : ` → ${esc(String(Hh.text || '').replace(/^고수온은\s*/, ''))}`;
+    return `<b class="ng">고수온 보장 X</b>${why}`;
+  }
+  return esc(Hh.text || '확인 필요');
+}
+// 판매기간 원문에서 이 어종 기간만 짧게 (예: 1월~5월, 10월~12월 → 1~5월, 10~12월)
+function saleShort(text, species){
+  if(!text) return '확인 필요';
+  const part = String(text).split('/').find(p => p.includes(species));
+  const raw = part ? part.split(':').pop() : String(text).split('.')[0];
+  return raw.replace(/(\d+)월\s*~\s*(\d+)월/g, '$1~$2월').trim();
+}
+// 피해 정도별 막대: 초록 = 받는 보험금, 회색 = 손해 - 보험금(자기부담 = 어가 부담, 같은 값이라 한 번만 표시), 막대 전체 길이 = 손해액
+function scBars(rows, payLabel){
+  const top = Math.max(...rows.map(r => Number(r.loss) || 0));
+  if(!top || rows.every(r => !Number(r.payout))) return '';
+  return `<div class="scb-lg"><span><i style="background:#2f8f5b"></i>${payLabel}</span><span><i style="background:#c9ced8"></i>자기부담 (어가가 부담)</span></div>
+    ${rows.map(r => { const L = Number(r.loss) || 0, P = Math.min(Number(r.payout) || 0, L);
+      return `<div class="scb-row"><span>${Math.round(r.rate * 100)}%</span><div class="scb-line">
+        <div class="scb-bar" style="width:calc((100% - 150px) * ${(L / top).toFixed(4)})"><span class="p" style="width:${L ? (P / L * 100).toFixed(1) : 0}%"></span><span class="d" style="flex:1"></span></div>
+        <span class="scb-val"><b>${r.payout == null ? '–' : eok(r.payout)}</b> / 손해 ${eok(r.loss).replace(/ 원$/, '')}</span></div></div>`; }).join('')}`;
+}
+// '가입하면' → '가입했다면' (그래프 범례용)
+const pastAction = a => ({'가입하면':'가입했다면', '고수온 특약을 넣으면':'고수온 특약을 넣었다면', '부담보 특약을 빼면':'부담보 특약을 뺐다면'})[a || '가입하면'] || a;
+const moreText = t => t ? `<details class="more"><summary>자세히 ▸</summary><p>${esc(t)}</p></details>` : '';
+
 function apiCard(c, k){
   const ct = c.contract, P = c.product || {}, Hh = c.heat || {}, R = c.recommend || {};
-  const heatCls = Hh.ok === true ? 'ok' : Hh.ok === false ? 'ng' : '';
   const gap = API_GAP.includes(c.ins);
   const sale = P.sale || {};
   const saleCls = sale.code === 'open' ? 'ok' : sale.code === 'soon' || sale.code === 'closed' ? 'ng' : '';
-  const facts = [`<dt>고수온</dt><dd class="${heatCls}">${esc(Hh.text || '확인 필요')}</dd>`];
+  const facts = [`<dt>고수온 보장</dt><dd>${apiHeatLine(Hh)}</dd>`];
   if(ct){
     facts.push(`<dt>보험기간</dt><dd>${esc(ct.start_date)} ~ ${esc(ct.end_date)}${ct.days_left != null && ct.days_left >= 0 ? ` (만기 D-${ct.days_left})` : ''} · ${esc(ct.status)}</dd>`);
     facts.push(`<dt>가입금액</dt><dd>${eok(ct.coverage_amount)}${ct.plan ? ` · ${esc(ct.plan)}` : ''}${ct.deductible_rate != null ? ` · 자기부담 ${pct(ct.deductible_rate)}` : ''}</dd>`);
@@ -1512,13 +1563,13 @@ function apiCard(c, k){
       facts.push(`<dt>보험료</dt><dd>${won(ct.premium.total_premium)}${ct.premium.installment ? ' · 분납' + (ct.premium.plans || []).map(p => ` ${p.times}회`).join('/') + ' 가능' : ''}</dd>`);
     if(ct.policy_number) facts.push(`<dt>증권번호</dt><dd>${esc(ct.policy_number)}</dd>`);
   }
-  if(c.expired) facts.push(`<dt>이전 계약</dt><dd>${esc(c.expired.product_name || '')} · ${esc(c.expired.end_date)} ${esc(c.expired.status)}</dd>`);
+  if(c.expired) facts.push(`<dt>이전 계약</dt><dd>${esc(c.expired.product_name || '')} · <b class="ng">${esc(c.expired.end_date)} ${esc(c.expired.status)}</b></dd>`);
   if(!ct && c.product){
     facts.push(`<dt>추천 상품</dt><dd>${esc(P.product_name)}${(c.alternatives || []).length ? ` <span class="note">(그 밖에 ${c.alternatives.map(a => esc(a.product_name)).join(', ')})</span>` : ''}</dd>`);
-    facts.push(`<dt>판매기간</dt><dd>${esc(P.sale_period || '확인 필요')} → <span class="${saleCls}">${esc(sale.text || '확인 필요')}</span></dd>`);
-    if(P.subsidy) facts.push(`<dt>보험료 지원</dt><dd>${esc(P.subsidy)}</dd>`);
+    facts.push(`<dt>판매기간</dt><dd><b>${esc(saleShort(P.sale_period, c.species))}</b> → <b class="${saleCls}">${esc(sale.text || '확인 필요')}</b>${moreText(P.sale_period)}</dd>`);
+    if(P.subsidy) facts.push(`<dt>보험료 지원</dt><dd>${/국가/.test(P.subsidy) ? '보험료 일부를 <b>국가가 보조</b>해요' : esc(P.subsidy)}${/국가/.test(P.subsidy) ? moreText(P.subsidy) : ''}</dd>`);
   }
-  facts.push(`<dt>한계 수온</dt><dd class="${c.risk.hit ? 'ng' : ''}">${esc(c.risk.text)}</dd>`);
+  facts.push(`<dt>한계 수온</dt><dd class="${c.risk.hit ? 'ng' : ''}">${esc(c.risk.text).replace(/\d+(?:\.\d+)?℃/g, '<b>$&</b>')}</dd>`);
   const rec = R.title ? `<div class="rec ${R.level}"><b>추천 · ${esc(R.title)}</b>${(R.actions || []).length ? `<ul>${R.actions.map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : ''}</div>` : '';
   const quote = ['none','expired','norider'].includes(c.ins)
     ? `<div class="ctr-q"><label>견적 <input data-aquote="${c.mapping_id}" type="number" min="0" inputmode="numeric" placeholder="입력"> 만 원</label><span>내 부담 약 <b data-amine="${c.mapping_id}">–</b></span></div>` : '';
@@ -1526,25 +1577,22 @@ function apiCard(c, k){
   const scRows = SC && (SC.rows || []).length;
   let est = '';
   if(SC && SC.kind === 'compare'){
-    est = `<div class="est sc-cmp"><b class="sc-h">고수온으로 피해가 나면 · 지금은 <span class="ng">0원</span>, ${esc(SC.action || '가입하면')} 이만큼 받아요</b>
-      ${scRows ? `<div class="tbl-wrap"><table class="sc">
-        <thead><tr><th>피해</th><th class="num">손해액</th><th class="num">지금 받는 보험금</th><th class="num">${esc(SC.action || '가입하면')} 받는 보험금</th></tr></thead>
-        <tbody>${SC.rows.map(r => `<tr><td>${Math.round(r.rate * 100)}%</td><td class="num">${eok(r.loss)}</td><td class="num ng">0원</td><td class="num">${r.payout == null ? '–' : `<b class="ok">${eok(r.payout)}</b>`}</td></tr>`).join('')}</tbody>
-      </table></div>` : ''}
+    est = `<div class="est sc-cmp">
+      <div class="scb-h">고수온 피해 정도별 예상 보험금 <span class="src-tag">예시</span></div>
+      <div class="scb-sub">${SC.amount ? `가입금액 ${eok(SC.amount)} 기준${SC.basis ? ` (${esc(String(SC.basis).replace(/\s*가입금액/, ''))})` : ''} · ` : ''}막대 전체 길이 = 손해액</div>
+      ${scRows ? scBars(SC.rows, `${esc(pastAction(SC.action))} 받는 보험금`) : ''}
       ${apiData && apiData.sea.alert ? `<p class="note ng">${esc(apiData.sea.alert.type || '특보')} 발령 중이라 지금 가입해도 이번 피해는 보상되지 않아요 · 다음 피해부터 적용</p>` : ''}
-      ${SC.amount ? `<p class="note">가입금액 ${eok(SC.amount)} 기준 (${esc(SC.basis || '')})</p>` : ''}${SC.error ? `<p class="note">${esc(SC.error)}</p>` : ''}
+      ${!scRows && !SC.error ? '<p class="note">비교할 가입금액 자료가 없어요</p>' : ''}${SC.error ? `<p class="note">${esc(SC.error)}</p>` : ''}
     </div>`;
   } else if(SC && SC.kind === 'uncovered'){
-    est = `<div class="est"><b class="sc-h">고수온으로 피해가 나면 · <span class="ng">손해 전액 어가 부담</span></b>
-      <div class="tbl-wrap"><table class="sc"><thead><tr><th>피해</th><th class="num">손해액</th><th class="num">받는 보험금</th></tr></thead>
-      <tbody>${SC.rows.map(r => `<tr><td>${Math.round(r.rate * 100)}%</td><td class="num">${eok(r.loss)}</td><td class="num ng">0원</td></tr>`).join('')}</tbody></table></div></div>`;
+    const full = scRows ? SC.rows[SC.rows.length - 1] : null;
+    est = `<div class="est sc-ins"><b class="ng">고수온 피해가 나면 손해 전액 어가 부담</b>${full ? ` <span class="note">· 피해 ${Math.round(full.rate * 100)}%면 약 ${eok(full.loss)}</span>` : ''}</div>`;
   } else if(SC && SC.kind === 'insured'){
-    est = `<details class="est"><summary>고수온 피해 시 예상 보험금 보기</summary>
-      ${scRows ? `<div class="tbl-wrap"><table class="sc">
-        <thead><tr><th>피해</th><th class="num">손해액</th><th class="num">자기부담</th><th class="num">받는 보험금</th><th class="num">어가 부담</th></tr></thead>
-        <tbody>${SC.rows.map(r => `<tr><td>${Math.round(r.rate * 100)}%</td><td class="num">${eok(r.loss)}</td><td class="num">${r.deductible == null ? '–' : eok(r.deductible)}</td><td class="num"><b class="${r.payout > 0 ? 'ok' : 'ng'}">${eok(r.payout)}</b></td><td class="num">${eok(r.burden)}</td></tr>`).join('')}</tbody>
-      </table></div>` : ''}${SC.error ? `<p class="note">${esc(SC.error)}</p>` : ''}
-    </details>`;
+    est = `<div class="est sc-ins">
+      <div class="scb-h">고수온 피해 정도별 예상 보험금 <span class="src-tag">예시</span></div>
+      <div class="scb-sub">${ct && ct.coverage_amount ? `가입금액 ${eok(ct.coverage_amount)} 기준 · ` : ''}막대 전체 길이 = 손해액</div>
+      ${scRows ? scBars(SC.rows, '받는 보험금') : ''}${SC.error ? `<p class="note">${esc(SC.error)}</p>` : ''}
+    </div>`;
   }
   return `<div class="ctr-card">
     <div class="ctr-h"><span class="ctr-no">${k+1}</span><b>${esc(c.species)}</b>${c.is_primary ? '<span class="src-tag">대표</span>' : ''}<span class="note">${esc(c.method || '')}${c.production_ratio != null ? ` · 생산 ${Number(c.production_ratio)}%` : ''}</span>
@@ -1576,7 +1624,7 @@ async function runEstimate(btn){
     const x = r.result;
     const zeroWhy = Number(x.payout) === 0 && Number(x.deductible) >= Number(x.calculated)
       ? '<br><span class="ng">자기부담금이 손해액보다 커서 지급액이 0원이에요 (최저 자기부담 = 가입금액의 1~2%)</span>' : '';
-    out.innerHTML = `<b>지급 예상 ${won(x.payout)}</b> · 손해액 ${won(x.loss)} · 자기부담 ${won(x.deductible)}${x.farmer_burden != null ? ` · 어가 부담 ${won(x.farmer_burden)}` : ''}${zeroWhy}
+    out.innerHTML = `<b>지급 예상 ${won(x.payout)}</b> · 손해액 ${won(x.loss)} · 자기부담 ${won(x.deductible)}${x.farmer_burden != null && Number(x.farmer_burden) !== Number(x.deductible) ? ` · 어가 부담 ${won(x.farmer_burden)}` : ''}${zeroWhy}
       <br><span class="note">${esc(r.rule ? r.rule.coverage_name : '')}${r.applied_price ? ` · 적용가격 ${won(r.applied_price.price)}/${r.applied_price.unit === 'KRW_PER_KG' ? 'kg' : '마리'}` : ''}${(r.warnings || []).length ? ' · ' + r.warnings.map(esc).join(' · ') : ''}</span>`;
   }catch(e){
     const b = e.body || {};
