@@ -1102,6 +1102,7 @@ const API_BASE = window.DETAIL_API_BASE ?? ((location.protocol === 'file:' ? 'ht
   : location.origin));   // 배포(Render) 등 백엔드가 화면을 같이 내보낼 때는 같은 주소 (다른 화면과 동일)
 let apiOk = false, apiList = [], apiSel = null, apiData = null, apiErr = null, detailMode = 'mock';
 let apiRequestId = 0;
+let apiListLoading = false, apiPending = null;
 const apiQuotes = {};   // mapping_id → 견적(만 원)
 
 function renderBrief(){ return detailMode === 'api' ? renderApiDetail() : renderMockBrief(); }
@@ -1403,42 +1404,65 @@ async function apiPost(path, body){
 async function initApi(){
   apiErr = null;
   detailMode = 'api';
+  apiListLoading = true;
+  const params = new URLSearchParams(location.search);
+  const wantId = params.has('id') ? Number(params.get('id')) : null;
+  if(params.has('id')){
+    apiSel = Number.isSafeInteger(wantId) && wantId > 0 ? wantId : null;
+    if(apiSel == null) apiErr = '요청한 어가를 찾을 수 없어요.';
+  }
   try{
     apiList = await apiGet('/api/households?limit=1000');
     apiOk = true;
     // 상담 홈 연락 목록에서 고른 어가 (farm_detail.html?id=어가번호)
-    const params = new URLSearchParams(location.search);
-    if(params.has('id')){
-      const wantId = Number(params.get('id'));
+    if(params.has('id') && (apiSel === wantId || apiSel == null)){
       const want = apiList.find(h => h.household_id === wantId);
       apiSel = want ? wantId : null;
-      if(want && want.region !== homeRegion && hasOffice(want.region)) setOffice(want.region);   // 다른 지역 어가면 담당을 그 지역으로
-      if(apiSel == null) apiErr = '요청한 어가를 찾을 수 없어요.';
-    }else if(!regionHouseholds().some(h => h.household_id === apiSel)) apiSel = regionHouseholds()[0]?.household_id ?? null;
-    if(page === 'detail') renderBrief(); else renderPicker();
+      if(apiSel == null){
+        ++apiRequestId; apiData = null;
+        apiErr = '요청한 어가를 찾을 수 없어요.';
+      }
+    }else if(!params.has('id') && !regionHouseholds().some(h => h.household_id === apiSel)) apiSel = regionHouseholds()[0]?.household_id ?? null;
+    const current = apiList.find(h => h.household_id === apiSel);
+    if(current && current.region !== homeRegion){
+      if(hasOffice(current.region)) setOffice(current.region);
+      else{ homeRegion = fcRegion = current.region; putOffice(current.region); }
+    }
   }catch(e){
-    apiOk = false; apiSel = null; apiData = null; apiErr = e.message;
+    apiOk = false;
+    if(!params.has('id')){ apiSel = null; apiData = null; apiErr = e.message; }
     addNotice(`⚠️ DB 어가 목록을 불러오지 못했어요. (${e.message})`);
-    if(page === 'detail') renderBrief(); else renderPicker();
+  }finally{
+    apiListLoading = false;
   }
+  if(page === 'detail') renderBrief(); else renderPicker();
 }
 async function loadApiDetail(id, force){
   if(!force && apiData && apiData.household.household_id === id) return true;
+  if(!force && apiPending && apiPending.id === id) return apiPending.promise;
   const requestId = ++apiRequestId;
   apiData = null; apiErr = null;
   briefBoxes('<div class="loading">어가 정보를 불러오는 중…</div>', '');
-  try{
-    const data = await apiGet(`/api/households/${id}/detail`);
-    if(requestId !== apiRequestId || apiSel !== id || detailMode !== 'api') return false;
-    apiData = data;
-  }catch(e){
-    if(requestId !== apiRequestId || apiSel !== id || detailMode !== 'api') return false;
-    apiErr = e.message;
-  }
-  return true;
+  const pending = {id, promise:null};
+  apiPending = pending;
+  pending.promise = (async () => {
+    try{
+      const data = await apiGet(`/api/households/${id}/detail`);
+      if(requestId !== apiRequestId || apiSel !== id || detailMode !== 'api') return false;
+      apiData = data;
+    }catch(e){
+      if(requestId !== apiRequestId || apiSel !== id || detailMode !== 'api') return false;
+      apiErr = e.message;
+    }
+    return true;
+  })().finally(() => { if(apiPending === pending) apiPending = null; });
+  return pending.promise;
 }
 async function renderApiDetail(force){
   renderPicker();
+  if(apiSel == null && apiListLoading && !apiErr){
+    briefBoxes('<div class="loading">어가 목록을 불러오는 중…</div>', ''); return;
+  }
   if(apiSel == null){
     const message = apiErr || (apiOk && apiList.length && !regionHouseholds().length ? `${homeRegion} 지역 고객이 없어요. 위 '담당'에서 다른 지역을 골라 보세요.` : apiOk && !apiList.length ? '등록된 어가가 없어요.' : '어가를 고르면 통화 전 브리핑이 보여요.');
     briefBoxes(`<div class="empty">${esc(message)}</div>`, ''); return;
@@ -2027,16 +2051,25 @@ consultEl.addEventListener('keydown', e => {
 });
 
 /* ===== 시작 ===== */
-(async () => {
-  await loadFarms();
-  const startOffice = fillOffice(getOffice());
-  if(startOffice) setOffice(startOffice);
+async function startDetailPage(){
+  homeRegion = fcRegion = getOffice();
+  const startPage = ['home','detail','forecast','consult'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'detail';
+  if(startPage !== 'detail'){ showPage(startPage); return; }
+  const farmsReady = loadFarms();
+  const apiReady = initApi();
+  showPage(startPage);
+  await farmsReady;
+  const startOffice = fillOffice(homeRegion);
+  if(startOffice){
+    const changed = startOffice !== homeRegion;
+    homeRegion = fcRegion = startOffice; putOffice(startOffice);
+    if(changed && apiOk && !new URLSearchParams(location.search).has('id')) apiSel = regionHouseholds()[0]?.household_id ?? null;
+  }
   if(!selected && sorted().length) selected = sorted()[0].id;
   renderHome();
-  initApi();
-  const startPage = ['home','detail','forecast','consult'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'detail';   // 다른 화면의 '어가 상세' 메뉴로 들어오므로 기본은 어가 상세
-  showPage(startPage);
-})();
+  await apiReady;
+}
+startDetailPage();
 
 /* ===== 계약별 보험: 어종이 2개 이상이면 한 장씩 넘겨 보기 (탭 · ‹ › 버튼 · 키보드 ← →, 옆으로 밀어 넘기기는 없음) ===== */
 let ctrSlideAt = {};   // 어가별로 마지막에 보던 카드 번호 (다시 그려져도 유지)

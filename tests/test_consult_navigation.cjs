@@ -20,18 +20,23 @@ function setup(search = '') {
     return nodes.get(id);
   };
   const context = vm.createContext({
-    URLSearchParams, location: { search },
+    URLSearchParams, location: { search, hash: '' },
     apiOk: false, apiList: [], apiSel: null, apiData: null, apiErr: null,
     apiRequestId: 0, detailMode: 'mock', page: 'detail', farms: [], selected: null,
+    apiListLoading: false, apiPending: null, homeRegion: 'test-region', fcRegion: 'test-region',
     notices: [], toasts: [], boxes: [],
     document: { getElementById: element, querySelectorAll: () => [] },
     esc: value => String(value).replaceAll('<', '&lt;').replaceAll('>', '&gt;'),
     renderBrief() {},
+    getOffice: () => 'test-region', putOffice() {}, hasOffice: () => false,
+    loadFarms: async () => {}, fillOffice: current => current, sorted: () => [], renderHome() {},
   });
+  context.showPage = page => { context.page = page; if (page === 'detail') context.renderBrief(); };
   context.addNotice = message => context.notices.push(message);
   context.toast = message => context.toasts.push(message);
   context.briefBoxes = (...html) => context.boxes.push(html);
-  vm.runInContext(['initApi', 'loadApiDetail', 'renderPicker', 'renderApiDetail', 'saveApiLog']
+  vm.runInContext(detail.match(/^const regionHouseholds = .+$/m)[0], context);
+  vm.runInContext(['initApi', 'loadApiDetail', 'renderPicker', 'renderApiDetail', 'saveApiLog', 'startDetailPage']
     .map(source).join('\n'), context);
   return { context, element };
 }
@@ -45,7 +50,9 @@ function deferred() {
 test('direct links select the requested household; missing IDs do not select another', async () => {
   for (const [search, expected] of [['?id=2', 2], ['?id=999', null], ['?id=bad', null], ['', 1]]) {
     const { context } = setup(search);
-    context.apiGet = async () => [{ household_id: 1 }, { household_id: 2 }];
+    context.apiGet = async () => [1, 2].map(household_id => ({
+      household_id, region: 'test-region', species: [], owner_name: '', household_name: '',
+    }));
     await context.initApi();
     assert.equal(context.apiSel, expected);
     assert.equal(context.detailMode, 'api');
@@ -66,6 +73,128 @@ test('empty lists and connection errors show an explicit state', async () => {
   assert.equal(context.apiSel, null);
   assert.ok(context.notices[0].includes('HTTP 503'));
   assert.ok(context.boxes.at(-1)[0].includes('HTTP 503'));
+});
+
+test('direct detail starts before region and household lists finish', async () => {
+  const { context } = setup('?id=2');
+  const regions = deferred(), households = deferred();
+  const calls = [];
+  context.loadFarms = () => regions.promise;
+  context.apiGet = path => {
+    calls.push(path);
+    return path.includes('/2/detail')
+      ? Promise.resolve({ household: { household_id: 2 } })
+      : households.promise;
+  };
+  context.renderBrief = () => { if (context.apiSel != null) context.loadApiDetail(context.apiSel); };
+  const start = context.startDetailPage();
+  await new Promise(setImmediate);
+  assert.equal(context.apiData.household.household_id, 2);
+  assert.equal(context.apiListLoading, true);
+  assert.deepEqual(calls, ['/api/households?limit=1000', '/api/households/2/detail']);
+  households.resolve([{ household_id: 2, region: 'other-region', species: [] }]);
+  await new Promise(setImmediate);
+  regions.resolve();
+  await start;
+  assert.equal(context.homeRegion, 'other-region');
+  assert.equal(calls.filter(path => path.includes('/2/detail')).length, 1);
+});
+
+test('default detail does not wait for regional forecasts', async () => {
+  const { context } = setup();
+  const regions = deferred();
+  const calls = [];
+  context.loadFarms = () => regions.promise;
+  context.apiGet = async path => {
+    calls.push(path);
+    return path.includes('/detail')
+      ? { household: { household_id: 1 } }
+      : [{ household_id: 1, region: 'test-region', species: [] }];
+  };
+  context.renderBrief = () => { if (context.apiSel != null) context.loadApiDetail(context.apiSel); };
+  const start = context.startDetailPage();
+  await new Promise(setImmediate);
+  assert.equal(context.apiData.household.household_id, 1);
+  assert.ok(calls.includes('/api/households/1/detail'));
+  regions.resolve();
+  await start;
+});
+
+test('rendering the same pending household shares one detail request', async () => {
+  const { context } = setup();
+  const response = deferred();
+  let calls = 0;
+  context.detailMode = 'api';
+  context.apiSel = 1;
+  context.apiGet = () => { ++calls; return response.promise; };
+  const first = context.loadApiDetail(1);
+  const second = context.loadApiDetail(1);
+  assert.equal(calls, 1);
+  response.resolve({ household: { household_id: 1 } });
+  assert.deepEqual(await Promise.all([first, second]), [true, true]);
+  assert.equal(context.apiPending, null);
+});
+
+test('household-list failure preserves successfully loaded direct detail', async () => {
+  const { context } = setup('?id=2');
+  const households = deferred();
+  context.apiGet = path => path.includes('/detail')
+    ? Promise.resolve({ household: { household_id: 2 } })
+    : households.promise;
+  const list = context.initApi();
+  await context.loadApiDetail(2);
+  households.reject(Error('HTTP 503'));
+  await list;
+  assert.equal(context.apiSel, 2);
+  assert.equal(context.apiData.household.household_id, 2);
+  assert.equal(context.apiErr, null);
+  assert.ok(context.notices[0].includes('HTTP 503'));
+});
+
+test('late household list cannot overwrite a newer household selection', async () => {
+  const { context } = setup('?id=2');
+  const households = deferred();
+  context.apiGet = path => path.includes('/detail')
+    ? Promise.resolve({ household: { household_id: 3 } })
+    : households.promise;
+  const list = context.initApi();
+  context.apiSel = 3;
+  await context.loadApiDetail(3);
+  households.resolve([2, 3].map(household_id => ({ household_id, region: 'test-region', species: [] })));
+  await list;
+  assert.equal(context.apiSel, 3);
+  assert.equal(context.apiData.household.household_id, 3);
+});
+
+test('invalid direct IDs never request a detail or fall back to another household', async () => {
+  for (const id of ['bad', '0', '-1', '1.2']) {
+    const { context } = setup(`?id=${id}`);
+    const calls = [];
+    context.apiGet = async path => {
+      calls.push(path);
+      return [{ household_id: 1, region: 'test-region', species: [] }];
+    };
+    context.renderBrief = () => { if (context.apiSel != null) context.loadApiDetail(context.apiSel); };
+    await context.startDetailPage();
+    assert.equal(context.apiSel, null);
+    assert.ok(context.apiErr);
+    assert.deepEqual(calls, ['/api/households?limit=1000']);
+  }
+});
+
+test('a missing direct household invalidates its older pending detail', async () => {
+  const { context } = setup('?id=999');
+  const households = deferred(), response = deferred();
+  context.apiGet = path => path.includes('/detail') ? response.promise : households.promise;
+  const list = context.initApi();
+  const pending = context.loadApiDetail(999);
+  households.resolve([{ household_id: 1, region: 'test-region', species: [] }]);
+  await list;
+  response.resolve({ household: { household_id: 999 } });
+  assert.equal(await pending, false);
+  assert.equal(context.apiSel, null);
+  assert.equal(context.apiData, null);
+  assert.ok(context.apiErr);
 });
 
 test('an older success or failure cannot overwrite the latest selection', async () => {
