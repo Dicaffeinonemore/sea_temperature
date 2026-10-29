@@ -229,6 +229,8 @@
   .next{display:block;font-size:11px;color:var(--warn);margin-top:2px;white-space:nowrap}
   .calc .src{grid-column:1/-1;font-size:11px;color:var(--muted);margin-top:-4px}
   .main{grid-template-columns:minmax(0,1.75fr) minmax(340px,1fr)}
+  /* 1201~1350px 에서는 1.75:1 비율이면 연락 순서 표가 좁아 '상태' 열이 잘려서, 표에 필요한 폭을 먼저 주고 문자 카드는 300px 이상 남겨요 */
+  @media (min-width:1201px) and (max-width:1350px){.main{grid-template-columns:minmax(0,max-content) minmax(300px,1fr)}}
   .who b,.who small{white-space:nowrap}
   .who small{display:block}
   #rows td{padding:9px 7px}
