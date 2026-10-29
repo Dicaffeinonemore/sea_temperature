@@ -40,7 +40,7 @@
 /* 왼쪽 메뉴: 청록 바탕, 선택한 메뉴는 흰 바탕 */
 .side{background:var(--side);align-self:start;padding:18px 0}
 .top,.side{font-family:Pretendard,"Noto Sans KR",sans-serif;font-weight:900}
-.top h1,.side .nav{font-weight:900}
+.top h1,.side .nav{font-weight:700}
 .top-meta{font-family:"Noto Sans KR",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-weight:400}
 /* 사이드바 폭 196→160px: 가장 긴 메뉴 '고객 상담 현황'도 14px 여유가 남고, 줄어든 만큼 본문이 넓어져요 (900px 이하는 메뉴가 가로라 제외) */
 @media (min-width:901px){.shell{grid-template-columns:160px minmax(0,1fr)}}
