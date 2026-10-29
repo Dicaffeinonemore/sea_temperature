@@ -38,6 +38,8 @@
 
 /* 왼쪽 메뉴: 청록 바탕, 선택한 메뉴는 흰 바탕 */
 .side{background:var(--side);align-self:start;padding:18px 0}
+.top,.side{font-family:"돋움체",DotumChe,"돋움",Dotum,sans-serif}
+.side .nav{font-weight:700}
 /* 사이드바 폭 196→160px: 가장 긴 메뉴 '고객 상담 현황'도 14px 여유가 남고, 줄어든 만큼 본문이 넓어져요 (900px 이하는 메뉴가 가로라 제외) */
 @media (min-width:901px){.shell{grid-template-columns:160px minmax(0,1fr)}}
 /* 화면이 1440px보다 넓으면 .shell 이 가운데 놓여 왼쪽에 빈 띠가 생겨서, 청록을 화면 왼쪽 끝까지 이어요 */
