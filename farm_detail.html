@@ -568,7 +568,7 @@ function addNotice(msg){
 function setMode(ok, err){
   mode = ok ? 'db' : 'sample';
   document.getElementById('data-mode').textContent = ok ? 'DB 연결됨' : '가상 데이터 · 서버 연결 실패';
-  document.getElementById('updated').textContent = ok ? `${new Date().toLocaleString('ko-KR')} 조회` : '2026.10.22 (목) 06:00 기준';
+  document.getElementById('updated').textContent = ok ? `마지막 조회 ${Shell.lastViewed()}` : '2026.10.22 (목) 06:00 기준';
   document.getElementById('reset').hidden = ok;   // 홈과 같이 가상 데이터일 때만 보여요
   if(!ok) addNotice(location.protocol === 'file:'
     ? '⚠️ 파일로 열면 서버에 연결할 수 없어 가상 데이터를 보여 주고 있어요. sea_temperature 폴더에서 python -m http.server 8765 를 켜고 http://localhost:8765/farm_detail.html 로 열어 주세요.'
@@ -1151,7 +1151,7 @@ function renderMockBrief(){
       ${scriptBox('m:' + f.id, exampleScript(L0))}`)}
 
     <div class="actions">
-      <button type="button" class="btn pri" data-act="call">📞 전화 연결</button>
+      <button type="button" class="btn pri" data-act="call"><svg class="ic-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/></svg>전화 연결</button>
     </div>
 
     ${acc('record', '결과 기록', STATUS[f.status], `
@@ -1447,8 +1447,8 @@ async function renderApiDetail(force){
 
     <div class="b-sec">
       <div class="tnow">
-        <div class="tnow-main"><span class="lbl">오늘 수온</span><span class="big">${T.temp != null ? Number(T.temp).toFixed(1) + '℃' : '–'}</span>
-          <span class="badge s${st}">${STAGE_ICON[st]} ${STAGE[st]}</span></div>
+        <div class="tnow-main"><div class="tnow-head"><span class="lbl">오늘 수온</span><span class="badge s${st}">${STAGE[st]}</span></div>
+          <span class="big">${T.temp != null ? Number(T.temp).toFixed(1) + '℃' : '–'}</span></div>
         <div class="tnow-stat"><span class="lbl">예측 최고</span><b>${peak ? Number(peak.value).toFixed(1) + '℃' : '–'}</b><small>${peak ? mdStr(peak.day) + (peak.src === 'ECMWF' ? ' · 참고' : '') : esc(S.data_range && S.data_range.roms ? S.data_range.roms.reason : '예측 없음')}</small></div>
         <div class="tnow-stat"><span class="lbl">2~3주 흐름</span><b>${S.trend ? TREND_BIG[S.trend] : '–'}</b><small>${S.trend ? 'ECMWF 보정 참고' : esc(S.data_range && S.data_range.om ? S.data_range.om.reason : '예측 없음')}</small></div>
       </div>
@@ -1470,7 +1470,7 @@ async function renderApiDetail(force){
       ${scriptBox('h:' + H.household_id, esc(D.script).replace('{burden}', '<b id="s-burden">[예상 부담]</b>'))}`)}
 
     <div class="actions">
-      <button type="button" class="btn pri" data-act="call">📞 전화 연결${H.phone_masked ? ' · ' + esc(H.phone_masked) : ''}</button>
+      <button type="button" class="btn pri" data-act="call"><svg class="ic-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"/></svg>전화 연결${H.phone_masked ? ' · ' + esc(H.phone_masked) : ''}</button>
     </div>
 
     ${acc('record', '결과 기록', esc(D.consult.status), `

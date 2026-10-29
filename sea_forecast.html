@@ -451,7 +451,7 @@ function addNotice(msg){
 function setMode(ok, err){
   mode = ok ? 'db' : 'sample';
   document.getElementById('data-mode').textContent = ok ? 'DB 연결됨' : '가상 데이터 · 서버 연결 실패';
-  document.getElementById('updated').textContent = ok ? `${new Date().toLocaleString('ko-KR')} 조회` : '2026.10.22 (목) 06:00 기준';
+  document.getElementById('updated').textContent = ok ? `마지막 조회 ${Shell.lastViewed()}` : '2026.10.22 (목) 06:00 기준';
   if(!ok) addNotice(location.protocol === 'file:'
     ? '⚠️ 파일로 열면 서버에 연결할 수 없어 가상 데이터를 보여 주고 있어요. sea_temperature 폴더에서 python -m http.server 8765 를 켜고 http://localhost:8765/sea_forecast.html 로 열어 주세요.'
     : `⚠️ 서버에 연결하지 못해 가상 데이터를 보여 주고 있어요. 백엔드(8000 포트)가 켜져 있는지 확인해 주세요. (${err.message})`);
@@ -606,7 +606,7 @@ function renderForecastSide(I){
 
   const first = I.top >= 1 ? `${mdw(I.d)} (D-${I.d})` : '없음';
   document.getElementById('fc-summary').innerHTML = `
-    <li><span>예상 단계</span><span class="badge s${I.top}">${STAGE_ICON[I.top]} ${STAGE[I.top]}</span></li>
+    <li><span>예상 단계</span><span class="badge s${I.top}">${STAGE[I.top]}</span></li>
     <li><span>오늘 최고 예측</span><b>${I.t[0].toFixed(1)}℃</b></li>
     <li><span>7일 최고</span><b>${I.maxT.toFixed(1)}℃ · ${md(I.dMax)}</b></li>
     <li><span>${STAGE[I.top]} 첫 예상일</span><b>${first}</b></li>
@@ -634,7 +634,7 @@ function renderForecastSide(I){
   }</tbody></table></div>`;
   document.getElementById('fc-tables').innerHTML =
     `<div><h3>1~7일 · ROMS (대응 검토)</h3>${table(pts.filter(p => p.src==='ROMS'), false)}</div>
-     <div><h3>8~21일 · ECMWF 보정 (참고용) ${biasChip(I)}</h3>${table(pts.filter(p => p.src==='ECMWF'), true)}</div>`;
+     <div><h3>8~21일 · ECMWF 보정 (참고용) ${biasChip(I)}</h3>${table(pts.filter(p => p.src==='ECMWF'), true)}<p class="fc-ref-note">* 8~21일 단계는 같은 기준을 ECMWF 보정값에 적용한 참고용</p></div>`;
 }
 
 /* ===== 그래프 툴팁 ===== */
