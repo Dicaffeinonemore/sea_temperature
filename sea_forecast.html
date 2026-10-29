@@ -187,8 +187,7 @@
   .g-line{stroke:#e8ecf1;stroke-width:1}
   .g-txt{fill:var(--muted);font-size:11px}
   .g-band{fill:rgba(110,120,140,.09)}
-  .pt-val{font-size:10.5px;fill:#4b5363;font-variant-numeric:tabular-nums;pointer-events:none}
-  .g-break{fill:none;stroke:#8a93a3;stroke-width:1.5}
+  .pt-val{font-size:11px;font-weight:500;fill:#4b5363;font-variant-numeric:tabular-nums;pointer-events:none;paint-order:stroke;stroke:#fff;stroke-width:3px}
   .zone-warn{fill:#f8c9c4;opacity:.65}
   .zone-watch{fill:#fbe6a2;opacity:.6}
   .g-head{font-size:11px;font-weight:700}
@@ -555,39 +554,39 @@ function chartSvg(I, pick, o = {}){
   const fcRegion = I.id;
   const pts = I.series, fcPick = pick;
   const W = 900, H = o.h || 300, L = 46, R = 16, T = 28, B = 40, pW = W - L - R, pH = H - T - B;
-  // 세로축: 예측값 범위를 0.5℃ 단위로 확대해 하루하루 차이가 보이게 하고,
-  // 25℃보다 한참 낮으면 위쪽 띠에 관심·주의 구간을 접어서(≈) 항상 보여 줘요
+  // 세로축은 예측값 범위에 맞춰 1℃ 눈금으로 확대하고,
+  // 24℃보다 한참 낮으면 관심·주의 구간을 위쪽 얇은 띠로 접어서 항상 보여 줘요
   const temps = pts.map(p => p.max), tMax = Math.max(...temps);
-  let lo = Math.floor((Math.min(...temps) - 0.3) * 2) / 2, hi = Math.ceil((tMax + 0.3) * 2) / 2;
-  if(hi - lo < 2){ const mid = (hi + lo) / 2; lo = Math.floor((mid - 1) * 2) / 2; hi = lo + 2; }
-  const fold = hi < 24;                       // true면 위쪽 띠(24~29℃)를 따로 접어서 표시
+  let lo = Math.floor(Math.min(...temps) - 0.3), hi = Math.ceil(tMax + 0.3);
+  if(hi - lo < 3){ lo = hi - 3; }
+  const fold = hi < 24;
   if(!fold) hi = Math.max(hi, 29);
-  const TOPH = fold ? Math.round(pH * 0.24) : 0, GAP = fold ? 10 : 0;
-  const yTop = v => T + (29 - v) / (29 - 24) * TOPH;                       // 접은 띠: 24~29℃
+  const TOPH = fold ? 36 : 0, GAP = fold ? 14 : 0;
   const yData = v => T + TOPH + GAP + (hi - v) / (hi - lo) * (pH - TOPH - GAP);
-  const x = i => L + i / 20 * pW, y = v => fold && v >= 24 ? yTop(v) : yData(v);
-  const yc = v => Math.min(T + pH, Math.max(T, y(v)));   // 그래프 칸 밖으로 나가지 않게
-  const step = hi - lo > 6 ? 1 : 0.5;
+  const x = i => L + i / 20 * pW, y = yData;
+  const yc = v => Math.min(T + pH, Math.max(T, y(v)));
+  const step = hi - lo > 8 ? 2 : 1;
+  const top0 = T + TOPH + GAP;   // 수온 그래프가 시작하는 높이
   let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${fcRegion} 21일 수온 예측 그래프">`;
-  // 위험 구간 색칠: 주의(28℃ 이상) 빨강 · 관심(25~28℃) 노랑
-  svg += `<rect class="zone-warn" x="${L}" y="${T}" width="${pW}" height="${yc(28) - T}"/>`;
-  svg += `<rect class="zone-watch" x="${L}" y="${yc(28)}" width="${pW}" height="${yc(25) - yc(28)}"/>`;
-  svg += `<rect class="g-band" x="${x(6.5)}" y="${T}" width="${W - R - x(6.5)}" height="${pH}"/>`;
+  // 위험 구간 색칠: 주의(28℃ 이상) 빨강 · 관심(25~28℃) 노랑 (접었으면 위쪽 띠를 반씩)
+  const zWarn = fold ? [T, T + TOPH / 2] : [T, yc(28)], zWatch = fold ? [T + TOPH / 2, T + TOPH] : [yc(28), yc(25)];
+  svg += `<rect class="zone-warn" x="${L}" y="${zWarn[0]}" width="${pW}" height="${zWarn[1] - zWarn[0]}"/>`;
+  svg += `<rect class="zone-watch" x="${L}" y="${zWatch[0]}" width="${pW}" height="${zWatch[1] - zWatch[0]}"/>`;
+  svg += `<rect class="g-band" x="${x(6.5)}" y="${top0}" width="${W - R - x(6.5)}" height="${T + pH - top0}"/>`;
   svg += `<text class="g-head r" x="${x(3)}" y="16" text-anchor="middle">1~7일</text>`;
   svg += `<text class="g-head o" x="${x(13.75)}" y="16" text-anchor="middle">8~21일</text>`;
-  for(let v = lo; v <= hi + 1e-9; v += step){
-    svg += `<line class="g-line" x1="${L}" y1="${y(v)}" x2="${W-R}" y2="${y(v)}"/><text class="g-txt" x="${L-8}" y="${y(v)+4}" text-anchor="end">${v.toFixed(1)}°</text>`;
+  for(let v = lo; v <= hi; v += step){
+    svg += `<line class="g-line" x1="${L}" y1="${yData(v)}" x2="${W-R}" y2="${yData(v)}"/><text class="g-txt" x="${L-8}" y="${yData(v)+4}" text-anchor="end">${v}°</text>`;
   }
   if(fold){
-    const yb = T + TOPH + GAP / 2;
-    svg += `<rect x="${L}" y="${T + TOPH}" width="${pW}" height="${GAP}" fill="#fff"/>`;
-    svg += `<path class="g-break" d="M${L-14},${yb+4} l6,-8 l6,8 l6,-8 M${W-R-18},${yb+4} l6,-8 l6,8 l6,-8"/>`;
-    svg += `<text class="g-txt" x="${L-8}" y="${y(25)+4}" text-anchor="end">25°</text><text class="g-txt" x="${L-8}" y="${y(28)+4}" text-anchor="end">28°</text>`;
-    svg += `<text class="th25t" x="${W-R-6}" y="${y(25)-5}" text-anchor="end" font-weight="700">지금 최고 ${tMax.toFixed(1)}℃ · 관심 25℃까지 ${(25 - tMax).toFixed(1)}℃ 남음</text>`;
+    svg += `<text class="th28t" x="${L+8}" y="${T + TOPH / 4 + 4}" font-weight="700">주의 28℃ 이상</text>`;
+    svg += `<text class="th25t" x="${L+8}" y="${T + TOPH * 3 / 4 + 4}" font-weight="700">관심 25℃ 이상</text>`;
+    svg += `<text class="th25t" x="${W-R-8}" y="${T + TOPH * 3 / 4 + 4}" text-anchor="end">관심 단계까지 ${(25 - tMax).toFixed(1)}℃ 남음</text>`;
+  } else {
+    [[25,'th25'],[28,'th28']].filter(([v]) => v >= lo && v <= hi).forEach(([v,c]) => {
+      svg += `<line class="${c}" x1="${L}" y1="${y(v)}" x2="${W-R}" y2="${y(v)}"/><text class="${c}t" x="${L+6}" y="${y(v)-5}" text-anchor="start" font-weight="700">${v === 25 ? '관심 25℃' : '주의 28℃'}</text>`;
+    });
   }
-  [[25,'th25'],[28,'th28']].filter(([v]) => fold || (v >= lo && v <= hi)).forEach(([v,c]) => {
-    svg += `<line class="${c}" x1="${L}" y1="${y(v)}" x2="${W-R}" y2="${y(v)}"/><text class="${c}t" x="${L+6}" y="${y(v)-5}" text-anchor="start" font-weight="700">${v === 25 ? '관심 25℃' : '주의 28℃'}</text>`;
-  });
   for(let i = 0; i <= 20; i += 2) svg += `<text class="g-txt" x="${x(i)}" y="${H - B + 20}" text-anchor="middle">${md(i)}</text>`;
   if(!o.still) svg += `<line class="tc-guide" x1="0" y1="${T}" x2="0" y2="${T + pH}"/>`;
   const line = arr => arr.map(p => `${x(p.i)},${y(p.max)}`).join(' ');
@@ -600,7 +599,10 @@ function chartSvg(I, pick, o = {}){
       ? `<circle class="pt ${p.src==='ROMS'?'r':'o'}" style="cursor:default" cx="${x(p.i)}" cy="${y(p.max)}" r="3.5"><title>${mdw(p.i)} ${p.max.toFixed(1)}℃ · ${p.src}</title></circle>`
       : `<circle class="pt ${p.src==='ROMS'?'r':'o'}" data-dot="${p.i}" data-r="${on?7:4.5}" cx="${x(p.i)}" cy="${y(p.max)}" r="${on?7:4.5}"/>`;
   });
-  pts.forEach(p => { svg += `<text class="pt-val" x="${x(p.i)}" y="${y(p.max) - 9}" text-anchor="middle">${p.max.toFixed(1)}</text>`; });
+  // 날짜마다 0.1℃ 값 표시
+  pts.forEach(p => {
+    svg += `<text class="pt-val" x="${x(p.i)}" y="${y(p.max) - 10}" text-anchor="${p.i === 0 ? 'start' : p.i === 20 ? 'end' : 'middle'}">${p.max.toFixed(1)}</text>`;
+  });
   // 날짜마다 세로 칸: 칸 어디에 커서를 올려도 그 날짜 툴팁이 떠요 (터치는 누르기, 키보드는 Tab)
   if(!o.still) pts.forEach(p => {
     svg += `<rect class="tc-hit" data-pt="${p.i}" tabindex="0" aria-label="${mdw(p.i)} 최고 ${p.max.toFixed(1)}℃" x="${x(p.i) - pW / 40}" y="${T}" width="${pW / 20}" height="${pH}"/>`;
