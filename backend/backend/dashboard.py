@@ -2,7 +2,6 @@
 from datetime import date
 from functools import lru_cache
 import io
-import math
 from threading import Lock
 from typing import Annotated, Literal
 
@@ -270,6 +269,17 @@ def _style(ax, *, hide_y: bool = False):
     ax.set_axisbelow(True)
 
 
+def _nice_yaxis(ax, top: float):
+    """Y axis from 0 with at most 4 readable steps (10 · 20 · 30 · 50 …) picked by matplotlib for this data.
+
+    The 15% headroom keeps the value label above the tallest bar inside the chart.
+    """
+    from matplotlib.ticker import MaxNLocator
+    ticks = [t for t in MaxNLocator(nbins=4, steps=[1, 2, 3, 5, 10], integer=True).tick_values(0, max(top, 1) * 1.15) if t >= 0]
+    ax.set_ylim(0, ticks[-1])
+    ax.set_yticks(ticks)
+
+
 def _heads(ax, x_split: float, past_txt: str, fc_txt: str, compact: bool = False):
     left, right = ax.get_xlim()
     ax.axvspan(x_split, right, color=BAND, zorder=0, linewidth=0)
@@ -334,10 +344,7 @@ def yearly_figure(rows: list[dict], compact: bool = False):
     ax.set_xticks(range(len(years)), [f"{y}\n(예측)" if y == fc_year else str(y) for y in years])
     ax.set_xlim(-0.6, len(years) - 0.4)
     if compact:
-        # Figma card: y ticks every 30 (0 · 30 · 60), range grows in steps of 30 when data goes past 60.
-        ymax = max(60, math.ceil((top_all or 1) * 1.15 / 30) * 30)
-        ax.set_ylim(0, ymax)
-        ax.set_yticks(range(0, ymax + 1, 30))
+        _nice_yaxis(ax, top_all)
         _style(ax, hide_y=True)
         ax.tick_params(axis="y", labelleft=True)
     else:
@@ -389,7 +396,11 @@ def monthly_figure(rows: list[dict], compact: bool = False):
 
     ax.set_xticks(range(len(labels)), [m.replace("-", ".") if m.endswith(("-01", "-07")) else "" for m in labels])
     ax.set_xlim(-0.5, len(labels) - 0.5)
-    ax.set_ylim(bottom=0)
+    if compact:
+        values = [float(x[k]) for x in rows for k in ("value", "high") if x.get(k) is not None]
+        _nice_yaxis(ax, max(values, default=0))
+    else:
+        ax.set_ylim(bottom=0)
     ax.yaxis.set_major_formatter(lambda v, _: f"{v:.0f}건")
     _style(ax)
     first_fc = min((idx[x["month"][:7]] for x in rows if x["kind"] == "예측"), default=None)
