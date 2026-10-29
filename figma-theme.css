@@ -1,0 +1,43 @@
+/* Figma 「파이널 프로젝트_유료」 디자인 규칙을 네 화면에 입히는 테마
+   각 화면에서 shell.css 다음 줄에 불러와요. 화면 코드는 그대로 두고 값만 덮어써요.
+   규칙: 글꼴 Noto Sans KR · 포인트 #007F98 · 사이드바 #017896 · 카드·버튼 모서리 6px · 배지 3px */
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap");
+
+:root{
+  --bg:#f4f5f7; --line:#e2e8f0; --line-strong:#cbd5e1; --soft:#f7f8fa;
+  --text:#334155; --sub:#475569; --muted:#64748b;
+  --accent:#007f98; --accent-soft:#e0f2f5;
+  --normal:#157c3c; --normal-soft:#eaf5ef;
+  --alert-soft:#fdeaea;
+  --radius:6px;
+  --side:#017896;
+}
+
+/* 카드·버튼·입력칸·팝업: 6px */
+.top-meta select,.ghost,.bell-panel,.magnifier-lens,.cal-nav button,.cal-d,.cal-ev,
+.ctr-card,.ctr-total,.script,textarea,.btn,.pick,.search input,.toast,body.show-chg .chg-box,
+.alert-box,.notice,.ht-hl,.confirm,.confirm .sum,.confirm .warn,.gov-sub,.gov-card,.hh-pick select,
+.tnow>div,.rec,.sc-cmp,.sl-nav,.ttip,.bias-modal,.bm-tile,.bm-warn{border-radius:6px}
+
+/* 상태 배지: 3px */
+.ins,.st,.cal-st,.pts i,.tag-why,.need,.ht-pill,.script-h .edited,.gov-tag,.src-tag,.bm-tag,
+.bell-list .ty,.hist-res{border-radius:3px}
+
+/* 글자 크기: Figma 단계(11·12·13·14·15·16·20·26)로 */
+.ins,.home-top .chip,.bp-picked button,.ht-link,.seg button,.hist-res,.hist-who small,
+.sc th,.sc td,.sl-n,.ttip .sub,.bm-tile .s,.cal-nav button{font-size:12px}
+.ctr-line small,.cal-all,.gd-badge,.ht-note,.sig .dd,.bias-chip,.bm-tag{font-size:11px}
+.cal-ev,.ht-list,.bm-warn,.bm-ex{font-size:13px}
+.confirm h4,.bm-head h3{font-size:16px}
+
+/* 보험 상태 배지 색 */
+.ins-ok{background:#eaf5ef;color:#157c3c;border-color:#bbe5c8}
+.ins-gap{background:#fff1b8}
+.ins-none{background:#fdeaea;border-color:#f5c2bd}
+.ty.join{background:#eaf5ef;color:#157c3c}
+
+/* 왼쪽 메뉴: 청록 바탕, 선택한 메뉴는 흰 바탕 */
+.side{background:var(--side);align-self:stretch;padding:18px 0}
+.nav{color:#fff;border-radius:0}
+.nav:hover{background:rgba(255,255,255,.12)}
+.nav[aria-current="page"]{background:#fff;color:var(--accent);box-shadow:none}

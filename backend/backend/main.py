@@ -106,6 +106,7 @@ SCREENS = ("consult_home.html", "consult_status.html", "farm_detail.html", "sea_
 SHARED = {
     "shell.js": "text/javascript; charset=utf-8",
     "shell.css": "text/css; charset=utf-8",
+    "figma-theme.css": "text/css; charset=utf-8",
 }
 
 
