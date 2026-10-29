@@ -47,3 +47,9 @@
 .nav{color:#fff;border-radius:0}
 .nav:hover{background:rgba(255,255,255,.12)}
 .nav[aria-current="page"]{background:#fff;color:var(--accent);box-shadow:none}
+/* 위 .side::before 청록 띠까지가 눈에 보이는 사이드바라서, 선택 메뉴 흰 바탕도 그 띠 위로 같은 폭만큼 이어요
+   (900px 이하는 메뉴가 가로로 놓여 옆 메뉴를 덮으므로 제외) */
+@media (min-width:901px){
+  .nav[aria-current="page"]{position:relative}
+  .nav[aria-current="page"]::before{content:"";position:absolute;top:0;bottom:0;right:100%;width:100vw;background:#fff}
+}
