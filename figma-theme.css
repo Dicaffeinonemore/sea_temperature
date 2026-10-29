@@ -38,6 +38,18 @@
 
 /* 왼쪽 메뉴: 청록 바탕, 선택한 메뉴는 흰 바탕 */
 .side{background:var(--side);align-self:stretch;padding:18px 0}
+/* 화면이 1440px보다 넓으면 .shell 이 가운데 놓여 왼쪽에 빈 띠가 생겨서, 청록을 화면 왼쪽 끝까지 이어요 */
+.side::before{content:"";position:absolute;top:0;bottom:0;right:100%;width:100vw;background:var(--side)}
+.top h1{font-size:20px;color:#0070bf}
+/* 화면 스크립트가 이 배지의 글자를 바꾸므로 지우지 않고 숨겨요 (연결 실패는 화면 위 노란 안내로 보여요) */
+#data-mode{display:none}
+.bell svg{width:18px;height:18px}
 .nav{color:#fff;border-radius:0}
 .nav:hover{background:rgba(255,255,255,.12)}
 .nav[aria-current="page"]{background:#fff;color:var(--accent);box-shadow:none}
+/* 위 .side::before 청록 띠까지가 눈에 보이는 사이드바라서, 선택 메뉴 흰 바탕도 그 띠 위로 같은 폭만큼 이어요
+   (900px 이하는 메뉴가 가로로 놓여 옆 메뉴를 덮으므로 제외) */
+@media (min-width:901px){
+  .nav[aria-current="page"]{position:relative}
+  .nav[aria-current="page"]::before{content:"";position:absolute;top:0;bottom:0;right:100%;width:100vw;background:#fff}
+}

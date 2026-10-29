@@ -435,7 +435,7 @@
     <!-- ===== 어가 상세 ===== -->
     <!-- 데이터를 받기 전에도 어가 상세가 먼저 보이게 (홈 영역의 수온 예측 카드가 잠깐 비치지 않도록) -->
     <section id="page-detail" data-page-section="detail">
-      <div class="page-h"><button type="button" class="ghost" id="back-home">← 연락 목록</button><h2>어가 상세</h2><p>통화 전 브리핑 · 전화 · 결과 기록</p>
+      <div class="page-h"><button type="button" class="ghost" id="back-home">← 연락 목록</button><h2>어가 상세</h2>
         <label class="hh-pick" id="hh-pick-wrap" hidden>어가 선택 <select id="hh-pick" aria-label="어가 선택"></select></label></div>
       <div class="detail-grid">
         <article class="panel" id="brief" aria-label="어가 브리핑 (수온 · 계약별 보험)"></article>
@@ -1548,7 +1548,7 @@ function apiCard(c, k){
   }
   return `<div class="ctr-card">
     <div class="ctr-h"><span class="ctr-no">${k+1}</span><b>${esc(c.species)}</b>${c.is_primary ? '<span class="src-tag">대표</span>' : ''}<span class="note">${esc(c.method || '')}${c.production_ratio != null ? ` · 생산 ${Number(c.production_ratio)}%` : ''}</span>
-      <span class="badge s${c.stage}">${STAGE[c.stage]}</span><span class="${API_INS_CLS[c.ins]}" style="margin-left:auto">${esc(c.ins_label)}</span></div>
+      <span class="${API_INS_CLS[c.ins]}" style="margin-left:auto">${esc(c.ins_label)}</span></div>
     <dl class="facts">${facts.join('')}</dl>
     ${rec}${est}${quote}
   </div>`;

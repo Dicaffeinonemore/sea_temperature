@@ -398,7 +398,7 @@
           <div class="list-h">
             <div class="sec-h" style="margin:0">
               <h3 id="h-list"><span id="list-region"></span>연락 순서</h3>
-              <p>어가를 누르면 어가 상세로 이동해요 · 체크하면 오른쪽에서 문자를 한 번에 보내요</p>
+              
             </div>
             <div class="filters" id="filters" role="group" aria-label="목록 거르기"></div>
           </div>
@@ -422,7 +422,7 @@
         </section>
 
         <aside class="panel" id="bulk-panel" aria-labelledby="h-bulk">
-          <div class="list-h"><div class="sec-h" style="margin:0"><h3 id="h-bulk">일괄 안내 문자</h3><p>목록에서 체크한 어가에 한 번에 보내요</p></div></div>
+          <div class="list-h"><div class="sec-h" style="margin:0"><h3 id="h-bulk">일괄 안내 문자</h3></div></div>
           <div class="panel-in bp">
             <div class="bp-count" id="bulk-n"></div>
             <div class="bp-picked" id="bulk-picked"></div>
@@ -930,7 +930,7 @@ function renderRows(){
 }
 function updateBulkLen(){
   const b = bytes(bulkText);
-  document.getElementById('bulk-note').textContent = `선택한 어가 모두에게 같은 내용이 가요 · 고쳐 쓸 수 있어요 · [○○수협]·[수협 전화]는 발송 때 실제 값으로 바뀌어요 · ${b}바이트 ${b > 90 ? '장문(LMS)' : '단문(SMS)'}`;
+  document.getElementById('bulk-note').textContent = `${b}바이트 ${b > 90 ? '장문(LMS)' : '단문(SMS)'}`;
 }
 function renderBulk(rows){
   rows = rows || sorted().filter(pass);
