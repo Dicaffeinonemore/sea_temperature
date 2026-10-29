@@ -83,6 +83,14 @@
   </div>
 </header>`);
 
+  // 헤더 줄바꿈과 글꼴 로딩 뒤에도 메뉴 높이가 화면 안에 맞도록 실측값을 공유해요.
+  const header = me.previousElementSibling;
+  const updateHeaderHeight = () => {
+    document.documentElement.style.setProperty('--header-height', `${header.getBoundingClientRect().height}px`);
+  };
+  updateHeaderHeight();
+  new ResizeObserver(updateHeaderHeight).observe(header);
+
   /* ===== 돋보기: 복제 화면은 별도 DOM에 격리해 원본 ID와 클릭 동작을 보존해요 ===== */
   const magnifierButton = document.getElementById('magnifier-toggle');
   const lens = document.createElement('div');
