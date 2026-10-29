@@ -37,7 +37,7 @@
   me.insertAdjacentHTML('beforebegin', `
 <header class="top">
   <div class="top-in">
-    <h1>고수온 선제 상담 대시보드</h1>
+    <h1>고수온 선제 상담</h1>
     <span class="demo" id="data-mode">불러오는 중</span>
     <div class="top-meta">
       <label>담당 지역 <select id="office" aria-label="담당 지역"></select></label>
@@ -45,11 +45,11 @@
       <button class="ghost" id="reset" type="button" hidden>시연 처음으로</button>
       <!-- 오른쪽 버튼 순서: 돋보기 · 달력 · 알림 -->
       <button type="button" class="bell magnifier-toggle" id="magnifier-toggle" aria-label="돋보기 켜기" aria-pressed="false" title="돋보기 켜기">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35M11 8v6M8 11h6"/></svg>
       </button>
       <div class="bell-wrap" id="cal-wrap">
         <button type="button" class="bell" id="cal-btn" aria-label="상담 일정" aria-expanded="false" aria-controls="cal-panel" title="상담 일정">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v3M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
           <span class="bell-n cal-n" id="cal-n" hidden></span>
         </button>
         <div class="bell-panel cal-panel" id="cal-panel" role="dialog" aria-label="상담 일정" hidden>
@@ -69,7 +69,7 @@
       </div>
       <div class="bell-wrap" id="bell-wrap">
         <button type="button" class="bell" id="bell" aria-label="알림" aria-expanded="false" aria-controls="bell-panel">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>
           <span class="bell-n" id="bell-n" hidden></span>
         </button>
         <div class="bell-panel" id="bell-panel" hidden>
