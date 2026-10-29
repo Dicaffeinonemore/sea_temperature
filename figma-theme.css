@@ -2,6 +2,7 @@
    각 화면에서 shell.css 다음 줄에 불러와요. 화면 코드는 그대로 두고 값만 덮어써요.
    규칙: 글꼴 Noto Sans KR · 포인트 #007F98 · 사이드바 #017896 · 카드·버튼 모서리 6px · 배지 3px */
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap");
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
 :root{
   --bg:#f4f5f7; --line:#e2e8f0; --line-strong:#cbd5e1; --soft:#f7f8fa;
@@ -38,8 +39,9 @@
 
 /* 왼쪽 메뉴: 청록 바탕, 선택한 메뉴는 흰 바탕 */
 .side{background:var(--side);align-self:start;padding:18px 0}
-.top,.side{font-family:"돋움체",DotumChe,"돋움",Dotum,sans-serif}
-.side .nav{font-weight:700}
+.top,.side{font-family:Pretendard,"Noto Sans KR",sans-serif;font-weight:900}
+.top h1,.side .nav{font-weight:900}
+.top-meta{font-family:"Noto Sans KR",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-weight:400}
 /* 사이드바 폭 196→160px: 가장 긴 메뉴 '고객 상담 현황'도 14px 여유가 남고, 줄어든 만큼 본문이 넓어져요 (900px 이하는 메뉴가 가로라 제외) */
 @media (min-width:901px){.shell{grid-template-columns:160px minmax(0,1fr)}}
 /* 화면이 1440px보다 넓으면 .shell 이 가운데 놓여 왼쪽에 빈 띠가 생겨서, 청록을 화면 왼쪽 끝까지 이어요 */
