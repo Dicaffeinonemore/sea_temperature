@@ -346,6 +346,14 @@ function renderConsult(){
       <div class="hist-memo">${esc(h.memo)}</div>
     </li>`).join('');
 }
+// 이름은 성만 보이게 가려요 (예: 박종수 → 박○○)
+const maskName = n => n ? n[0] + '○'.repeat(Math.max(1, [...n].length - 1)) : n;
+async function loadMasked(){
+  const [c, h] = await Promise.all([getJSON('/customers'), getJSON('/history')]);
+  c.forEach(x => { x.name = maskName(x.name); });
+  h.forEach(x => { x.name = maskName(x.name); });
+  return [c, h];
+}
 
 async function getJSON(path){
   const res = await fetch(API + path);
@@ -356,7 +364,7 @@ async function getJSON(path){
 async function load(){
   const notice = document.getElementById('notice');
   try{
-    [customers, history] = await Promise.all([getJSON('/customers'), getJSON('/history')]);
+    [customers, history] = await loadMasked();
     dbMode = true;
     document.getElementById('data-mode').textContent = 'DB 연결됨';
     document.getElementById('updated').textContent = `마지막 조회 ${Shell.lastViewed()}`;
@@ -475,7 +483,7 @@ delOk.addEventListener('click', async () => {
         throw new Error(msg);
       }
       // 상태·최근 연락·상담 수가 바뀌므로 서버에서 다시 받아요
-      [customers, history] = await Promise.all([getJSON('/customers'), getJSON('/history')]);
+      [customers, history] = await loadMasked();
       toast(res.status === 404 ? '이미 지워진 기록이에요 · 목록을 새로 불러왔어요' : `${h.name} ${h.date} 상담 기록을 삭제했어요`);
       if(window.Shell) Shell.reloadNoti();   // 지운 기록의 알림도 함께 사라지게
     }else{
