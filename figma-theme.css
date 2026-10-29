@@ -65,15 +65,16 @@
   .nav[aria-current="page"]{position:relative}
   .nav[aria-current="page"]::before{content:"";position:absolute;top:0;bottom:0;right:100%;width:100vw;background:#fff}
   .top{position:sticky;top:0;z-index:30}
-  /* 여백까지 메뉴 너비에 포함하면 내부 스크롤에도 왼쪽 배경과 선택 표시가 잘리지 않아요. */
+  .top .logo{transform:translateX(var(--logo-offset,0px))}
+  /* 메뉴는 화면 왼쪽에 붙여 넓은 화면에서도 아이콘 앞 여백이 늘어나지 않게 해요. */
+  .shell{max-width:none;margin:0;grid-template-columns:minmax(max-content,var(--sidebar-width,196px)) minmax(0,1fr)}
   .side{
-    --side-gutter:max(0px,calc((100vw - 1440px)/2));
     top:var(--header-height,0px);
     height:max(0px,calc(100dvh - var(--header-height,0px)));
-    width:calc(100% + var(--side-gutter));
-    margin-left:calc(-1 * var(--side-gutter));
+    width:auto;
+    margin-left:0;
     overflow-y:auto;
   }
   .side::before,.nav[aria-current="page"]::before{display:none}
-  .side .nav{flex-shrink:0;padding-left:calc(12px + var(--side-gutter))}
+  .side .nav{flex-shrink:0;padding-left:12px}
 }
