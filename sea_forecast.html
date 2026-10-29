@@ -368,13 +368,13 @@
       <div class="bm-foot"><button type="button" class="btn" data-bias-close>닫기</button></div>
     </dialog>
     <section id="page-forecast">
-      <div class="page-h"><h2>수온 예측</h2><p>담당 지역 기준 · 지역은 맨 위 '담당'에서 바꿔요 · 1~7일은 대응 판단, 8~21일은 흐름 참고만 해요</p></div>
+      <div class="page-h"><h2>수온 예측</h2></div>
       <div class="fc-grid">
         <section class="panel panel-in" aria-labelledby="h-fc">
           <div class="sec-h"><h3 id="h-fc">21일 수온 추이</h3><p id="fc-sub"></p></div>
           <div class="legend">
             <span><i></i>ROMS 1~7일 · 대응 검토</span>
-            <span class="om"><i></i>ECMWF 보정 8~21일 · 참고만</span>
+            <span class="om"><i></i>ECMWF 보정 8~21일 · 참고용</span>
             <span class="th"><i></i>기준선 25℃ · 28℃</span>
             <span class="hint">그래프에 커서를 올리면 날짜별 수온이 보여요</span>
           </div>
@@ -385,7 +385,7 @@
         </section>
         <div class="fc-side">
           <section class="panel panel-in" aria-labelledby="h-fcs">
-            <div class="sec-h"><h3 id="h-fcs">단기 예상 위험 요약</h3><p>선택 지역 · 앞으로 7일</p></div>
+            <div class="sec-h"><h3 id="h-fcs">단기 예상 위험 요약</h3></div>
             <ul class="mini" id="fc-summary"></ul>
           </section>
           <section class="panel panel-in" aria-labelledby="h-fcc">
@@ -409,7 +409,6 @@
     </section>
     <p class="foot">
       위험 단계는 예보값에 앱 기준(관심 25℃ · 주의 28℃ · 경보 28℃ 이상 3일)을 적용한 앱 자체 판정(참고)이며, 공식 특보나 보험금 지급 기준이 아닙니다. 수과원 공식 특보 기준과의 일치 여부는 확인 중이니, 공식 특보는 수과원 발표로 확인하세요.
-      어종 신호등은 앞으로 7일(ROMS) 일최고 수온이 어종 한계 수온에 도달하면 주의, 한계 1℃ 이내까지 오르면 관심으로 표시합니다.
       1~7일은 국립해양조사원 ROMS 모델 예측값(관측값 아님), 8~21일은 ECMWF EC46 예측을 지역별로 보정한 참고값입니다(Weather data by Open-Meteo.com). ECMWF 보정값(8~21일 표의 참고 단계 포함)으로는 위험 단계·연락 대상·보험금 지급 여부를 판단하지 않습니다.
     </p>
   </main>
@@ -636,7 +635,7 @@ function renderForecastSide(I){
   }</tbody></table></div>`;
   document.getElementById('fc-tables').innerHTML =
     `<div><h3>1~7일 · ROMS (대응 검토)</h3>${table(pts.filter(p => p.src==='ROMS'), false)}</div>
-     <div><h3>8~21일 · ECMWF 보정 (참고만) ${biasChip(I)}</h3>${table(pts.filter(p => p.src==='ECMWF'), true)}</div>`;
+     <div><h3>8~21일 · ECMWF 보정 (참고용) ${biasChip(I)}</h3>${table(pts.filter(p => p.src==='ECMWF'), true)}</div>`;
 }
 
 /* ===== 그래프 툴팁 ===== */
