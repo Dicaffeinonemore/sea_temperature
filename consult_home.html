@@ -354,6 +354,13 @@
   .home-top .dash-img{flex:1;min-height:0;object-fit:contain}
   @media (max-width:1240px){.home-top{grid-template-columns:1fr 1fr}.home-top>.fc-card{grid-column:1/-1;border-left:0;border-top:1px solid var(--line)}}
   @media (max-width:640px){.home-top{grid-template-columns:1fr}.home-top>.ht-col+.ht-col{border-left:0;border-top:1px solid var(--line)}}
+  /* Figma: 신청·주의 범례는 선 대신 10×10 채운 사각형 (모서리 2px, 기호~글자 5px, 항목 사이 12px) */
+  .ht-legend{gap:4px 12px}
+  .ht-legend span{display:inline-flex;align-items:center;gap:5px}
+  .ht-legend .l-apply,.ht-legend .l-warn{width:10px;height:10px;margin-right:0;border-top:0;border-radius:2px}
+  .ht-legend .l-apply{background:var(--teal)}.ht-legend .l-warn{background:#c2620a}
+  /* 가운데 수온 칸의 정보 행이 왼쪽 '오늘 연락할 어가' 행과 같은 높이에서 시작하도록, 수온 숫자 줄을 왼쪽 강조 상자(.ht-hl)와 같은 58px로 */
+  #home-temp .ht-now{min-height:58px;flex-wrap:wrap;align-content:center}
 </style>
 <link rel="stylesheet" href="shell.css">
 <link rel="stylesheet" href="figma-theme.css">
