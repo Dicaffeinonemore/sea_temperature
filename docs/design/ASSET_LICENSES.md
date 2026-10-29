@@ -16,4 +16,5 @@ Approval status values: `not approved` (default), `approved`, `rejected`.
 
 | 돋보기 SVG 아이콘 | Icon | 이번 요청에서 직접 작성, `shell.js` | 외부 자산 미사용 | 외부 라이선스 조건 없음 | 프로젝트 코드와 함께 관리 | 2026-10-28: 사용자 돋보기 버튼 요청 및 `shell.js` 변경 승인 | approved |
 | 화면 돋보기 구현 | Code | 이번 요청에서 독립 구현, `shell.js`, `shell.css` | 참고 프로젝트 코드·패키지 미사용 | 외부 라이선스 조건 없음 | 프로젝트 코드와 함께 관리 | 2026-10-28: 사용자 기능 요청 및 두 파일 변경 승인 | approved |
+| 수협 로고 (`suhyup-logo.png`) | Image | 수협중앙회 상표 — Figma AppHeader(파이널 프로젝트_수정 2119:2529)의 로고를 PNG 3배로 내보냄, `shell.js` 상단 바 | 상표권은 수협중앙회에 있음, 사용 허락 받지 않음 | 불가 (교육 과정 비상업 시연용으로만) | 수정·재배포 불가, 시연 외 사용 시 수협 허락 필요 | 2026-10-29: 사용자가 KB-Bridge 과정 비상업 시연 목적으로 사용 결정 — 법률 검토 아님 | approved |
 | Noto Sans KR | Font | Google Fonts (Google, Sandoll) — `figma-theme.css` `@import` | SIL Open Font License 1.1 | 허용 (OFL) | 수정·재배포 가능, 글꼴 단독 판매 불가, 라이선스 표기 유지 | 2026-10-28: https://fonts.google.com/noto/specimen/Noto+Sans+KR (OFL 표기) 확인 — 법률 검토 아님 | approved |
