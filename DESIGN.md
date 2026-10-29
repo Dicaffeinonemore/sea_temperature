@@ -121,3 +121,9 @@ Values already used in the screens. Reuse them for consistency; they become deci
 ## Approved values log
 | Date | Item | Value | Approved by |
 |---|---|---|---|
+| 2026-10-28 | Font | Noto Sans KR (400·500·700), sizes 11·12·13·14·15·16·20·26px | sooui9 |
+| 2026-10-28 | Accent color | `#007F98` (soft `#E0F2F5`) | sooui9 |
+| 2026-10-28 | Side menu | background `#017896`, white text; current page white with `#007F98` text | sooui9 |
+| 2026-10-28 | Neutral colors | text `#334155` / `#475569` / `#64748B`, line `#E2E8F0`, input line `#CBD5E1`, page `#F4F5F7`, box `#F7F8FA` | sooui9 |
+| 2026-10-28 | Success color | `#157C3C` on `#EAF5EF` | sooui9 |
+| 2026-10-28 | Border radius | cards, buttons, inputs, popups 6px; status badges 3px; chips pill | sooui9 |
