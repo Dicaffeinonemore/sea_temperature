@@ -1472,6 +1472,9 @@ async function renderApiDetail(force){
   if(apiErr || !apiData){ briefBoxes(`<div class="empty">어가 정보를 불러오지 못했어요 · ${esc(apiErr || '')}</div>`, ''); return; }
   const D = apiData, H = D.household, S = D.sea, cards = D.cards;
   const st = D.stage.level ?? 0, T = S.today, sg = S.stage;
+  const nextContact = new Date(D.consult.next_contact_at || Date.now());
+  // datetime-local은 시간대가 없으므로 UTC 문자열로 바꾸기 전에 한국시간을 반영해요.
+  const nextContactValue = new Date(nextContact.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0,16);
 
   // 오늘 수온 + 단계
   const tSrc = T.source === 'risa' ? `<span class="src-tag live">실측</span> RISA ${esc(T.station_name || '')}${T.station_km != null ? ` (${T.station_km}km)` : ''} · ${esc(T.observed_at)}`
@@ -1525,7 +1528,7 @@ async function renderApiDetail(force){
       <div class="record">
         <label>통화 결과
           <select id="r-status">${API_STATUS.map(v => `<option ${D.consult.status === v ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
-        <label>다음 연락·상담일 <input id="r-next" type="datetime-local"></label>
+        <label>다음 연락·상담일 <input id="r-next" type="datetime-local" value="${nextContactValue}"></label>
         ${cards.map(c => `<label>${esc(c.standard_name)} 결과
           <select data-ares="${c.mapping_id}" data-ins="${c.contract ? c.contract.insurance_id : ''}"><option value="">기록 안 함</option>${ITEM_RESULT.map(v => `<option>${v}</option>`).join('')}</select></label>`).join('')}
         <label>상담자 <input id="r-staff" type="text" maxlength="50" placeholder="이름"></label>

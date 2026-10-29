@@ -238,6 +238,37 @@ test('saving is blocked when the displayed household differs from the selection'
   assert.equal(context.toasts.length, 1);
 });
 
+test('next contact defaults to current Korean time and preserves saved appointments', async () => {
+  for (const [now, saved, expected] of [
+    ['2026-10-29T05:27:45Z', null, '2026-10-29T14:27'],
+    ['2026-10-29T18:30:00Z', null, '2026-10-30T03:30'],
+    ['2026-10-29T05:27:45Z', '2026-11-02T01:30:00Z', '2026-11-02T10:30'],
+    ['2026-10-29T05:27:45Z', '2026-11-02T10:30:00+09:00', '2026-11-02T10:30'],
+  ]) {
+    const { context } = setup();
+    context.Date = class extends Date {
+      static now() { return Date.parse(now); }
+    };
+    Object.assign(context, {
+      detailMode: 'api', apiSel: 1,
+      API_GAP: [], API_STATUS: [], STAGE: [''],
+      acc: (_key, _title, _summary, body) => body,
+      govAcc: () => '', helpAcc: () => '', scriptBox: () => '', mdStr: () => '',
+      loadGov() {}, updateApiCalc() {},
+      apiData: {
+        household: { household_id: 1 }, cards: [], checks: [], script: '', guide: '',
+        sea: { today: {}, stage: {}, roms: [], om: [] }, stage: { level: 0 },
+        consult: { status: '', season: '', logs: [], next_contact_at: saved },
+      },
+    });
+    await context.renderApiDetail();
+    const html = context.boxes.at(-1)[1];
+    const value = html.match(/id="r-next"[^>]*value="([^"]*)"/);
+    assert.ok(value, 'next-contact field must have a default value');
+    assert.equal(value[1], expected);
+  }
+});
+
 test('a save response cannot overwrite a newly selected household', async () => {
   const { context } = setup();
   const pending = deferred();
