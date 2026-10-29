@@ -107,6 +107,7 @@ SHARED = {
     "shell.js": "text/javascript; charset=utf-8",
     "shell.css": "text/css; charset=utf-8",
     "figma-theme.css": "text/css; charset=utf-8",
+    "suhyup-logo.png": "image/png",
 }
 
 

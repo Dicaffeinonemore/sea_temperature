@@ -37,6 +37,8 @@
   me.insertAdjacentHTML('beforebegin', `
 <header class="top">
   <div class="top-in">
+    <img class="logo" src="suhyup-logo.png" alt="수협" width="92" height="30">
+    <span class="logo-div" aria-hidden="true"></span>
     <h1>고수온 선제 상담</h1>
     <span class="demo" id="data-mode">불러오는 중</span>
     <div class="top-meta">

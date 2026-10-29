@@ -41,6 +41,9 @@
 /* 화면이 1440px보다 넓으면 .shell 이 가운데 놓여 왼쪽에 빈 띠가 생겨서, 청록을 화면 왼쪽 끝까지 이어요 */
 .side::before{content:"";position:absolute;top:0;bottom:0;right:100%;width:100vw;background:var(--side)}
 .top h1{font-size:20px;color:#0070bf}
+/* Figma AppHeader: 로고 92×30 · 구분선 1×22 (간격은 .top-in 의 20px) */
+.top .logo{display:block;width:92px;height:30px}
+.top .logo-div{width:1px;height:22px;background:#ccd4de}
 /* 화면 스크립트가 이 배지의 글자를 바꾸므로 지우지 않고 숨겨요 (연결 실패는 화면 위 노란 안내로 보여요) */
 #data-mode{display:none}
 .bell svg{width:18px;height:18px}
