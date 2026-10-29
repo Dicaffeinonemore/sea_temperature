@@ -491,7 +491,7 @@ function addNotice(msg){
 function setMode(ok, err){
   mode = ok ? 'db' : 'sample';
   document.getElementById('data-mode').textContent = ok ? 'DB 연결됨' : '가상 데이터 · 서버 연결 실패';
-  document.getElementById('updated').textContent = ok ? `${new Date().toLocaleString('ko-KR')} 조회` : '2026.10.22 (목) 06:00 기준';
+  document.getElementById('updated').textContent = ok ? `마지막 조회 ${Shell.lastViewed()}` : '2026.10.22 (목) 06:00 기준';
   if(!ok) addNotice(location.protocol === 'file:'
     ? '⚠️ 파일로 열면 서버에 연결할 수 없어 가상 데이터를 보여 주고 있어요. sea_temperature 폴더에서 python -m http.server 8765 를 켜고 http://localhost:8765/consult_home.html 로 열어 주세요.'
     : `⚠️ 서버에 연결하지 못해 가상 데이터를 보여 주고 있어요. 백엔드(8000 포트)가 켜져 있는지 확인해 주세요. (${err.message})`);
