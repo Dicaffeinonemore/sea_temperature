@@ -54,6 +54,14 @@
 /* Figma: 고객 목록 표와 예측 상세 값 표는 모든 칸 가운데 정렬 */
 #page-consult th,#page-consult td,#fc-tables th,#fc-tables td{text-align:center;vertical-align:middle}
 #page-consult .ctr-line{justify-content:center}
+/* 수신 동의 ○ · ×: 글자 기호는 ○ 이 ×보다 가늘게 그려져서, 같은 선 두께(2.4)의 아이콘으로 맞춰요 */
+.cs-ic{display:inline-block;width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;vertical-align:-2px}
+/* 예측 상세 값: 1~7일 표와 8~21일 표 사이 구분선 (900px 이하는 위아래로 놓여 위쪽 선) */
+#fc-tables{column-gap:32px}
+#fc-tables>div+div{border-left:1px solid var(--line);padding-left:16px;margin-left:-16px}
+@media (max-width:900px){#fc-tables>div+div{border-left:0;padding-left:0;margin-left:0;border-top:1px solid var(--line);padding-top:16px}}
+/* 표 머리칸 배경: 어가 상세 '계약별 보험' 항목 칸과 같은 회색 */
+th{background:var(--soft)}
 /* Figma: 어종 신호등 주의 점은 주황 */
 .sig-0 i,.l0{background:#ea580c}
 .fc-ref-note{margin-top:8px;font-size:11px;color:#64748b}
