@@ -1,0 +1,105 @@
+day_stages() 수온 위험 단계 테스트 안내
+
+1. 목적과 범위
+
+테스트 파일: backend/backend/tests/test_farm_detail_day_stages.py
+검사 대상: backend/backend/farm_detail.py의 day_stages()
+작성 담당: Dicaffeinonemore
+
+입력한 수온을 프로젝트의 위험 단계 기준에 맞게 계산하는지 검사합니다.
+Python 기본 unittest를 사용하며, 프로젝트 의존성이 설치된 환경에서 실행합니다.
+서버 실행, DB 연결, n8n 연결은 필요하지 않습니다.
+테스트는 입력값을 메모리에서 비교하며 화면 파일이나 실제 데이터를 변경하지 않습니다.
+
+이 테스트는 실제 수온 예측값과 실측값의 오차를 측정하지 않습니다.
+판정 기준 자체의 과학적 타당성도 검증하지 않습니다.
+실제 예측 정확도 검증에는 같은 지역·대상 날짜의 예측값과 실측값,
+예측 생성 시점 및 평가 기준이 별도로 필요합니다.
+
+2. 입력과 결과
+
+values: 판정할 날짜들의 수온 목록. 날짜순으로 넣습니다.
+lookback: 판정 시작일 이전의 수온 목록. 날짜순으로 넣으며 연속 일수에 반영합니다.
+두 목록은 하루 간격으로 이어지는 입력이라는 전제입니다.
+날짜가 빠졌다면 해당 일자의 None을 넣어야 합니다.
+함수는 날짜를 받지 않으므로 날짜 간격이나 입력 순서를 직접 검증하지 않습니다.
+
+결과는 values에 해당하는 날짜만 반환합니다.
+stage는 위험 단계, streak28은 해당 날짜까지 이어진 28℃ 이상 연속 일수입니다.
+
+stage 0: 정상 (25℃ 미만)
+stage 1: 관심 (25℃ 이상, 28℃ 미만)
+stage 2: 주의 (28℃ 이상, 연속 3일 미만)
+stage 3: 경보 (28℃ 이상, 연속 3일 이상)
+
+현재 구현은 None도 stage 0으로 반환하고 연속 일수를 초기화합니다.
+결측값이 실제로 정상 수온이었다는 뜻은 아닙니다.
+28℃ 미만으로 내려가도 연속 일수가 초기화됩니다.
+
+3. 검증 항목 (테스트 메서드 11개)
+
+01) test_temperature_boundaries
+    25℃와 28℃ 경계 및 None의 단계와 연속 일수를 확인합니다.
+02) test_alert_starts_on_third_hot_day_and_continues
+    연속 고수온 셋째 날부터 경보가 발생하고 이후에도 유지되는지 확인합니다.
+03) test_cooler_day_resets_alert_and_streak
+    28℃ 미만으로 내려가면 경보가 해제되고 연속 일수가 다시 시작하는지 확인합니다.
+04) test_missing_day_resets_alert_and_streak
+    중간 결측값이 연속 고수온을 끊는지 확인합니다.
+05) test_lookback_contributes_to_streak_but_not_output
+    과거 고수온이 이어지되 과거 날짜의 결과는 반환하지 않는지 확인합니다.
+06) test_only_unbroken_tail_of_lookback_counts
+    과거의 저온·결측 이후 연속된 마지막 고수온 구간만 반영하는지 확인합니다.
+07) test_empty_values_return_no_days_even_with_lookback
+    판정할 날짜가 없으면 과거 자료가 있어도 빈 결과를 반환하는지 확인합니다.
+08) test_input_lists_are_not_modified
+    함수가 원본 입력 목록을 변경하지 않는지 확인합니다.
+09) test_thresholds_use_unrounded_temperatures
+    24.9999℃와 27.9999℃ 등을 반올림해 상위 단계로 잘못 판정하지 않는지 확인합니다.
+10) test_seven_day_reference_scenario
+    수동으로 정한 가상 7일 시나리오의 단계·연속 일수와 실제 출력을 비교합니다.
+    실측 자료가 아닌, 프로젝트 규칙에 따른 고정 예상 결과입니다.
+11) test_scattered_hot_days_do_not_accumulate_into_alert
+    중간에 저온·결측이 있으면 고수온 발생일을 합산해 경보로 오판하지 않는지 확인합니다.
+
+4. 실행 방법 (Windows PowerShell)
+
+각자의 저장소 루트 폴더에서 다음 명령을 순서대로 실행합니다.
+저장소 루트는 backend 폴더와 .venv 폴더가 있는 위치입니다.
+
+    cd backend
+    ..\.venv\Scripts\python.exe -m unittest backend.tests.test_farm_detail_day_stages -v
+
+이미 backend 폴더 안에 있다면 첫 번째 명령은 생략합니다.
+.venv가 다른 위치에 있다면 python.exe 경로를 본인 환경에 맞게 바꿉니다.
+다른 팀원의 PC 경로를 그대로 복사하지 마세요.
+새 의존성은 추가하지 않았으며 기존 백엔드 의존성이 필요합니다.
+
+전체 테스트가 아닌 특정 항목만 실행하려면 다음처럼 메서드 이름까지 지정합니다.
+
+    ..\.venv\Scripts\python.exe -m unittest backend.tests.test_farm_detail_day_stages.DayStagesTest.test_seven_day_reference_scenario -v
+
+현재 backend/run_tests.py에는 이 파일이 포함되어 있지 않습니다.
+위의 별도 명령으로 실행해야 합니다.
+
+5. 진행 방식과 결과 읽기
+
+각 테스트는 준비된 수온 목록으로 실제 day_stages()를 호출한 뒤,
+반환된 단계와 연속 일수를 미리 정한 예상 결과와 비교합니다.
+예상값을 실제 함수의 출력으로 생성하지 않습니다.
+
+예: lookback=[28.0, 28.0], values=[28.0]이면
+    결과는 [{"stage": 3, "streak28": 3}]입니다.
+    과거 이틀에 오늘 하루가 이어져 고수온 셋째 날이기 때문입니다.
+
+성공: 각 항목에 ok, 마지막에 Ran 11 tests와 OK가 표시됩니다.
+실패: FAIL과 함께 예상 결과와 실제 결과의 차이가 표시됩니다.
+오류: ERROR와 함께 모듈 로딩 또는 실행 중 발생한 예외가 표시됩니다.
+여러 입력을 비교하는 subTest는 테스트 메서드 개수에 별도로 더해지지 않습니다.
+
+python.exe를 찾지 못하면 현재 터미널 위치와 .venv 경로를 확인하세요.
+No module named 'backend'가 나오면 저장소 루트 바로 아래의 backend 폴더인지 확인하세요.
+다른 패키지의 ModuleNotFoundError는 사용 중인 Python 환경의 백엔드 의존성을 확인하세요.
+
+판정 기준 변경 후 실패한다면, 변경이 의도된 것인지 먼저 확인합니다.
+통과시키기 위해 예상값만 바꾸지 말고 팀에서 합의한 기준과 비교해야 합니다.
