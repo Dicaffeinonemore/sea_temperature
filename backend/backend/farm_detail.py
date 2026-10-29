@@ -71,6 +71,7 @@ from psycopg_pool import ConnectionPool
 from pydantic import BaseModel, Field
 
 from backend.config import get_settings
+from backend.farm_detail_query_cache import cache_detail_request, cache_repository_query
 
 log = logging.getLogger("household_detail_api")
 logging.basicConfig(level=logging.INFO)
@@ -241,6 +242,10 @@ _PRICE_WHERE = f"""product_id = %(product_id)s AND species_id = %(species_id)s
 
 def make_compat_repository(base: type) -> type:
     class CompatRepository(base):   # type: ignore[misc, valid-type]
+        @cache_repository_query
+        def _all(self, sql, params=None):
+            return super()._all(sql, params)
+
         def find_price(self, *, product_id, species_id, region_no, on_date, weight_g, variant, month=None):
             rows = self._all(
                 f"""SELECT {_PRICE_COLS} FROM insurance.insurance_applied_price
@@ -1578,6 +1583,7 @@ def list_households(q: Optional[str] = Query(None, description="어가명·대�
 
 
 @router.get("/api/households/{household_id}/detail")
+@cache_detail_request
 def household_detail(household_id: int):
     today = today_kst()
     hh = q_one(HOUSEHOLD_SQL, (household_id,))
