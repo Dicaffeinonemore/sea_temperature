@@ -412,6 +412,11 @@
 
   window.Shell = {
     reloadNoti: loadNoti,
+    // 상단 바 '마지막 조회' 시각 (Figma 형식: 2026.10.28 13:42)
+    lastViewed(){
+      const d = new Date(), p = v => String(v).padStart(2, '0');
+      return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    },
     push(n){
       const d = new Date(), p = v => String(v).padStart(2, '0');
       noti.unshift({id:'local-' + (++localSeq), local:true, read:false,

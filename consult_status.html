@@ -357,7 +357,7 @@ async function load(){
     [customers, history] = await Promise.all([getJSON('/customers'), getJSON('/history')]);
     dbMode = true;
     document.getElementById('data-mode').textContent = 'DB 연결됨';
-    document.getElementById('updated').textContent = `${new Date().toLocaleString('ko-KR')} 조회`;
+    document.getElementById('updated').textContent = `마지막 조회 ${Shell.lastViewed()}`;
   }catch(e){
     customers = structuredClone(SAMPLE.customers);
     history = SAMPLE.history.map((h, i) => ({...h, log_id:'s' + i}));   // 가상 데이터용 기록 번호
