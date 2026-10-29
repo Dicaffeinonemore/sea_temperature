@@ -83,13 +83,22 @@
   </div>
 </header>`);
 
-  // 헤더 줄바꿈과 글꼴 로딩 뒤에도 메뉴 높이가 화면 안에 맞도록 실측값을 공유해요.
+  // 헤더가 바뀌어도 메뉴 높이와 로고 구분선에 맞춘 너비를 유지하도록 실측값을 공유해요.
   const header = me.previousElementSibling;
-  const updateHeaderHeight = () => {
+  const logo = header.querySelector('.logo');
+  const logoDivider = header.querySelector('.logo-div');
+  const updateShellLayout = () => {
     document.documentElement.style.setProperty('--header-height', `${header.getBoundingClientRect().height}px`);
+    document.documentElement.style.setProperty('--sidebar-width', `${logoDivider.getBoundingClientRect().right}px`);
+    const sidebar = document.querySelector('.shell > .side');
+    const sidebarWidth = sidebar ? sidebar.getBoundingClientRect().width : logoDivider.getBoundingClientRect().right;
+    // transform 이전 위치로 계산해야 크기 재측정 때 로고가 계속 이동하지 않아요.
+    const logoCenter = header.getBoundingClientRect().left + logo.offsetLeft + logo.offsetWidth / 2;
+    document.documentElement.style.setProperty('--logo-offset', `${sidebarWidth / 2 - logoCenter}px`);
   };
-  updateHeaderHeight();
-  new ResizeObserver(updateHeaderHeight).observe(header);
+  updateShellLayout();
+  document.addEventListener('DOMContentLoaded', updateShellLayout, {once:true});
+  new ResizeObserver(updateShellLayout).observe(header);
 
   /* ===== 돋보기: 복제 화면은 별도 DOM에 격리해 원본 ID와 클릭 동작을 보존해요 ===== */
   const magnifierButton = document.getElementById('magnifier-toggle');
