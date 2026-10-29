@@ -2,6 +2,7 @@
 from datetime import date
 from functools import lru_cache
 import io
+import math
 from threading import Lock
 from typing import Annotated, Literal
 
@@ -308,7 +309,8 @@ def yearly_figure(rows: list[dict], compact: bool = False):
     fc_year = max((int(r["year"]) for r in rows if r["kind"] == "예측"), default=None)
     by = {(r["metric"], int(r["year"])): r for r in rows}
 
-    fig = Figure(figsize=(8, 2.8) if compact else (10, 5), dpi=100)
+    # Compact card chart is flatter (8:2.0) so the home top cards don't leave empty space under the KPI rows.
+    fig = Figure(figsize=(8, 2.0) if compact else (10, 5), dpi=100)
     ax = fig.subplots()
     w, top_all = 0.36, 0.0
     for k, mt in enumerate(METRICS):
@@ -331,8 +333,16 @@ def yearly_figure(rows: list[dict], compact: bool = False):
 
     ax.set_xticks(range(len(years)), [f"{y}\n(예측)" if y == fc_year else str(y) for y in years])
     ax.set_xlim(-0.6, len(years) - 0.4)
-    ax.set_ylim(0, (top_all or 1) * 1.15)
-    _style(ax, hide_y=True)
+    if compact:
+        # Figma card: y ticks every 30 (0 · 30 · 60), range grows in steps of 30 when data goes past 60.
+        ymax = max(60, math.ceil((top_all or 1) * 1.15 / 30) * 30)
+        ax.set_ylim(0, ymax)
+        ax.set_yticks(range(0, ymax + 1, 30))
+        _style(ax, hide_y=True)
+        ax.tick_params(axis="y", labelleft=True)
+    else:
+        ax.set_ylim(0, (top_all or 1) * 1.15)
+        _style(ax, hide_y=True)
     if fc_year is not None:
         _heads(ax, years.index(fc_year) - 0.5, f"{years[0]}~{fc_year - 1} · 실적(가데이터)", "1년 후 · 예측 참고만", compact)
 
@@ -361,7 +371,7 @@ def monthly_figure(rows: list[dict], compact: bool = False):
     labels = sorted({r["month"][:7] for r in rows})
     idx = {m: i for i, m in enumerate(labels)}
 
-    fig = Figure(figsize=(8, 2.8) if compact else (11, 5), dpi=100)
+    fig = Figure(figsize=(8, 2.0) if compact else (11, 5), dpi=100)
     ax = fig.subplots()
     for mt in METRICS:
         r = sorted((x for x in rows if x["metric"] == mt), key=lambda x: x["month"])
