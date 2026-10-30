@@ -1067,7 +1067,7 @@ function renderRows(){
     const spCls = !sp.known ? 'sp-none' : sp.hit ? 'sp-hit' : '';
     const w = fWhy(f);
     const whyTag = w === 'soon' ? '<span class="tag-why">마감 임박</span>' : w === 'alert' ? '<span class="tag-why" style="background:var(--alert-soft);color:var(--alert)">특보 발령</span>' : '';
-    const nx = f.next && f.status !== 'win' ? `<span class="next">다음 연락 ${f.next.slice(5).replace('-','/')}</span>` : '';
+    const nx = f.next && f.status !== 'win' ? `<span class="next">상담일 ${f.next.slice(5).replace('-','/')}</span>` : '';
     return `<tr class="pick-row ${done?'done':''}" data-id="${f.id}" tabindex="0" aria-selected="${selected===f.id}">
       <td class="ck"><input type="checkbox" data-ck="${f.id}" ${picked.has(f.id)?'checked':''} aria-label="${esc(f.name)} 선택"></td>
       <td class="rank">${rank}</td>
@@ -1581,7 +1581,7 @@ async function renderApiDetail(force){
       </div>
       <p class="note" style="margin-top:6px">시즌(${esc(D.consult.season)}) 상담 상태와 상담 기록에 함께 저장돼요 · 어종별 결과는 따로 남아요.</p>`)}
 
-    ${acc('hist', '상담 기록', `${D.consult.logs.length}건${D.consult.next_contact_at ? ' · 다음 연락 ' + mdStr(D.consult.next_contact_at) : ''}`, D.consult.logs.length
+    ${acc('hist', '상담 기록', `${D.consult.logs.length}건${D.consult.next_contact_at ? ' · 상담일 ' + mdStr(D.consult.next_contact_at) : ''}`, D.consult.logs.length
       ? `<ul class="hist-list">${D.consult.logs.map(l => `<li><b>${esc(String(l.contacted_at).slice(0,16).replace('T',' '))}</b> · ${esc(l.channel)} · <b>${esc(l.result_status)}</b>${l.items.length ? ' · ' + l.items.map(i => esc(i.species) + ' ' + esc(i.result)).join(', ') : ''}${l.memo ? `<br>${esc(l.memo)}` : ''}${l.staff_name ? ` <span class="note">(${esc(l.staff_name)})</span>` : ''}</li>`).join('')}</ul>`
       : '<p class="note">아직 상담 기록이 없어요.</p>')}
 

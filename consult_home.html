@@ -307,10 +307,10 @@
   td.ins-norider .ins-sp{color:#b45309;font-weight:700}
   th.ins-miss{color:var(--alert);font-weight:700}
   td.ins-miss .ins-sp{color:var(--alert);font-weight:700}
-  .ins-empty{color:#d1d5db}
+  .ins-empty{color:#64748b}
   td.col-guide{min-width:170px}
   .gd-badge{display:inline-block;font-size:11.5px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap}
-  .gd-badge.gd-ok{background:#e7f6ec;color:#15803d}
+  .gd-badge.gd-ok{background:#e7f6ec;color:#136f35}
   .gd-badge.gd-warn{background:#fdecea;color:#c2410c}
   .gd-badge.gd-later{background:#eef2f7;color:#475569}
   .gd-det{font-size:12px;color:var(--sub);margin-top:4px;line-height:1.5}
@@ -946,7 +946,7 @@ function renderRows(){
     const rank = all.indexOf(f) + 1, multi = f.items.length > 1;
     const done = !ACTIVE.includes(f.status);
     const stCls = f.status === 'todo' ? 'todo' : f.status === 'book' ? 'book' : f.status === 'win' ? 'win' : '';
-    const nx = f.next && f.status !== 'win' ? `<span class="next">다음 연락 ${f.next.slice(5).replace('-','/')}</span>` : '';
+    const nx = f.next && f.status !== 'win' ? `<span class="next">상담일 ${f.next.slice(5).replace('-','/')}</span>` : '';
     return `<tr class="pick-row ${done?'done':''}" data-id="${f.id}" tabindex="0">
       <td class="ck"><input type="checkbox" data-ck="${f.id}" ${picked.has(f.id)?'checked':''} aria-label="${esc(f.name)} 선택"></td>
       <td class="rank">${rank}</td>
