@@ -497,7 +497,10 @@ async function postJSON(path, body){
   return res.json();
 }
 // 화면에는 쉬운 안내와 오류코드만, 주소·서버 원문은 콘솔에 남겨요 (코드 없는 오류 = 화면 처리 중 오류 APP)
-function errCode(e){ console.warn(e); return e.code || (/HTTP (\d{3})/.exec(e.message) || [])[1] || 'APP'; }
+function errCode(e){
+  console.warn(e);
+  return e.code || (/HTTP (\d{3})/.exec(e.message) || [])[1] || 'APP';
+}
 function addNotice(msg){
   const n = document.getElementById('notice');
   n.textContent = n.hidden ? msg : n.textContent + '\n' + msg;

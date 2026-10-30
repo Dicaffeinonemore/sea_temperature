@@ -20,7 +20,7 @@ function setup(search = '') {
     return nodes.get(id);
   };
   const context = vm.createContext({
-    URLSearchParams, location: { search, hash: '' },
+    URLSearchParams, console, location: { search, hash: '' },
     apiOk: false, apiList: [], apiSel: null, apiData: null, apiErr: null,
     apiRequestId: 0, detailMode: 'mock', page: 'detail', farms: [], selected: null,
     apiListLoading: false, apiPending: null, homeRegion: 'test-region', fcRegion: 'test-region',
@@ -36,7 +36,7 @@ function setup(search = '') {
   context.toast = message => context.toasts.push(message);
   context.briefBoxes = (...html) => context.boxes.push(html);
   vm.runInContext(detail.match(/^const regionHouseholds = .+$/m)[0], context);
-  vm.runInContext(['initApi', 'loadApiDetail', 'renderPicker', 'renderApiDetail', 'saveApiLog', 'startDetailPage']
+  vm.runInContext(['errCode', 'initApi', 'loadApiDetail', 'renderPicker', 'renderApiDetail', 'saveApiLog', 'startDetailPage']
     .map(source).join('\n'), context);
   return { context, element };
 }
@@ -71,8 +71,8 @@ test('empty lists and connection errors show an explicit state', async () => {
   await context.renderApiDetail();
   assert.equal(context.apiOk, false);
   assert.equal(context.apiSel, null);
-  assert.ok(context.notices[0].includes('HTTP 503'));
-  assert.ok(context.boxes.at(-1)[0].includes('HTTP 503'));
+  assert.ok(context.notices[0].includes('오류코드: 503'));
+  assert.ok(context.boxes.at(-1)[0].includes('오류코드: 503'));
 });
 
 test('direct detail starts before region and household lists finish', async () => {
@@ -148,7 +148,7 @@ test('household-list failure preserves successfully loaded direct detail', async
   assert.equal(context.apiSel, 2);
   assert.equal(context.apiData.household.household_id, 2);
   assert.equal(context.apiErr, null);
-  assert.ok(context.notices[0].includes('HTTP 503'));
+  assert.ok(context.notices[0].includes('오류코드: 503'));
 });
 
 test('late household list cannot overwrite a newer household selection', async () => {
