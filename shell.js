@@ -12,10 +12,83 @@
      Shell.push(n)       이 화면에서만 알림을 하나 더해요 (가상 예시용)
    어가 알림을 누르면 기본으로 consult_status.html?cust=어가번호 로 가서 그 고객이 선택된 화면이 열려요.
    알림을 누르면 document 에 'shell:noti' 이벤트(취소 가능)가 나가요.
-   화면이 e.preventDefault() 하면 기본 동작(고객 상담 현황으로 이동 · 담당 지역 바꾸기)을 하지 않아요. */
+   화면이 e.preventDefault() 하면 기본 동작(고객 상담 현황으로 이동 · 담당 지역 바꾸기)을 하지 않아요.
+
+   고수온 / 저수온 모드 (상단 '담당 지역' 옆에서 고름 · 이 브라우저에 기억 · 바꾸면 화면을 다시 불러요)
+     Shell.mode          'heat' | 'cold'
+     Shell.M             이 모드의 기준 { word:'고수온'|'저수온', key:'max'|'min'(판정에 쓰는 일별 값), val:'최고'|'최저',
+                         watch·warn(관심·주의 수온), hot(true=고수온), limits(어종 기준), limitWord, up/down 말 등 }
+     Shell.reach(v, t)   v 가 기준 t 에 닿았나 (고수온은 이상, 저수온은 이하)
+     Shell.stageOfDay(t, i, arr)  날짜별 단계 0 정상 · 1 관심 · 2 주의 · 3 경보 (주의 수온이 3일 이어지면 경보)
+     Shell.text(s)       '고수온' 이 들어간 문구를 이 모드 말로 바꿈 (저수온 모드일 때만)
+   주소에 ?mode=cold 또는 ?mode=heat 를 붙이면 그 모드로 열려요(시연용). */
 (() => {
   const me = document.currentScript, part = me && me.dataset.part;
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  /* ===== 고수온 / 저수온 모드 (header·nav 어느 쪽이 먼저 실행돼도 한 번만 만듦) ===== */
+  if(!window.ShellMode){
+    const MODE_KEY = 'heat-dashboard-mode';
+    // 고수온: 수과원 고수온 특보 수준 25℃·28℃ (일최고) · 어종 = 국립수산과학원(2024.7.19) 생존 상한
+    // 저수온: 수과원 저수온 특보 기준 예비 7℃·주의보 4℃·경보 4℃ 이하 3일 (일최저)
+    //         어종 = 수협 수산경제연구원 「이상수온 대응 어류가두리 양식장 이동 지원 검토」(2026.1) 먹이 중단 수온 (농어는 폐사 5~8℃ → 8℃)
+    const MODES = {
+      heat:{id:'heat', word:'고수온', icon:'🌡', key:'max', val:'최고', watch:25, warn:28, hot:true,
+            limits:{'조피볼락':28, '전복':28, '넙치':29, '강도다리':27}, limitWord:'견디는 한계', moveUp:'오르', cross:'넘는',
+            title:'고수온 위험 어가 관리 시스템'},
+      cold:{id:'cold', word:'저수온', icon:'❄', key:'min', val:'최저', watch:7, warn:4, hot:false,
+            limits:{'조피볼락':5, '농어':8, '참돔':10, '감성돔':10, '숭어':10, '가숭어':10, '돌돔':13, '쥐치':15, '능성어':15},
+            limitWord:'먹이 끊는 수온', moveUp:'내려가', cross:'밑도는',
+            title:'저수온 위험 어가 관리 시스템'},
+    };
+    // 저수온 대응 요령은 일반 안내 (약관상 의무 사항은 수협 확인)
+    const COLD_PHRASES = [
+      ['수온이 오르고 있어요', '수온이 내려가고 있어요'], ['오를 것으로', '내려갈 것으로'], ['넘는 날이', '밑도는 날이'],
+      ['먹이 주기를 멈추고 선별·분조는 미뤄 주세요', '먹이량을 줄이고 선별·이동은 미뤄 주세요'],
+      ['먹이 주기를 멈추고 선별·분조는 미뤄 주셔야 해요', '먹이량을 줄이고 선별·이동은 미뤄 주셔야 해요'],
+      ['경보 시 먹이 주기 중단 · 선별·분조 금지 (약관상 의무)', '저수온 특보 시 먹이량 조절 · 선별·이동 자제 (약관 의무는 수협 확인)'],
+      ['경보가 나면 먹이 주기 중단, 선별·분조 금지 (약관상 의무)', '저수온 특보가 나면 먹이량 조절, 선별·이동 자제 (약관 의무는 수협 확인)'],
+      ['산소 공급 장비를 점검하고', '사육 밀도와 월동 대비를 점검하고'], ['액화산소 등 대응 장비 점검 안내', '월동 대비(사육밀도·먹이량 조절) 안내'],
+      ['경보 때 지켜야 할 의무를 안내하고', '저수온 때 지켜야 할 대응을 안내하고'],
+    ];
+    const pick = () => {
+      try{
+        const q = new URLSearchParams(location.search).get('mode'); if(MODES[q]) return q;
+        const s = localStorage.getItem(MODE_KEY); if(MODES[s]) return s;
+      }catch(e){}
+      const m = new Date().getMonth() + 1;   // 처음이면 계절로: 11~4월 저수온
+      return (m >= 11 || m <= 4) ? 'cold' : 'heat';
+    };
+    const id = pick(), M = MODES[id];
+    const reach = (v, t) => M.hot ? v >= t : v <= t;
+    window.ShellMode = {
+      mode:id, M, MODES, reach,
+      stageOfDay(t, i, arr){
+        if(t == null) return 0;
+        if(reach(t, M.warn)){
+          const run = arr.slice(Math.max(0, i - 2), i + 1).filter(v => v != null && reach(v, M.warn)).length;
+          return run >= 3 ? 3 : 2;
+        }
+        return reach(t, M.watch) ? 1 : 0;
+      },
+      limitOf(name){ const k = Object.keys(M.limits).find(k => String(name || '').includes(k)); return k ? M.limits[k] : null; },
+      // 저수온 모드: '고수온' → '저수온' 과 수온 방향·대응 요령 문구를 바꿈 ('고수온·저수온' 처럼 둘 다 적은 곳은 그대로)
+      text(s){
+        if(M.hot) return s;
+        let t = String(s).replaceAll('고수온·저수온', '\u0001');
+        for(const [a, b] of COLD_PHRASES) t = t.replaceAll(a, b);
+        return t.replaceAll('고수온', '저수온').replaceAll('\u0001', '고수온·저수온');
+      },
+      set(next){
+        if(!MODES[next] || next === id) return;
+        try{ localStorage.setItem(MODE_KEY, next); }catch(e){}
+        const u = new URL(location.href); u.searchParams.delete('mode');
+        location.href = u.href;   // 화면 전체를 그 모드로 다시 그림
+      },
+    };
+    document.documentElement.dataset.mode = id;
+  }
+  const SM = window.ShellMode;
 
   /* ===== 왼쪽 메뉴 ===== */
   if(part === 'nav'){
@@ -39,10 +112,14 @@
   <div class="top-in">
     <img class="logo" src="suhyup-logo.png" alt="수협" width="92" height="30">
     <span class="logo-div" aria-hidden="true"></span>
-    <h1>고수온 위험 어가 관리 시스템</h1>
+    <h1 id="sys-title">${SM.M.title}</h1>
     <span class="demo" id="data-mode">불러오는 중</span>
     <div class="top-meta">
       <label>담당 지역 <select id="office" aria-label="담당 지역"></select></label>
+      <div class="mode-seg" role="group" aria-label="위험 모드">
+        <button type="button" data-mode-set="heat" class="heat" aria-pressed="${SM.mode === 'heat'}">🌡 고수온</button>
+        <button type="button" data-mode-set="cold" class="cold" aria-pressed="${SM.mode === 'cold'}">❄ 저수온</button>
+      </div>
       <span id="updated"></span>
       <button class="ghost" id="reset" type="button" hidden>시연 처음으로</button>
       <!-- 오른쪽 버튼 순서: 돋보기 · 달력 · 알림 -->
@@ -85,6 +162,16 @@
 
   // 헤더가 바뀌어도 메뉴 높이와 로고 구분선에 맞춘 너비를 유지하도록 실측값을 공유해요.
   const header = me.previousElementSibling;
+  header.querySelector('.mode-seg').addEventListener('click', e => {
+    const b = e.target.closest('[data-mode-set]'); if(b) SM.set(b.dataset.modeSet);
+  });
+  // 탭 제목의 '고수온' 도 모드에 맞게 · 화면 아래 판정 기준 문구(.foot-rule)도 저수온 기준으로
+  document.title = SM.text(document.title);
+  if(!SM.M.hot) document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.foot-rule').forEach(el => {
+      el.textContent = '위험 단계는 저수온 앱 기준(관심 7℃ · 주의 4℃ · 경보 4℃ 이하 3일, 일최저 수온 · 수과원 저수온 특보 기준)으로 판정한 참고값이며,';
+    });
+  });
   const logo = header.querySelector('.logo');
   const logoDivider = header.querySelector('.logo-div');
   const updateShellLayout = () => {
@@ -212,13 +299,13 @@
   const API_BASE = location.protocol === 'file:' ? 'http://127.0.0.1:8000'
     : location.port === '8765' ? `${location.protocol}//${location.hostname}:8000` : location.origin;
   // 서버에 연결하지 못했을 때만 보여 주는 예시 (각 화면도 그때는 가상 데이터를 보여 줘요)
-  const SAMPLE_NOTI = [
+  const SAMPLE_NOTI = (SM.M.hot ? x => x : list => list.map(n => ({...n, text:SM.text(n.text)})))([
     {id:'s1', ty:'apply', lbl:'가입 신청', farm:'A-060', at:'10/22 05:52', text:'통영 - 배○○ · 문자 링크로 고수온 특약 가입 상담 신청', read:false},
     {id:'s2', ty:'reply', lbl:'문자 회신', farm:'B-007', at:'10/22 05:31', text:'거제 - 이○○ · 판매 마감 문자에 "전화 주세요" 회신', read:false},
     {id:'s3', ty:'apply', lbl:'상담 요청', farm:'E-008', at:'10/21 18:20', text:'창원 - 서○○ · 오만둥이 보험 문의, 전화 요청', read:false},
     {id:'s4', ty:'alert', lbl:'특보', farm:null, region:'고성', at:'10/21 10:00', text:'고성 고수온 예비특보 발령 (수과원 발표)', read:true},
     {id:'s5', ty:'join', lbl:'가입 완료', farm:'F-002', at:'08/14 15:10', text:'하동 - 오○○ · 해상가두리어류 재해보험 + 고수온 특약 가입', read:true},
-  ];
+  ]);
   const $ = id => document.getElementById(id);
   let noti = [], loadErr = null, localSeq = 0;
 
@@ -420,6 +507,7 @@
   new MutationObserver(updateCalBadge).observe($('office'), {childList:true});
 
   window.Shell = {
+    ...SM,
     reloadNoti: loadNoti,
     // 상단 바 '마지막 조회' 시각 (Figma 형식: 2026.10.28 13:42)
     lastViewed(){

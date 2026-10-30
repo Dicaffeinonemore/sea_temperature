@@ -20,6 +20,10 @@ STATUS = Literal["미연락", "부재·재연락", "문자 발송", "상담 예�
 BASE_HEAT_PRODUCTS = [2, 20]
 HEAT_RIDER = "고수온원인 수산물손해담보 특별약관"
 HEAT_EXCLUSION = "이상수온원인 수산물손해부담보 특별약관"
+# 저수온 모드(?mode=cold): 저수온 특약이 있거나, 주계약에 저수온이 들어 있는 상품(insurance_coverages 에서 찾음)이면 보장
+COLD_RIDER = "저수온원인 수산물손해담보 특별약관"
+COLD_BASE_SQL = """SELECT DISTINCT product_id FROM insurance.insurance_coverages
+                   WHERE contract_type = '주계약' AND effect = '보장추가' AND risk_types::text LIKE '%%저수온%%'"""
 REGION_SHORT = "regexp_replace(r.sigungu_name, '(시|군)$', '')"
 
 
@@ -27,12 +31,17 @@ def mask_phone(phone: str | None) -> str | None:
     return None if phone is None else f"{phone[:3]}-****-{phone[-4:]}"
 
 
-def contracts_by_household(db: Connection, household_ids: list[int]) -> dict[int, list[dict]]:
+def contracts_by_household(db: Connection, household_ids: list[int], mode: str = "heat") -> dict[int, list[dict]]:
+    if mode == "cold":
+        rider, riders_short = COLD_RIDER, "저수온"
+        base = [r["product_id"] for r in db.execute(COLD_BASE_SQL).fetchall()]
+    else:
+        rider, riders_short, base = HEAT_RIDER, HEAT_RIDER, BASE_HEAT_PRODUCTS
     rows = db.execute("""
         SELECT m.household_id, m.mapping_id, s.standard_name AS species,
                CASE
                  WHEN bool_or(c.insurance_id IS NOT NULL AND (
-                        COALESCE(t.rider_details->'riders' ? %(rider)s, false)
+                        COALESCE(t.rider_details->'riders' ?| ARRAY[%(rider)s, %(short)s], false)
                         OR (c.product_id = ANY(%(base)s)
                             AND NOT COALESCE(t.rider_details->'riders' ? %(exclusion)s, false))))
                    THEN 'covered'
@@ -51,7 +60,7 @@ def contracts_by_household(db: Connection, household_ids: list[int]) -> dict[int
         WHERE m.household_id = ANY(%(ids)s) AND m.status <> '폐업'
         GROUP BY m.household_id, m.mapping_id, s.standard_name, m.is_primary
         ORDER BY m.household_id, m.is_primary DESC, m.mapping_id
-    """, {"rider": HEAT_RIDER, "base": BASE_HEAT_PRODUCTS, "exclusion": HEAT_EXCLUSION,
+    """, {"rider": rider, "short": riders_short, "base": base, "exclusion": HEAT_EXCLUSION,
           "ids": household_ids}).fetchall()
     grouped: dict[int, list[dict]] = {}
     for row in rows:
@@ -61,7 +70,7 @@ def contracts_by_household(db: Connection, household_ids: list[int]) -> dict[int
     return grouped
 
 
-def list_customers(db: Connection, season: str) -> list[dict]:
+def list_customers(db: Connection, season: str, mode: str = "heat") -> list[dict]:
     rows = db.execute(f"""
         SELECT h.household_id, h.owner_name AS name, h.phone_number, h.sms_consent,
                {REGION_SHORT} AS region, COALESCE(cs.status, '미연락') AS status,
@@ -76,7 +85,7 @@ def list_customers(db: Connection, season: str) -> list[dict]:
                            WHERE q.household_id = h.household_id ORDER BY q.base_date DESC LIMIT 1) q ON true
         ORDER BY h.household_id
     """, (season,)).fetchall()
-    contracts = contracts_by_household(db, [r["household_id"] for r in rows])
+    contracts = contracts_by_household(db, [r["household_id"] for r in rows], mode)
     return [{"code": str(r["household_id"]), "name": r["name"], "phone_masked": mask_phone(r["phone_number"]),
              "sms_consent": r["sms_consent"], "region": r["region"],
              "contracts": contracts.get(r["household_id"], []), "risk_stage": r["risk_stage"],
@@ -207,8 +216,10 @@ WriteDB = Annotated[Connection, Depends(get_customer_db, scope="function")]
 
 
 @router.get("/customers")
-def customers(db: ReadDB, season: Annotated[str, Query(min_length=1, max_length=20)] = SEASON):
-    return list_customers(db, season)
+def customers(db: ReadDB, season: Annotated[str, Query(min_length=1, max_length=20)] = SEASON,
+              mode: Literal["heat", "cold"] = "heat"):
+    """mode=cold 면 계약별 보장(coverage)을 저수온 기준으로 판정해요."""
+    return list_customers(db, season, mode)
 
 
 @router.get("/history")

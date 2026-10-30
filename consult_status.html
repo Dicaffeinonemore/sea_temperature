@@ -182,7 +182,7 @@
     </section>
 
     <p class="foot">
-      위험 단계는 앱 기준(관심 25℃ · 주의 28℃ · 경보 28℃ 이상 3일)으로 판정한 참고값이며, 공식 특보나 보험금 지급 기준이 아닙니다(Weather data by Open-Meteo.com).<br>
+      <span class="foot-rule">위험 단계는 앱 기준(관심 25℃ · 주의 28℃ · 경보 28℃ 이상 3일)으로 판정한 참고값이며,</span> 공식 특보나 보험금 지급 기준이 아닙니다(Weather data by Open-Meteo.com).<br>
       문의 · 수협중앙회 경남지역본부 <a href="tel:0552891124">055-289-1124</a> · 수협은행 경남지역본부 <a href="tel:0556030466">055-603-0466</a>
     </p>
   </main>
@@ -349,7 +349,7 @@ function renderConsult(){
 // 이름은 성만 보이게 가려요 (예: 박종수 → 박○○)
 const maskName = n => n ? n[0] + '○'.repeat(Math.max(1, [...n].length - 1)) : n;
 async function loadMasked(){
-  const [c, h] = await Promise.all([getJSON('/customers'), getJSON('/history')]);
+  const [c, h] = await Promise.all([getJSON(`/customers?mode=${Shell.mode}`), getJSON('/history')]);
   c.forEach(x => { x.name = maskName(x.name); });
   h.forEach(x => { x.name = maskName(x.name); });
   return [c, h];

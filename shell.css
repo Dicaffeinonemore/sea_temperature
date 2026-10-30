@@ -10,6 +10,13 @@
 .demo{font-size:12px;font-weight:500;color:var(--warn);background:var(--warn-soft);border:1px solid #f3d3ad;border-radius:999px;padding:2px 10px}
 .top-meta{margin-left:auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;color:var(--sub);font-size:14px}
 .top-meta select{border:1px solid var(--line-strong);border-radius:8px;padding:5px 8px;background:#fff}
+/* 고수온 / 저수온 모드 선택 */
+.mode-seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:999px;overflow:hidden;background:#fff}
+.mode-seg button{border:0;background:none;padding:5px 12px;font-size:13px;font-weight:700;color:var(--sub);cursor:pointer}
+.mode-seg button+button{border-left:1px solid var(--line-strong)}
+.mode-seg button.heat[aria-pressed="true"]{background:#fdecea;color:#9b2c1f}
+.mode-seg button.cold[aria-pressed="true"]{background:#e8f1fe;color:#1849a9}
+.mode-seg button:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
 .ghost{border:1px solid var(--line-strong);background:#fff;border-radius:8px;padding:5px 10px;font-size:13px;color:var(--sub)}
 
 /* 왼쪽 메뉴 */

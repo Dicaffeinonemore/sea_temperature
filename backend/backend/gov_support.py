@@ -1,7 +1,7 @@
-"""정부지원금 · 고수온 피해 지원 API (Super DB 사용 안 함).
+"""정부지원금 · 고수온·저수온 피해 지원 API (Super DB 사용 안 함).
 
 DB에 연결하지 않고 backend/backend/data/damage/ 의 CSV 4개만 읽는다.
-  programs.csv : 고수온 피해 지원 제도 (재해복구비 · 긴급방류 · 상환연기 · 보증 …)
+  programs.csv : 고수온·저수온 피해 지원 제도 (재해복구비 · 긴급방류 · 상환연기 · 보증 …)
   prices.csv   : 해양수산부 「자연재난 복구비용 산정기준(단가)」 고시 품목별 복구 단가
                  → 여기에 없는 어종은 화면에 '정부 지원 품목 아님'
   relief.csv   : 피해율별 정책자금 상환연기
@@ -29,7 +29,7 @@ from backend.insurance import species_terms
 
 router = APIRouter(prefix="/api/v1/gov-support", tags=["정부지원금"])
 
-HEAT = r"고수온|이상\s*수온"
+HEAT = r"고수온|저수온|이상\s*수온"   # 이상수온 피해(고수온·저수온) 지원 제도만 남김
 # 품종 별칭 (가두리 어류는 '어류'·'가두리'로도 찾음)
 ALIAS = {"우럭": "조피볼락", "광어": "넙치", "우렁쉥이": "멍게", "참굴": "굴", "참전복": "전복"}
 CAGE_FISH = {"조피볼락", "참돔", "돌돔", "감성돔", "농어", "점농어", "쥐치", "말쥐치", "숭어", "가숭어", "능성어", "방어", "넙치", "강도다리"}
@@ -69,9 +69,9 @@ RECOVERY_SPLIT = {"grant": 50, "loan": 30, "self": 20, "cap": 50_000_000,
 
 
 def gov_url(url: Any) -> str | None:
-    """정부 사이트(*.go.kr · 정부24 gov.kr) 링크만 통과. 기사·민간·연구원 사이트는 None"""
+    """정부 사이트(*.go.kr · 정부24 gov.kr · 정책브리핑 korea.kr) 링크만 통과. 기사·민간·연구원 사이트는 None"""
     m = re.match(r"^https?://([^/:?#]+)", str(url or "").strip(), re.I)
-    return str(url).strip() if m and re.search(r"(^|\.)(go|gov)\.kr$", m.group(1).lower()) else None
+    return str(url).strip() if m and re.search(r"(^|\.)((go|gov)\.kr|korea\.kr)$", m.group(1).lower()) else None
 
 
 class DamageProgram(BaseModel):
@@ -184,7 +184,7 @@ def damage_support(species: list[str] | None = None) -> dict:
             "to_check": [x.strip() for x in str(r.get("확인필요_항목") or "").split(";") if x.strip()],
             "link": gov_url(r.get("공식링크")), "basis": _txt(r.get("근거_법령고시")), "checked": _txt(r.get("확인일")),
         })
-    # 고수온과 관련된 제도만 (대상·지원내용·2026년 현황 등에 '고수온'이 있는 것. '확인 필요' 칸은 보지 않음)
+    # 이상수온(고수온·저수온)과 관련된 제도만 (대상·지원내용·2026년 현황 등에 그 말이 있는 것. '확인 필요' 칸은 보지 않음)
     programs = [x for x in programs if re.search(HEAT, " ".join(str(v) for v in x.values() if isinstance(v, str)))]
     order = {"지원금": 0, "대출": 1, "보증": 2}
     programs.sort(key=lambda x: (order.get(x["kind"] or "", 9), x["id"]))
@@ -228,7 +228,7 @@ def main():
     import argparse
     import json
 
-    ap = argparse.ArgumentParser(description="고수온 피해 시 정부 지원 (CSV, DB 안 씀)")
+    ap = argparse.ArgumentParser(description="고수온·저수온 피해 시 정부 지원 (CSV, DB 안 씀)")
     ap.add_argument("damage", nargs="?", help="(예전 실행 방법 호환용, 생략 가능)")
     ap.add_argument("--species", action="append", help="어종 (여러 번 가능)")
     a = ap.parse_args()

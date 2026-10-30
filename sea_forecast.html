@@ -189,6 +189,19 @@
   .g-band{fill:rgba(110,120,140,.09)}
   .pt-val{font-size:11px;font-weight:500;fill:#4b5363;font-variant-numeric:tabular-nums;pointer-events:none;paint-order:stroke;stroke:#fff;stroke-width:3px}
   .zone-warn{fill:#f8c9c4;opacity:.65}
+  /* 저수온(11~4월): 아래쪽 파란 구간 · 기준선 7℃·4℃ */
+  .zone-cwarn{fill:#b9d0f5;opacity:.7}
+  .zone-cwatch{fill:#dde9fb;opacity:.75}
+  .thc7{stroke:#5b8def;stroke-width:1.6;stroke-dasharray:6 6}
+  .thc4{stroke:#1849a9;stroke-width:1.6;stroke-dasharray:6 6}
+  .thc7t{fill:#2f5fc4;font-size:10px} .thc4t{fill:#173d8f;font-size:10px}
+  .season-tag{display:inline-block;font-size:11px;font-weight:700;border-radius:4px;padding:0 6px;margin-left:6px;vertical-align:middle}
+  .season-tag.cold{background:#e8f1fe;color:#1849a9}
+  .season-tag.heat{background:#fdeee0;color:#a8500a}
+  .sig-note{font-size:12px;color:var(--muted);margin-top:10px}
+  .legend .th.cold i{border-top-color:#1849a9}
+  /* 저수온 '주의'는 파란색 (빨강 = 고수온과 헷갈리지 않게) */
+  .sig-c0{background:#e8f1fe;border-color:#b9d0f5}.sig-c0 i,.lc0{background:#2f6fe0}.sig-c0 .lim,.sig-c0 .dd{color:#1849a9}
   .zone-watch{fill:#fbe6a2;opacity:.6}
   .g-head{font-size:11px;font-weight:700}
   .g-head.r{fill:var(--accent)} .g-head.o{fill:var(--muted)}
@@ -377,7 +390,7 @@
           <div class="legend">
             <span><i></i>ROMS 1~7일 · 대응 검토</span>
             <span class="om"><i></i>ECMWF 보정 8~21일 · 참고용</span>
-            <span class="th"><i></i>기준선 25℃ · 28℃</span>
+            <span class="th" id="fc-th"><i></i>기준선 25℃ · 28℃</span>
           </div>
           <div class="chart-box" id="fc-box">
             <div class="chart" id="fc-chart"><div class="empty">불러오는 중이에요…</div></div>
@@ -391,7 +404,7 @@
           </section>
           <section class="panel panel-in" aria-labelledby="h-fcc">
             <div class="sec-h"><h3 id="h-fcc">판정 참고 기준</h3></div>
-            <ul class="mini">
+            <ul class="mini" id="fc-rules">
               <li><span>관심 (예비특보 수준)</span><b>25℃ 도달 예상</b></li>
               <li><span>주의 (주의보 수준)</span><b>28℃ 도달 예상</b></li>
               <li><span>경보</span><b>28℃ 이상 3일 연속</b></li>
@@ -409,7 +422,7 @@
       </section>
     </section>
     <p class="foot">
-      위험 단계는 앱 기준(관심 25℃ · 주의 28℃ · 경보 28℃ 이상 3일)으로 판정한 참고값이며, 공식 특보나 보험금 지급 기준이 아닙니다(Weather data by Open-Meteo.com).<br>
+      <span id="fc-foot-rule">위험 단계는 앱 기준(관심 25℃ · 주의 28℃ · 경보 28℃ 이상 3일)으로 판정한 참고값이며,</span> 공식 특보나 보험금 지급 기준이 아닙니다(Weather data by Open-Meteo.com).<br>
       문의 · 수협중앙회 경남지역본부 <a href="tel:0552891124">055-289-1124</a> · 수협은행 경남지역본부 <a href="tel:0556030466">055-603-0466</a>
     </p>
   </main>
@@ -471,13 +484,32 @@ const r1 = v => Math.round(v * 10) / 10;
 const pad = n => String(n).padStart(2, '0');
 const ymd = i => { const d = dayOf(i); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
 const TREND = {up:'↗ 상승', flat:'→ 유지', down:'↘ 하강'};
+/* ===== 고수온 · 저수온 기준 =====
+   오른쪽 위 '담당 지역' 옆 모드 선택(shell.js Shell.mode)을 따라가요. 처음 열면 계절로 정해져요(11~4월 저수온).
+   저수온 단계 = 국립수산과학원 저수온 특보 기준: 예비특보 7℃ 도달 · 주의보 4℃ 도달 · 경보 4℃ 이하 3일 이상 */
+const RULES = {
+  heat:{key:'max', word:'고수온', val:'최고', watch:25, warn:28, hot:true},
+  cold:{key:'min', word:'저수온', val:'최저', watch:7, warn:4, hot:false},
+};
+let SEASON = Shell.mode, R = RULES[SEASON];
+const reachOf = (v, lim) => R.hot ? v >= lim : v <= lim;   // 기준에 닿았나 (고수온은 이상, 저수온은 이하)
 // 어종 신호등: 어종별 견디는 한계 수온(℃). 앞으로 7일 예보가 이 값에 닿으면 주의, SIGNAL_NEAR 이내면 관심.
 // 출처: 조피볼락·전복·넙치·강도다리 = 국립수산과학원(2024.7.19) / 멍게·가숭어·굴·참돔 = 팀 리서치 자료(.local/pdf-review)
 const SPECIES_SIGNAL = [
   {name:'조피볼락', limit:28}, {name:'전복', limit:28}, {name:'넙치', limit:29}, {name:'강도다리', limit:27},
   {name:'멍게', limit:25}, {name:'가숭어', limit:30}, {name:'굴', limit:30}, {name:'참돔', limit:31},
 ];
-const SIGNAL_NEAR = 1;   // 한계 수온보다 이만큼(℃) 낮은 값까지 올라오면 '관심'
+const SIGNAL_NEAR = 1;   // 한계 수온보다 이만큼(℃) 낮은 값까지 올라오면 '관심' (저수온은 이만큼 높은 값까지 내려오면)
+// 저수온 어종 기준(℃): 이 수온 이하로 내려가면 먹이를 끊는다고 정리된 값 (농어만 '5~8℃ 폐사' → 8℃로 봄)
+// 출처: 수협 수산경제연구원 「이상수온 대응 어류가두리 양식장 이동 지원 검토」(수산 이슈포커스 2026-01호) · 현장 조사·면담 정리값
+// 넙치·강도다리·전복·굴·멍게는 자료가 없어 넣지 않음 → 지역 단계(7℃·4℃)만 적용
+const SPECIES_COLD = [
+  {name:'조피볼락', limit:5, what:'먹이 중단'}, {name:'농어', limit:8, what:'폐사 5~8℃'},
+  {name:'참돔', limit:10, what:'먹이 중단'}, {name:'감성돔', limit:10, what:'먹이 중단'}, {name:'숭어류', limit:10, what:'먹이 중단'},
+  {name:'돌돔', limit:13, what:'먹이 중단'}, {name:'쥐치류', limit:15, what:'먹이 중단'}, {name:'능성어', limit:15, what:'먹이 중단'},
+];
+const COLD_NO_DATA = '넙치·강도다리·전복·굴·멍게';
+const SIGNAL_RULE_COLD = ['7일 안 기준 이하', `기준 ${SIGNAL_NEAR}℃ 이내`, '여유 있음'];
 const SIGNAL = ['주의', '관심', '정상'];
 const SIGNAL_RULE = ['7일 안 한계 도달', `한계 ${SIGNAL_NEAR}℃ 이내`, '여유 있음'];
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -508,13 +540,32 @@ function sampleSeries(t, trend){
   return roms.concat(om);
 }
 const SAMPLE_REGIONS = {base_date:'2026-10-22', regions:SAMPLE_REGION_SEED.map(({t, ...r}) => ({...r, series:sampleSeries(t, r.trend)}))};
+// 저수온 가상 값 (저수온 모드인데 서버에 연결 못 했을 때만): 7일 일최저
+const SAMPLE_COLD_SEED = [
+  {id:'통영', t:[9.8,9.4,9.1,8.7,8.5,8.6,8.8], trend:'down'}, {id:'거제', t:[10.4,10.1,9.9,9.6,9.4,9.5,9.6], trend:'flat'},
+  {id:'고성', t:[8.9,8.4,7.9,7.4,7.1,7.2,7.5], trend:'down'}, {id:'남해', t:[6.8,6.1,5.4,4.6,3.9,3.7,3.8], trend:'down', alert:{type:'저수온 주의보', since:'1/13'}},
+  {id:'하동', t:[6.5,5.9,5.2,4.4,3.8,3.6,3.7], trend:'down'}, {id:'창원', t:[8.2,7.8,7.3,6.9,6.6,6.7,6.9], trend:'flat'},
+  {id:'사천', t:[6.2,5.5,4.8,4.0,3.6,3.4,3.5], trend:'down', alert:{type:'저수온 주의보', since:'1/13'}},
+];
+function sampleSeriesCold(t, trend){
+  const roms = t.map((min,i) => ({i, max:r1(min+1.4), mean:r1(min+0.7), min, src:'ROMS'}));
+  const om = [];
+  for(let k = 1; k <= 14; k++){
+    const drift = trend === 'down' ? -0.05*k : trend === 'up' ? 0.08*k : 0;
+    const min = r1(t[6] + drift + 0.2*Math.sin(k/2));
+    om.push({i:6+k, max:r1(min+1.2), mean:r1(min+0.6), min, src:'ECMWF'});
+  }
+  return roms.concat(om);
+}
+const SAMPLE_COLD = {base_date:'2027-01-14', regions:SAMPLE_COLD_SEED.map(({t, ...r}) => ({bias:{diff:-1.2, own:true}, alert:null, ...r, series:sampleSeriesCold(t, r.trend)}))};
 
 function stageOfDay(t, i, arr){
-  if(t >= 28){
-    const run = arr.slice(Math.max(0,i-2), i+1).filter(v => v >= 28).length;
+  // 고수온: 25℃ 관심 · 28℃ 주의 · 28℃ 이상 3일 경보 / 저수온: 7℃ 관심 · 4℃ 주의 · 4℃ 이하 3일 경보
+  if(reachOf(t, R.warn)){
+    const run = arr.slice(Math.max(0,i-2), i+1).filter(v => reachOf(v, R.warn)).length;
     return run >= 3 ? 3 : 2;
   }
-  return t >= 25 ? 1 : 0;
+  return reachOf(t, R.watch) ? 1 : 0;
 }
 let regionInfo = {};
 function applyRegions(data){
@@ -523,11 +574,11 @@ function applyRegions(data){
   regionInfo = {};
   data.regions.forEach(r => {
     const series = r.series.slice().sort((a,b) => a.i - b.i);
-    const t = series.filter(p => p.src === 'ROMS').map(p => p.max);
+    const t = series.filter(p => p.src === 'ROMS').map(p => p[R.key]);   // 고수온 = 일최고 · 저수온 = 일최저
     const st = t.map((v,i,a) => stageOfDay(v,i,a));
-    const top = Math.max(...st), maxT = Math.max(...t);
+    const top = Math.max(...st), maxT = R.hot ? Math.max(...t) : Math.min(...t);   // maxT = 7일 중 가장 위험한 값 (저수온이면 최저)
     // 21일 전체 단계(표시용): 8~21일은 참고만이라 top·첫 예상일 등 판정에는 쓰지 않아요. 7일→8일 경보 연속일은 이어서 계산해요.
-    const stAll = series.map((p,i,a) => stageOfDay(p.max, i, a.map(q => q.max)));
+    const stAll = series.map((p,i,a) => stageOfDay(p[R.key], i, a.map(q => q[R.key])));
     regionInfo[r.id] = {...r, t, series, st, stAll, top, d:st.indexOf(top), maxT, dMax:t.indexOf(maxT)};
   });
 }
@@ -551,7 +602,61 @@ function fillOffice(current){
 }
 /* ===== 21일 수온 그래프 ===== */
 // 21일 그래프 (홈은 still: 점 선택 없이 보기만)
+// 저수온 그래프: 일최저 수온 · 아래쪽에 관심(7℃ 이하)·주의(4℃ 이하) 파란 구간
+function chartSvgCold(I, pick, o = {}){
+  const fcRegion = I.id, pts = I.series, fcPick = pick, v = p => p.min;
+  const W = 900, H = o.h || 300, L = 46, RR = 16, T = 28, B = 40, pW = W - L - RR, pH = H - T - B;
+  const temps = pts.map(v), tMin = Math.min(...temps);
+  let lo = Math.floor(tMin - 0.3), hi = Math.ceil(Math.max(...temps) + 0.3);
+  if(hi - lo < 3){ hi = lo + 3; }
+  const fold = lo > 10;   // 7℃보다 한참 높으면 관심·주의 구간을 아래쪽 얇은 띠로 접어서 항상 보여 줘요
+  if(!fold) lo = Math.min(lo, 2);
+  const BOT = fold ? 36 : 0, GAP = fold ? 14 : 0;
+  const bot0 = T + pH - BOT - GAP;   // 수온 그래프가 끝나는 높이
+  const y = val => T + (hi - val) / (hi - lo) * (bot0 - T);
+  const x = i => L + i / 20 * pW;
+  const yc = val => Math.min(T + pH, Math.max(T, y(val)));
+  const step = hi - lo > 8 ? 2 : 1;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${fcRegion} 21일 수온 예측 그래프 (일최저)">`;
+  const zWarn = fold ? [T + pH - BOT / 2, T + pH] : [yc(4), T + pH], zWatch = fold ? [T + pH - BOT, T + pH - BOT / 2] : [yc(7), yc(4)];
+  svg += `<rect class="zone-cwarn" x="${L}" y="${zWarn[0]}" width="${pW}" height="${zWarn[1] - zWarn[0]}"/>`;
+  svg += `<rect class="zone-cwatch" x="${L}" y="${zWatch[0]}" width="${pW}" height="${zWatch[1] - zWatch[0]}"/>`;
+  svg += `<rect class="g-band" x="${x(6.5)}" y="${T}" width="${W - RR - x(6.5)}" height="${bot0 - T}"/>`;
+  svg += `<text class="g-head r" x="${x(3)}" y="16" text-anchor="middle">1~7일</text>`;
+  svg += `<text class="g-head o" x="${x(13.75)}" y="16" text-anchor="middle">8~21일</text>`;
+  for(let g = lo; g <= hi; g += step){
+    svg += `<line class="g-line" x1="${L}" y1="${y(g)}" x2="${W-RR}" y2="${y(g)}"/><text class="g-txt" x="${L-8}" y="${y(g)+4}" text-anchor="end">${g}°</text>`;
+  }
+  if(fold){
+    svg += `<text class="thc7t" x="${L+8}" y="${T + pH - BOT * 3 / 4 + 4}" font-weight="700">관심 7℃ 이하</text>`;
+    svg += `<text class="thc4t" x="${L+8}" y="${T + pH - BOT / 4 + 4}" font-weight="700">주의 4℃ 이하</text>`;
+    svg += `<text class="thc7t" x="${W-RR-8}" y="${T + pH - BOT * 3 / 4 + 4}" text-anchor="end">관심 단계까지 ${(tMin - 7).toFixed(1)}℃ 남음</text>`;
+  } else {
+    [[7,'thc7'],[4,'thc4']].filter(([t]) => t >= lo && t <= hi).forEach(([t,c]) => {
+      svg += `<line class="${c}" x1="${L}" y1="${y(t)}" x2="${W-RR}" y2="${y(t)}"/><text class="${c}t" x="${L+6}" y="${y(t)+13}" text-anchor="start" font-weight="700">${t === 7 ? '관심 7℃' : '주의 4℃'}</text>`;
+    });
+  }
+  for(let i = 0; i <= 20; i += 2) svg += `<text class="g-txt" x="${x(i)}" y="${H - B + 20}" text-anchor="middle">${md(i)}</text>`;
+  if(!o.still) svg += `<line class="tc-guide" x1="0" y1="${T}" x2="0" y2="${T + pH}"/>`;
+  const line = arr => arr.map(p => `${x(p.i)},${y(v(p))}`).join(' ');
+  svg += `<polyline class="s-roms" points="${line(pts.filter(p => p.src==='ROMS'))}"/>`;
+  svg += `<polyline class="s-om" points="${line([pts[6]].concat(pts.filter(p => p.src==='ECMWF')))}"/>`;
+  pts.forEach(p => {
+    const on = p.i === fcPick;
+    svg += o.still
+      ? `<circle class="pt ${p.src==='ROMS'?'r':'o'}" style="cursor:default" cx="${x(p.i)}" cy="${y(v(p))}" r="3.5"><title>${mdw(p.i)} 최저 ${v(p).toFixed(1)}℃ · ${p.src}</title></circle>`
+      : `<circle class="pt ${p.src==='ROMS'?'r':'o'}" data-dot="${p.i}" data-r="${on?7:4.5}" cx="${x(p.i)}" cy="${y(v(p))}" r="${on?7:4.5}"/>`;
+  });
+  pts.forEach(p => {
+    svg += `<text class="pt-val" x="${x(p.i)}" y="${y(v(p)) - 10}" text-anchor="${p.i === 0 ? 'start' : p.i === 20 ? 'end' : 'middle'}">${v(p).toFixed(1)}</text>`;
+  });
+  if(!o.still) pts.forEach(p => {
+    svg += `<rect class="tc-hit" data-pt="${p.i}" tabindex="0" aria-label="${mdw(p.i)} 최저 ${v(p).toFixed(1)}℃" x="${x(p.i) - pW / 40}" y="${T}" width="${pW / 20}" height="${pH}"/>`;
+  });
+  return svg + '</svg>';
+}
 function chartSvg(I, pick, o = {}){
+  if(SEASON === 'cold') return chartSvgCold(I, pick, o);   // (이 함수 안의 R 은 오른쪽 여백 값이라 SEASON 으로 확인)
   const fcRegion = I.id;
   const pts = I.series, fcPick = pick;
   const W = 900, H = o.h || 300, L = 46, R = 16, T = 28, B = 40, pW = W - L - R, pH = H - T - B;
@@ -617,42 +722,59 @@ let homeRegion = '통영', fcRegion = '통영', fcPick = 0;   // 0 = 오늘 점�
 /* ===== 수온 예측 ===== */
 function renderForecast(){
   const I = regionInfo[fcRegion];
-  document.getElementById('fc-sub').textContent = `${fcRegion}${fcRegion === homeRegion ? '' : ' (어가 지역)'} · ${md(0)}~${md(20)} · 일최고 수온`;
+  document.getElementById('fc-sub').innerHTML = `${esc(fcRegion)}${fcRegion === homeRegion ? '' : ' (어가 지역)'} · ${md(0)}~${md(20)} · 일${R.val} 수온<span class="season-tag ${SEASON}">${R.word} 기준</span>`;
+  renderSeasonText();
 
   document.getElementById('fc-chart').innerHTML = chartSvg(I, fcPick);
   renderForecastSide(I);
 }
 
+// 계절에 따라 기준선 · 판정 기준 · 아래 설명 문구 바꾸기
+function renderSeasonText(){
+  const th = document.getElementById('fc-th');
+  th.innerHTML = `<i></i>기준선 ${R.watch}℃ · ${R.warn}℃`; th.classList.toggle('cold', !R.hot);
+  document.getElementById('fc-rules').innerHTML = R.hot
+    ? `<li><span>관심 (예비특보 수준)</span><b>25℃ 도달 예상</b></li><li><span>주의 (주의보 수준)</span><b>28℃ 도달 예상</b></li><li><span>경보</span><b>28℃ 이상 3일 연속</b></li>`
+    : `<li><span>관심 (저수온 예비특보 수준)</span><b>7℃ 도달 예상</b></li><li><span>주의 (저수온 주의보 수준)</span><b>4℃ 도달 예상</b></li><li><span>경보</span><b>4℃ 이하 3일 연속</b></li>`;
+  document.getElementById('fc-foot-rule').textContent = R.hot
+    ? '위험 단계는 앱 기준(관심 25℃ · 주의 28℃ · 경보 28℃ 이상 3일)으로 판정한 참고값이며,'
+    : '위험 단계는 저수온 앱 기준(관심 7℃ · 주의 4℃ · 경보 4℃ 이하 3일, 일최저 수온 · 수과원 저수온 특보 기준)으로 판정한 참고값이며,';
+}
 function renderForecastSide(I){
   const pts = I.series;
 
   const first = I.top >= 1 ? `${mdw(I.d)} (D-${I.d})` : '없음';
   document.getElementById('fc-summary').innerHTML = `
     <li><span>예상 단계</span><span class="badge s${I.top}">${STAGE[I.top]}</span></li>
-    <li><span>오늘 최고 예측</span><b>${I.t[0].toFixed(1)}℃</b></li>
-    <li><span>7일 최고</span><b>${I.maxT.toFixed(1)}℃ · ${md(I.dMax)}</b></li>
+    <li><span>오늘 ${R.val} 예측</span><b>${I.t[0].toFixed(1)}℃</b></li>
+    <li><span>7일 ${R.val}</span><b>${I.maxT.toFixed(1)}℃ · ${md(I.dMax)}</b></li>
     <li><span>${STAGE[I.top]} 첫 예상일</span><b>${first}</b></li>
     <li><span>2~3주 흐름</span><b>${TREND[I.trend]}</b></li>
 `;
-  document.getElementById('sig-sub').textContent = `${fcRegion} · 앞으로 7일 최고 ${I.maxT.toFixed(1)}℃ 기준`;
-  const sig = SPECIES_SIGNAL.map((s, i) => {
-    const lv = I.maxT >= s.limit ? 0 : I.maxT >= s.limit - SIGNAL_NEAR ? 1 : 2;
-    return {...s, i, lv, reach: I.t.findIndex(t => t >= s.limit)};
+  document.getElementById('sig-sub').textContent = `${fcRegion} · 앞으로 7일 ${R.val} ${I.maxT.toFixed(1)}℃ 기준`
+    + (R.hot ? '' : ' · 어종 기준은 먹이 중단 수온');
+  const sig = (R.hot ? SPECIES_SIGNAL : SPECIES_COLD).map((s, i) => {
+    const near = R.hot ? s.limit - SIGNAL_NEAR : s.limit + SIGNAL_NEAR;
+    const lv = reachOf(I.maxT, s.limit) ? 0 : reachOf(I.maxT, near) ? 1 : 2;
+    return {...s, i, lv, reach: I.t.findIndex(t => reachOf(t, s.limit))};
   });
-  const chip = s => `<li class="sig sig-${s.lv}" title="${esc(s.name)} · 한계 ${s.limit}℃${s.reach >= 0 ? ` · ${mdw(s.reach)} 도달 예상` : ''}">`
+  const lvCls = lv => (!R.hot && lv === 0) ? 'c0' : String(lv);   // 저수온 주의 = 파랑
+  const chip = s => `<li class="sig sig-${lvCls(s.lv)}" title="${esc(s.name)} · ${R.hot ? '한계' : esc(s.what)} ${s.limit}℃${s.reach >= 0 ? ` · ${mdw(s.reach)} 도달 예상` : ''}">`
     + `<i aria-hidden="true"></i><b>${esc(s.name)}</b><span class="lim">${s.limit}℃</span>`
     + (s.lv === 0 ? `<span class="dd">${s.reach === 0 ? '오늘' : `D-${s.reach}`}</span>` : '')
     + '</li>';
-  document.getElementById('fc-signal').innerHTML = SIGNAL.map((label, lv) => {
+  // 고수온: 주의(빨강) → 관심 → 정상 · 저수온: 정상 → 관심 → 주의(파랑) 순서로 위에서 아래
+  document.getElementById('fc-signal').innerHTML = (R.hot ? [0, 1, 2] : [2, 1, 0]).map(lv => {
+    const label = SIGNAL[lv];
     const rows = sig.filter(s => s.lv === lv).sort((a, b) => lv === 0 ? a.reach - b.reach || a.i - b.i : a.i - b.i);
-    return `<div class="sig-row"><h4><i class="l${lv}" aria-hidden="true"></i>${label} ${rows.length}<small>${SIGNAL_RULE[lv]}</small></h4>`
+    return `<div class="sig-row"><h4><i class="l${lvCls(lv)}" aria-hidden="true"></i>${label} ${rows.length}<small>${(R.hot ? SIGNAL_RULE : SIGNAL_RULE_COLD)[lv]}</small></h4>`
       + (rows.length ? `<ul class="sig-list" aria-label="${label}">${rows.map(chip).join('')}</ul>` : '<p class="sig-none">해당 어종 없음</p>')
       + '</div>';
-  }).join('');
+  }).join('') + (R.hot ? '' : `<p class="sig-note">어종 기준: 수협 수산경제연구원(2026.1) 현장 조사 정리값 · ${COLD_NO_DATA}은 자료가 없어 지역 단계(7℃·4℃)만 봐 주세요</p>`);
 
   // ref = 8~21일 표: 같은 기준으로 단계를 보여 주되 '참고'로 표시
   const table = (rows, ref) => `<div class="tbl-wrap"><table><thead><tr><th>날짜</th><th>${ref?'단계(참고)':'단계'}</th><th class="num">최고℃</th><th class="num">평균℃</th><th class="num">최저℃</th></tr></thead><tbody>${
-    rows.map(r => `<tr><td>${mdw(r.i)}</td><td><span class="badge s${I.stAll[r.i]}${ref?' ref':''}">${STAGE[I.stAll[r.i]]}</span></td><td class="num"><b>${r.max.toFixed(1)}</b></td><td class="num">${r.mean.toFixed(1)}</td><td class="num">${r.min.toFixed(1)}</td></tr>`).join('')
+    rows.map(r => `<tr><td>${mdw(r.i)}</td><td><span class="badge s${I.stAll[r.i]}${ref?' ref':''}">${STAGE[I.stAll[r.i]]}</span></td><td class="num">${R.hot ? `<b>${r.max.toFixed(1)}</b>` : r.max.toFixed(1)}</td><td class="num">${r.mean.toFixed(1)}</td><td class="num">${R.hot ? r.min.toFixed(1) : `<b>${r.min.toFixed(1)}</b>`}</td></tr>`).join('')
   }</tbody></table></div>`;
   document.getElementById('fc-tables').innerHTML =
     `<div><h3>1~7일 · ROMS (대응 검토)</h3>${table(pts.filter(p => p.src==='ROMS'), false)}</div>
@@ -670,7 +792,9 @@ function showTip(i){
   const st = I.stAll[p.i];
   // 단계 배지는 날짜 옆에 · 8~21일(ECMWF)은 점선 테두리로 참고값임을 구분
   const badge = p.src === 'ROMS' ? `<span class="badge s${I.st[p.i]}">${STAGE[I.st[p.i]]}</span>` : `<span class="badge s${st} ref">${STAGE[st]}</span>`;
-  tip.innerHTML = `<span class="d">${mdw(p.i)}${badge}</span><span class="v">예상 최고<b>${p.max.toFixed(1)}℃</b></span><span class="sub">평균 ${p.mean.toFixed(1)}℃ · 최저 ${p.min.toFixed(1)}℃</span>`;
+  tip.innerHTML = R.hot
+    ? `<span class="d">${mdw(p.i)}${badge}</span><span class="v">예상 최고<b>${p.max.toFixed(1)}℃</b></span><span class="sub">평균 ${p.mean.toFixed(1)}℃ · 최저 ${p.min.toFixed(1)}℃</span>`
+    : `<span class="d">${mdw(p.i)}${badge}</span><span class="v">예상 최저<b>${p.min.toFixed(1)}℃</b></span><span class="sub">평균 ${p.mean.toFixed(1)}℃ · 최고 ${p.max.toFixed(1)}℃</span>`;
   tip.hidden = false;
   const br = box.getBoundingClientRect(), dr = dot.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
   const left = Math.min(Math.max(dr.left + dr.width / 2 - br.left, w / 2 + 2), br.width - w / 2 - 2);
@@ -707,7 +831,7 @@ document.getElementById('office').addEventListener('change', e => {
 /* ===== 시작 ===== */
 (async () => {
   try{ applyRegions(await getJSON(ENDPOINTS.regions)); setMode(true); }
-  catch(e){ applyRegions(SAMPLE_REGIONS); setMode(false, e); }
+  catch(e){ applyRegions(SEASON === 'cold' ? SAMPLE_COLD : SAMPLE_REGIONS); setMode(false, e); }
   homeRegion = fillOffice(getOffice());
   const want = new URLSearchParams(location.search).get('region');
   fcRegion = want && regionInfo[want] ? want : homeRegion;
@@ -749,7 +873,7 @@ function openBias(){
         <div class="s">${esc(st[2] || 'ROMS 값을 뽑는 기준 지점이에요')}</div></div>
     </div>
     ${B.big ? `<p class="bm-warn">⚠ 보정값이 ${B.a}℃로 커요(2℃ 이상). 8~21일 값은 오차가 클 수 있어 흐름만 참고하세요${Math.abs(B.d) >= 3 ? ' · 3℃ 이상이면 ECMWF 격자가 육지 가장자리에 걸렸을 수 있어요' : ''}.</p>` : ''}
-    ${e ? `<p class="bm-ex">예) ${mdw(e.i)} 일최고 &nbsp;ECMWF 원래 ${(e.max + B.d).toFixed(1)}℃ → 보정 ${B.up ? '+' : '−'}${B.a}℃ → <b>화면 표시 ${e.max.toFixed(1)}℃</b></p>` : ''}`;
+    ${e ? `<p class="bm-ex">예) ${mdw(e.i)} 일${R.val} &nbsp;ECMWF 원래 ${(e[R.key] + B.d).toFixed(1)}℃ → 보정 ${B.up ? '+' : '−'}${B.a}℃ → <b>화면 표시 ${e[R.key].toFixed(1)}℃</b></p>` : ''}`;
   document.getElementById('bias-modal-title').textContent = `${I.id} · 8~21일 보정값`;
   document.getElementById('bias-modal-body').innerHTML = body;
   document.getElementById('bias-modal').showModal();
