@@ -444,8 +444,8 @@ const ENDPOINTS = {
 let mode = 'sample';   // 'db' = 서버 데이터 · 'sample' = 가상 데이터
 
 async function getJSON(path){
-  const res = await fetch(API_BASE + path);
-  if(!res.ok) throw new Error(`${path} HTTP ${res.status}`);
+  const res = await fetch(API_BASE + path).catch(e => { throw Object.assign(e, {code:'NET'}); });
+  if(!res.ok) throw Object.assign(new Error(`${path} HTTP ${res.status}`), {code:res.status});
   return res.json();
 }
 // 쓰기 요청은 백엔드 규칙상 X-CSRF-Protection: 1 헤더가 필요해요
@@ -458,6 +458,11 @@ async function postJSON(path, body){
   }
   return res.json();
 }
+// 화면에는 쉬운 안내와 오류코드만, 주소·서버 원문은 콘솔에 남겨요 (코드 없는 오류 = 화면 처리 중 오류 APP)
+function errCode(e){
+  console.warn(e);
+  return e.code || (/HTTP (\d{3})/.exec(e.message) || [])[1] || 'APP';
+}
 function addNotice(msg){
   const n = document.getElementById('notice');
   n.textContent = n.hidden ? msg : n.textContent + '\n' + msg;
@@ -469,7 +474,7 @@ function setMode(ok, err){
   document.getElementById('updated').textContent = ok ? `마지막 조회 ${Shell.lastViewed()}` : '2026.10.22 (목) 06:00 기준';
   if(!ok) addNotice(location.protocol === 'file:'
     ? '⚠️ 파일로 열면 서버에 연결할 수 없어 가상 데이터를 보여 주고 있어요. sea_temperature 폴더에서 python -m http.server 8765 를 켜고 http://localhost:8765/sea_forecast.html 로 열어 주세요.'
-    : `⚠️ 서버에 연결하지 못해 가상 데이터를 보여 주고 있어요. 백엔드(8000 포트)가 켜져 있는지 확인해 주세요. (${err.message})`);
+    : `⚠️ 서버에 연결하지 못해 예시 데이터를 보여 드립니다. 잠시 후 새로고침해 주십시오. 오류코드: ${errCode(err)}`);
 }
 
 /* ===== 기본 값 ===== */
