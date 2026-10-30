@@ -102,15 +102,16 @@
 
   /* ===== 왼쪽 메뉴 ===== */
   if(part === 'nav'){
+    // 아이콘: Figma 시안과 같은 Lucide 1.63.0 (layout-dashboard · clipboard-list · chart-line · users)
     const MENU = [
-      ['home',     'consult_home.html',   '☎', '상담 홈'],
-      ['detail',   'farm_detail.html',    '☰', '어가 상세'],
-      ['forecast', 'sea_forecast.html',   '〰', '수온 예측'],
-      ['status',   'consult_status.html', '☷', '고객 상담 현황'],
+      ['home',     'consult_home.html',   '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>', '상담 홈'],
+      ['detail',   'farm_detail.html',    '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>', '어가 상세'],
+      ['forecast', 'sea_forecast.html',   '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>', '수온 예측'],
+      ['status',   'consult_status.html', '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/>', '고객 상담 현황'],
     ];
     const cur = me.dataset.page;
     me.insertAdjacentHTML('beforebegin', `<nav class="side" aria-label="화면 이동">${MENU.map(([k, href, ic, label]) =>
-      `<a class="nav" href="${href}"${k === cur ? ' aria-current="page"' : ''}><span class="ic" aria-hidden="true">${ic}</span>${label}${
+      `<a class="nav" href="${href}"${k === cur ? ' aria-current="page"' : ''}><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${ic}</svg></span>${label}${
         k === 'home' ? '<span class="cnt" id="nav-left" hidden></span>' : ''}</a>`).join('')}</nav>`);
     return;
   }

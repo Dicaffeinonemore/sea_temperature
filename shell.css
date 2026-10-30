@@ -25,7 +25,8 @@
 .nav{display:flex;align-items:center;gap:10px;border:0;background:none;text-align:left;padding:10px 12px;border-radius:8px;font-size:15px;font-weight:500;color:var(--sub);white-space:nowrap;text-decoration:none}
 .nav:hover{background:#e9edf3}
 .nav[aria-current="page"]{background:var(--panel);color:var(--text);font-weight:700;box-shadow:inset 3px 0 0 var(--accent)}
-.nav .ic{width:20px;text-align:center}
+.nav .ic{width:20px;display:flex;justify-content:center;flex:none}
+.nav .ic svg{width:18px;height:18px}
 .nav .cnt{margin-left:auto;font-size:12px;font-weight:700;color:#fff;background:var(--alert);border-radius:999px;padding:0 7px}
 
 /* 알림 종 */
