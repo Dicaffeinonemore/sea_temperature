@@ -398,9 +398,9 @@
   .scb-row > span{font-size:13px}
   .scb-line{display:flex;align-items:center;gap:8px;min-width:0}
   .scb-bar{display:flex;height:22px;border-radius:3px;overflow:hidden;flex:none}
-  .scb-bar .p{background:#2f8f5b}.scb-bar .d{background:#c9ced8}
+  .scb-bar .p{background:#237a4b}.scb-bar .d{background:#c9ced8}
   .scb-val{font-size:12.5px;white-space:nowrap;color:var(--muted)}
-  .scb-val b{color:#2f8f5b;font-size:13.5px}
+  .scb-val b{color:#237a4b;font-size:13.5px}
 </style>
 <link rel="stylesheet" href="shell.css">
 <link rel="stylesheet" href="figma-theme.css">
@@ -1624,7 +1624,7 @@ function saleShort(text, species){
 function scBars(rows, payLabel){
   const top = Math.max(...rows.map(r => Number(r.loss) || 0));
   if(!top || rows.every(r => !Number(r.payout))) return '';
-  return `<div class="scb-lg"><span><i style="background:#2f8f5b"></i>${payLabel}</span><span><i style="background:#c9ced8"></i>자기부담 (어가가 부담)</span></div>
+  return `<div class="scb-lg"><span><i style="background:#237a4b"></i>${payLabel}</span><span><i style="background:#c9ced8"></i>자기부담 (어가가 부담)</span></div>
     ${rows.map(r => { const L = Number(r.loss) || 0, P = Math.min(Number(r.payout) || 0, L);
       return `<div class="scb-row"><span>${Math.round(r.rate * 100)}%</span><div class="scb-line">
         <div class="scb-bar" style="width:calc((100% - 150px) * ${(L / top).toFixed(4)})"><span class="p" style="width:${L ? (P / L * 100).toFixed(1) : 0}%"></span><span class="d" style="flex:1"></span></div>
