@@ -57,6 +57,7 @@ import re
 import sys
 import threading
 import time
+from contextvars import ContextVar
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -119,6 +120,62 @@ SPECIES_LIMIT = {"조피볼락": 28.0, "우럭": 28.0, "전복": 28.0, "넙치":
 
 # 고수온을 보장하는 재해명 (insurance_coverages.risk_types)
 HEAT_PERILS = ("고수온", "이상수온")
+# 저수온을 보장하는 재해명 (같은 보장 표·같은 판정 규칙으로 판정)
+COLD_PERILS = ("저수온",)
+
+# ---------------------------------------------------------------------------
+# 고수온 / 저수온 모드 (화면 오른쪽 위 모드 선택 → /detail?mode=heat|cold)
+#   고수온: 일최고 수온 · 관심 25℃ · 주의 28℃ · 경보 28℃ 이상 3일 · 어종 = SPECIES_LIMIT
+#   저수온: 일최저 수온 · 관심 7℃ · 주의 4℃ · 경보 4℃ 이하 3일 (수과원 저수온 특보 기준)
+#           어종 = 수협 수산경제연구원(2026.1) 먹이 중단 수온 (농어는 폐사 5~8℃ → 8℃)
+#   모드는 요청마다 ContextVar 로 정해서, 아래 함수들이 M() 으로 그 기준을 꺼내 씀
+# ---------------------------------------------------------------------------
+SPECIES_COLD_LIMIT = {"조피볼락": 5.0, "우럭": 5.0, "농어": 8.0, "참돔": 10.0, "감성돔": 10.0, "숭어": 10.0,
+                      "돌돔": 13.0, "쥐치": 15.0, "능성어": 15.0}
+MODE_RULES = {
+    "heat": {"id": "heat", "word": "고수온", "hot": True, "val": "최고", "watch": WATCH_TEMP, "caution": CAUTION_TEMP,
+             "alert": ALERT_TEMP, "perils": HEAT_PERILS, "limits": SPECIES_LIMIT, "limit_word": "견디는 한계"},
+    "cold": {"id": "cold", "word": "저수온", "hot": False, "val": "최저", "watch": 7.0, "caution": 4.0,
+             "alert": 4.0, "perils": COLD_PERILS, "limits": SPECIES_COLD_LIMIT, "limit_word": "먹이 끊는 수온"},
+}
+_MODE: ContextVar[str] = ContextVar("farm_detail_mode", default="heat")
+
+
+def M() -> dict:
+    """지금 요청의 모드 기준 (기본 고수온)."""
+    return MODE_RULES[_MODE.get()]
+
+
+def reach(v: float, limit: float) -> bool:
+    """기준에 닿았나: 고수온은 이상, 저수온은 이하."""
+    return v >= limit if M()["hot"] else v <= limit
+
+
+# 저수온 모드에서 안내 문구를 바꿀 말 (고수온 → 저수온 은 tx() 가 모두 바꿈)
+COLD_PHRASES = (
+    ("오를 것으로", "내려갈 것으로"),
+    ("넘는 날이", "밑도는 날이"),
+    ("경보 시 먹이 주기 중단 · 선별·분조 금지 (약관상 의무)", "저수온 특보 시 먹이량 조절 · 선별·이동 자제 (약관 의무는 수협 확인)"),
+    ("경보가 나면 먹이 주기 중단, 선별·분조 금지 (약관상 의무)", "저수온 특보가 나면 먹이량 조절, 선별·이동 자제 (약관 의무는 수협 확인)"),
+    ("경보가 나면 먹이 주기를 멈추고 선별·분조는 미뤄 주셔야 해요.", "저수온 특보가 나면 먹이량을 줄이고 선별·이동은 미뤄 주세요."),
+    ("경보 때 지켜야 할 의무를 안내하고", "저수온 때 지켜야 할 대응을 안내하고"),
+    ("액화산소 등 대응 장비 점검 안내", "월동 대비(사육밀도·먹이량 조절) 안내"),
+)
+
+
+def tx(o: Any) -> Any:
+    """저수온 모드면 문구 속 '고수온'·수온 방향 말을 저수온에 맞게 바꿈 (dict·list 안까지)."""
+    if M()["hot"]:
+        return o
+    if isinstance(o, str):
+        for a, b in COLD_PHRASES:
+            o = o.replace(a, b)
+        return o.replace("고수온", "저수온")
+    if isinstance(o, list):
+        return [tx(x) for x in o]
+    if isinstance(o, dict):
+        return {k: tx(v) for k, v in o.items()}
+    return o
 
 # 고수온 피해 시 예상 보험금: 직원 입력 없이 피해율별로 자동 계산
 #   보유량·체중 정보가 DB 에 없으므로 '보험가액 = 가입금액'(전부보험)으로 가정하고
@@ -535,6 +592,9 @@ def data_range(table: str, region: Optional[dict]) -> dict:
 
 
 def metric(row: dict) -> Optional[float]:
+    if not M()["hot"]:   # 저수온은 일최저로 판정
+        v = row.get("min")
+        return v if v is not None else row.get("mean")
     v = row.get("max" if STAGE_METRIC == "max_c" else "mean")
     return v if v is not None else row.get("max")
 
@@ -544,16 +604,16 @@ def day_stages(values: list[Optional[float]], lookback: list[Optional[float]]) -
     seq = list(lookback) + list(values)
     out, run = [], 0
     for i, t in enumerate(seq):
-        run = run + 1 if t is not None and t >= ALERT_TEMP else 0
+        run = run + 1 if t is not None and reach(t, M()["alert"]) else 0
         if i < len(lookback):
             continue
         if t is None:
             s = 0
-        elif t >= ALERT_TEMP and run >= ALERT_STREAK_DAYS:
+        elif reach(t, M()["alert"]) and run >= ALERT_STREAK_DAYS:
             s = 3
-        elif t >= CAUTION_TEMP:
+        elif reach(t, M()["caution"]):
             s = 2
-        elif t >= WATCH_TEMP:
+        elif reach(t, M()["watch"]):
             s = 1
         else:
             s = 0
@@ -831,12 +891,12 @@ def build_sea(hh: dict, today: date) -> dict:
         now = {"temp": None, "source": "none", "is_forecast": False, "observed_at": None,
                "station_name": None, "station_km": None}
 
-    # 단계 판정 값: 오늘은 실측이 예측보다 높으면 실측 사용 (위험 쪽으로)
+    # 단계 판정 값: 오늘은 실측이 예측보다 위험하면 실측 사용 (고수온은 더 높으면, 저수온은 더 낮으면)
     def vals(series: list[dict], use_obs: bool) -> list[Optional[float]]:
         out = []
         for r in series:
             v = metric(r)
-            if use_obs and rt and r["day"] == today and (v is None or rt["temp"] > v):
+            if use_obs and rt and r["day"] == today and (v is None or (rt["temp"] > v if M()["hot"] else rt["temp"] < v)):
                 v = rt["temp"]
             out.append(v)
         return out
@@ -851,7 +911,10 @@ def build_sea(hh: dict, today: date) -> dict:
 
     stage = summarize_stage(roms_days + (om_days if STAGE_INCLUDE_OM else []), today)
     stage_ext = summarize_stage(roms_days + om_days, today)
-    hi = max(roms_days, key=lambda d: (d["value"] if d["value"] is not None else -99, -d["day"].toordinal()), default=None)
+    if M()["hot"]:
+        hi = max(roms_days, key=lambda d: (d["value"] if d["value"] is not None else -99, -d["day"].toordinal()), default=None)
+    else:   # 저수온은 7일 중 가장 낮은 날
+        hi = min(roms_days, key=lambda d: (d["value"] if d["value"] is not None else 99, d["day"].toordinal()), default=None)
 
     short = normalize_sigungu(hh.get("sigungu_name"))
     alert = OFFICIAL_ALERTS.get(short or "") or (OFFICIAL_ALERTS.get(roms_r["region"]) if roms_r else None)
@@ -862,42 +925,47 @@ def build_sea(hh: dict, today: date) -> dict:
         # 이름이 같은 예측 지역이 없어 가장 가까운 곳을 썼는데 멀리 있으면 화면에 표시
         "region_far": bool(roms_r and roms_r.get("matched") == "nearest" and (roms_r.get("km") or 0) > REGION_FAR_KM),
         "om_region": om_r["region"] if om_r else None,
-        "metric": "일최고" if STAGE_METRIC == "max_c" else "일평균",
+        "mode": M()["id"],
+        "metric": ("일최고" if STAGE_METRIC == "max_c" else "일평균") if M()["hot"] else "일최저",
         "today": now,
         "roms": roms_days,
         "om": om_days,
         # 예측이 비었을 때 원인 확인용: 테이블에 실제로 있는 날짜 범위
         "data_range": {"roms": data_range("example_region_daily", roms_r) if not roms_days else None,
                        "om": data_range("example_region_daily_om", om_r) if not om_days else None},
+        # 7일 중 가장 위험한 날 (고수온 = 최고 · 저수온 = 최저)
         "max7": {"temp": hi["value"], "date": hi["day"], "d": (hi["day"] - today).days} if hi and hi["value"] is not None else None,
         "stage": stage,                        # 확정 단계 (1~7일)
         "stage_extended": stage_ext,           # 참고 단계 (1~21일)
         "trend": trend_of(om),                 # 2~3주 흐름 up | flat | down
         "alert": alert,                        # 공식 특보 (없으면 None)
-        "criteria": {"watch": WATCH_TEMP, "caution": CAUTION_TEMP, "alert": ALERT_TEMP, "alert_days": ALERT_STREAK_DAYS,
+        "criteria": {"watch": M()["watch"], "caution": M()["caution"], "alert": M()["alert"], "alert_days": ALERT_STREAK_DAYS,
                      "include_om": STAGE_INCLUDE_OM},
     }
 
 
 def species_risk(sp: dict, sea: dict, today: date) -> dict:
     name = f"{sp.get('standard_name') or ''} {sp.get('common_name') or ''}"
-    limit = next((v for k, v in SPECIES_LIMIT.items() if k in name), None)
+    R = M()
+    limit = next((v for k, v in R["limits"].items() if k in name), None)
     label = sp.get("standard_name") or ""
     if limit is None:
         return {"known": False, "hit": False, "stage": 0, "limit": None,
-                "short": "기준 확인 필요", "text": f"{label} 한계 수온 자료 없음 · 지역 기준 적용"}
+                "short": "기준 확인 필요",
+                "text": f"{label} 한계 수온 자료 없음 · 지역 기준 적용" if R["hot"] else f"{label} 저수온 기준 자료 없음 · 지역 기준 적용"}
     days = [d for d in sea["roms"] if d["value"] is not None]
-    hit = next((d for d in days if d["value"] >= limit), None)
+    hit = next((d for d in days if reach(d["value"], limit)), None)
     if hit:
         d = (hit["day"] - today).days
         return {"known": True, "hit": True, "stage": 2, "limit": limit, "d": d, "date": hit["day"],
                 "short": f"{limit:g}℃ 도달 D-{d}",
-                "text": f"{label} 견디는 한계 {limit:g}℃ · {'오늘' if d == 0 else f'{d}일 뒤'} 도달 예상"}
-    mx = max((d["value"] for d in days), default=None)
-    gap = round(limit - mx, 1) if mx is not None else None
+                "text": f"{label} {R['limit_word']} {limit:g}℃ · {'오늘' if d == 0 else f'{d}일 뒤'} 도달 예상"}
+    vals = [d["value"] for d in days]
+    ext = (max(vals) if R["hot"] else min(vals)) if vals else None
+    gap = (round(limit - ext, 1) if R["hot"] else round(ext - limit, 1)) if ext is not None else None
     return {"known": True, "hit": False, "stage": 0, "limit": limit, "gap": gap,
-            "short": f"{limit:g}℃까지 {gap:.1f}℃" if gap is not None else f"한계 {limit:g}℃",
-            "text": f"{label} 견디는 한계 {limit:g}℃" + (f" · 7일 최고보다 {gap:.1f}℃ 여유" if gap is not None else "")}
+            "short": f"{limit:g}℃까지 {gap:.1f}℃" if gap is not None else f"기준 {limit:g}℃",
+            "text": f"{label} {R['limit_word']} {limit:g}℃" + (f" · 7일 {R['val']}보다 {gap:.1f}℃ 여유" if gap is not None else "")}
 
 
 # ---------------------------------------------------------------------------
@@ -952,11 +1020,11 @@ def _peril_in(peril: str, risk_types: list[str]) -> bool:
     return False
 
 
-def heat_profile(coverages: list[dict]) -> dict:
-    """상품의 고수온 보장 구조: 주계약 포함 / 특약으로 추가 / 부담보 특약."""
+def heat_profile(coverages: list[dict], perils: tuple = HEAT_PERILS) -> dict:
+    """상품의 고수온(perils=COLD_PERILS 면 저수온) 보장 구조: 주계약 포함 / 특약으로 추가 / 부담보 특약."""
     def is_heat(c: dict) -> Optional[str]:
         rt = c["risk_types"] if isinstance(c["risk_types"], list) else json.loads(c["risk_types"] or "[]")
-        return next((p for p in HEAT_PERILS if _peril_in(p, rt)), None)
+        return next((p for p in perils if _peril_in(p, rt)), None)
     main, riders, excl = [], [], []
     for c in coverages:
         peril = is_heat(c)
@@ -967,40 +1035,41 @@ def heat_profile(coverages: list[dict]) -> dict:
             (main if c["contract_type"] == "주계약" else riders).append(item)
         elif c["effect"] == "보장제외":
             excl.append(item)
-    peril = (main or riders or excl or [{"peril": HEAT_PERILS[0]}])[0]["peril"]
+    peril = (main or riders or excl or [{"peril": perils[0]}])[0]["peril"]
     return {"main": main, "riders": riders, "excl": excl, "peril": peril}
 
 
-def heat_status(profile: dict, joined_riders: list[str]) -> tuple[str, dict]:
-    """계약의 가입 특약(rider_details.riders) 기준으로 고수온 보장 판정."""
+def heat_status(profile: dict, joined_riders: list[str], perils: tuple = HEAT_PERILS,
+                label: str = "고수온") -> tuple[str, dict]:
+    """계약의 가입 특약(rider_details.riders) 기준으로 고수온(label='저수온'이면 저수온) 보장 판정."""
     joined = {_nospace(r) for r in joined_riders}
-    # 이름이 조금 달라도 잡히게: 특약 이름에 고수온/이상수온 + 부담보 여부로 보조 판정
-    loose_cover = [r for r in joined_riders if any(p in r for p in HEAT_PERILS) and "부담보" not in r]
-    loose_excl = [r for r in joined_riders if any(p in r for p in HEAT_PERILS) and "부담보" in r]
+    # 이름이 조금 달라도 잡히게: 특약 이름에 재해명(고수온/이상수온 또는 저수온) + 부담보 여부로 보조 판정
+    loose_cover = [r for r in joined_riders if any(p in r for p in perils) and "부담보" not in r]
+    loose_excl = [r for r in joined_riders if any(p in r for p in perils) and "부담보" in r]
     rider_in = [c for c in profile["riders"] if _nospace(c["name"]) in joined] or \
                [{"name": r, "peril": profile["peril"]} for r in loose_cover]
     excl_in = [c for c in profile["excl"] if _nospace(c["name"]) in joined] or \
               [{"name": r, "peril": profile["peril"]} for r in loose_excl]
     if excl_in:
-        return "excl", {"ok": False, "via": "부담보", "text": f"{excl_in[0]['name']} 가입 → 고수온 손해는 보상하지 않아요"}
+        return "excl", {"ok": False, "via": "부담보", "text": f"{excl_in[0]['name']} 가입 → {label} 손해는 보상하지 않아요"}
     if profile["main"]:
         return "full", {"ok": True, "via": "주계약", "text": f"주계약에 {profile['main'][0]['peril']} 보장 포함"}
     if rider_in:
-        return "full", {"ok": True, "via": "특약", "text": f"{rider_in[0]['name']} 가입 → 고수온 보장"}
+        return "full", {"ok": True, "via": "특약", "text": f"{rider_in[0]['name']} 가입 → {label} 보장"}
     if profile["riders"]:
         return "norider", {"ok": False, "via": None,
-                           "text": f"고수온 미보장 · {profile['riders'][0]['name']}을 추가해야 보장"}
-    return "noheat", {"ok": False, "via": None, "text": "이 상품에는 고수온 보장(주계약·특약)이 없어요"}
+                           "text": f"{label} 미보장 · {profile['riders'][0]['name']}을 추가해야 보장"}
+    return "noheat", {"ok": False, "via": None, "text": f"이 상품에는 {label} 보장(주계약·특약)이 없어요"}
 
 
-def heat_offer_text(profile: dict) -> dict:
-    """미가입 어종에 상품을 추천할 때 고수온 보장 방식 안내."""
+def heat_offer_text(profile: dict, label: str = "고수온") -> dict:
+    """미가입 어종에 상품을 추천할 때 고수온(label='저수온'이면 저수온) 보장 방식 안내."""
     if profile["main"]:
         t = f"주계약에 {profile['main'][0]['peril']} 포함" + (" (부담보 특약으로 뺄 수 있음)" if profile["excl"] else "")
         return {"ok": True, "via": "주계약", "text": t}
     if profile["riders"]:
-        return {"ok": None, "via": "특약", "text": f"고수온은 {profile['riders'][0]['name']}을 함께 넣어야 보장"}
-    return {"ok": False, "via": None, "text": "이 상품에는 고수온 보장이 없어요"}
+        return {"ok": None, "via": "특약", "text": f"{label}은 {profile['riders'][0]['name']}을 함께 넣어야 보장"}
+    return {"ok": False, "via": None, "text": f"이 상품에는 {label} 보장이 없어요"}
 
 
 _MONTH_RANGE_RE = re.compile(r"(\d{1,2})\s*월?\s*[~∼\-–]\s*(?:익년|다음\s*해|이듬해)?\s*(\d{1,2})\s*월")
@@ -1158,7 +1227,7 @@ def heat_scenarios(card: dict, today: date, hh: dict) -> Optional[dict]:
     - 미가입·만료·특약 없음·부담보 : kind=compare  · 지금 받는 보험금(0원) vs 가입(특약 추가)하면 받는 보험금
     - 그 밖(청약 중·상품에 고수온 없음) : kind=uncovered · 손해 전액 어가 부담"""
     code, c, p = card["ins"], card.get("contract"), card.get("product") or {}
-    peril = (card.get("heat") or {}).get("peril") or HEAT_PERILS[0]
+    peril = (card.get("heat") or {}).get("peril") or M()["perils"][0]
     try:
         if code == "full" and c and c.get("status") == ACTIVE_CONTRACT:
             if not c.get("coverage_amount"):
@@ -1174,12 +1243,12 @@ def heat_scenarios(card: dict, today: date, hh: dict) -> Optional[dict]:
             if code in ("norider", "excl") and c:
                 # 지금 계약 그대로 + 고수온 특약 추가 / 부담보 특약 제거
                 amount = Decimal(str(c["coverage_amount"] or 0))
-                riders = [r for r in c.get("riders") or [] if not (any(h in r for h in HEAT_PERILS) and "부담보" in r)]
+                riders = [r for r in c.get("riders") or [] if not (any(h in r for h in M()["perils"]) and "부담보" in r)]
                 if code == "norider" and heat_rider:
                     riders.append(heat_rider)
                 terms = {"plan": c.get("plan") or "표준형", "rate": c.get("deductible_rate") or "0.2",
                          "min_rate": c.get("min_deductible_rate"),
-                         "basis": "지금 계약 가입금액", "action": "고수온 특약을 넣으면" if code == "norider" else "부담보 특약을 빼면"}
+                         "basis": "지금 계약 가입금액", "action": f"{M()['word']} 특약을 넣으면" if code == "norider" else "부담보 특약을 빼면"}
             else:
                 prev = card.get("expired") or {}
                 ref = ({"amount": Decimal(str(prev["coverage_amount"])), "basis": "이전 계약 가입금액",
@@ -1244,7 +1313,8 @@ def build_cards(household_id: int, species: list[dict], sea: dict, today: date, 
     covs: dict[int, list[dict]] = {}
     for r in q_all(COVERAGES_SQL, (product_ids,)) if product_ids else []:
         covs.setdefault(r["product_id"], []).append(r)
-    profiles = {pid: heat_profile(covs.get(pid, [])) for pid in product_ids}
+    # 모드의 재해(고수온 또는 저수온) 기준 보장 구조 · 이름은 heat_* 그대로지만 저수온 모드면 저수온 판정
+    profiles = {pid: heat_profile(covs.get(pid, []), M()["perils"]) for pid in product_ids}
 
     def product_info(pid: Optional[int]) -> Optional[dict]:
         if pid is None:
@@ -1277,7 +1347,7 @@ def build_cards(household_id: int, species: list[dict], sea: dict, today: date, 
         if chosen and state in ("active", "pending"):
             c, t = chosen
             prof = profiles.get(c["product_id"]) or heat_profile([])
-            code, heat = heat_status(prof, t.get("riders") or [])
+            code, heat = heat_status(prof, t.get("riders") or [], M()["perils"], M()["word"])
             if state == "pending":
                 code = "pending"
                 heat = {**heat, "text": "청약 중 · " + heat["text"]}
@@ -1315,16 +1385,17 @@ def build_cards(household_id: int, species: list[dict], sea: dict, today: date, 
             card["alternatives"] = [product_info(p) for p in pids[1:3]]
             if card["product"]:
                 prof = profiles.get(card["product"]["product_id"]) or heat_profile([])
-                card["heat"] = {**heat_offer_text(prof), "peril": prof["peril"]}
+                card["heat"] = {**heat_offer_text(prof, M()["word"]), "peril": prof["peril"]}
             card["ins"] = "expired" if state == "expired" else ("none" if pids else "unknown")
             if state == "expired":
                 c, t = chosen
                 card["expired"] = {"insurance_id": c["insurance_id"], "product_name": c.get("product_name"),
                                    "status": c["status"], "end_date": c["end_date"],
                                    "coverage_amount": t.get("coverage_amount")}
-        card["ins_label"] = INS[card["ins"]]
+        card["ins_label"] = tx(INS[card["ins"]])
         card["scenarios"] = heat_scenarios(card, today, hh)
-        card["recommend"] = recommend(card, sea, today)
+        card["recommend"] = tx(recommend(card, sea, today))
+        card["mode"] = M()["id"]
         cards.append(card)
 
     cards.sort(key=lambda c: (URGENCY[c["ins"]], -(c["risk"]["stage"]), not c["is_primary"],
@@ -1464,11 +1535,11 @@ def example_script(owner: str, region: str, L: Optional[dict], sea: dict) -> str
     st, alert = sea["stage"], sea.get("alert")
     name = owner or "어가"
     lvl = st.get("level") or 0
-    first28 = next((d for d in sea["roms"] if d["value"] is not None and d["value"] >= CAUTION_TEMP), None)
+    first28 = next((d for d in sea["roms"] if d["value"] is not None and reach(d["value"], M()["caution"])), None)
     when = lambda n: "오늘" if n == 0 else f"{n}일 뒤"
     if lvl >= 3 and first28:
         n = (first28["day"] - date.fromisoformat(str(sea["roms"][0]["day"]))).days
-        opening = f"“{name}님, {when(n)}부터 {region} 바다가 {CAUTION_TEMP:g}℃ 넘는 날이 {ALERT_STREAK_DAYS}일 이상 이어질 것으로"
+        opening = f"“{name}님, {when(n)}부터 {region} 바다가 {M()['caution']:g}℃ 넘는 날이 {ALERT_STREAK_DAYS}일 이상 이어질 것으로"
     elif lvl >= 2 and st.get("temp") is not None:
         opening = f"“{name}님, {when(st['d'])} {region} 바다가 {st['temp']:.1f}℃까지 오를 것으로"
     else:
@@ -1584,7 +1655,16 @@ def list_households(q: Optional[str] = Query(None, description="어가명·대�
 
 @router.get("/api/households/{household_id}/detail")
 @cache_detail_request
-def household_detail(household_id: int):
+def household_detail(household_id: int,
+                     mode: Literal["heat", "cold"] = Query("heat", description="heat = 고수온 · cold = 저수온 기준")):
+    token = _MODE.set(mode)
+    try:
+        return _household_detail(household_id)
+    finally:
+        _MODE.reset(token)
+
+
+def _household_detail(household_id: int):
     today = today_kst()
     hh = q_one(HOUSEHOLD_SQL, (household_id,))
     if hh is None:
@@ -1614,9 +1694,10 @@ def household_detail(household_id: int):
         "cards": cards,
         "insurance_source": ins_source,          # claim_api | db
         "gap_count": sum(1 for c in cards if c["ins"] in GAP_CODES),
-        "guide": check_guide(lead),
-        "checks": talking_points(cards, sea, stage),
-        "script": example_script(hh["owner_name"], region, lead, sea),
+        "mode": M()["id"],
+        "guide": tx(check_guide(lead)),
+        "checks": tx(talking_points(cards, sea, stage)),
+        "script": tx(example_script(hh["owner_name"], region, lead, sea)),
         "consult": load_consult(household_id, today),
     })
 

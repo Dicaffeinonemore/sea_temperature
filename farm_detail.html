@@ -375,6 +375,14 @@
   .ctr-card .facts{gap:0;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff;font-size:13.5px}
   .ctr-card .facts dt{font-weight:700;color:var(--text);background:var(--soft);padding:8px 12px;white-space:nowrap;border-top:1px solid var(--line)}
   .ctr-card .facts dd{padding:8px 12px;border-top:1px solid var(--line);border-left:1px solid var(--line);min-width:0}
+  /* 고수온 보장 줄: 연한 빨강 (저수온 파랑과 짝) */
+  .ctr-card .facts dt.heat{background:#fdecea;color:#9b2c1f}
+  .ctr-card .facts dd.heat{background:#fff6f5}
+  /* 저수온 보장 줄: 파란색으로 고수온과 구분 */
+  .ctr-card .facts dt.cold{background:#e8f1fe;color:#1849a9}
+  .ctr-card .facts dd.cold{background:#f3f8ff;color:#1e3a6e}
+  .cold-ok{color:#1849a9;font-weight:700}
+  .cold-ng{color:#1849a9;font-weight:700;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
   .ctr-card .facts dt:first-of-type,.ctr-card .facts dd:first-of-type{border-top:0}
   .ctr-card .facts .more{margin-top:2px;font-size:12px}
   .ctr-card .facts .more summary{color:var(--accent);cursor:pointer;font-weight:400;list-style:none}
@@ -640,13 +648,28 @@ const SAMPLE_REGIONS = {
     series:region.t.map((max,i) => ({i,max,mean:max,min:max,src:'ROMS'})),
   })),
 };
-function stageOfDay(t, i, values){
-  if(t >= 28){
-    const run = values.slice(Math.max(0,i-2), i+1).filter(value => value >= 28).length;
-    return run >= 3 ? 3 : 2;
+// 저수온 모드 가상 값 (서버에 연결 못 했을 때만): 7일 일최저 · 1월 중순 예시
+const SAMPLE_COLD_SEED = [
+  {id:'통영', t:[9.8,9.4,9.1,8.7,8.5,8.6,8.8], trend:'down'}, {id:'거제', t:[10.4,10.1,9.9,9.6,9.4,9.5,9.6], trend:'flat'},
+  {id:'고성', t:[8.9,8.4,7.9,7.4,7.1,7.2,7.5], trend:'down'}, {id:'남해', t:[6.8,6.1,5.4,4.6,3.9,3.7,3.8], trend:'down', alert:{type:'저수온 주의보', since:'1/13'}},
+  {id:'하동', t:[6.5,5.9,5.2,4.4,3.8,3.6,3.7], trend:'down'}, {id:'창원', t:[8.2,7.8,7.3,6.9,6.6,6.7,6.9], trend:'flat'},
+  {id:'사천', t:[6.2,5.5,4.8,4.0,3.6,3.4,3.5], trend:'down', alert:{type:'저수온 주의보', since:'1/13'}},
+];
+function sampleSeriesCold(t, trend){
+  const roms = t.map((min,i) => ({i, max:r1(min+1.4), mean:r1(min+0.7), min, src:'ROMS'}));
+  const om = [];
+  for(let k = 1; k <= 14; k++){
+    const drift = trend === 'down' ? -0.05*k : trend === 'up' ? 0.08*k : 0;
+    const min = r1(t[6] + drift + 0.2*Math.sin(k/2));
+    om.push({i:6+k, max:r1(min+1.2), mean:r1(min+0.6), min, src:'ECMWF'});
   }
-  return t >= 25 ? 1 : 0;
+  return roms.concat(om);
 }
+const SAMPLE_COLD = {base_date:'2027-01-14', regions:SAMPLE_COLD_SEED.map(({t, ...r}) => ({bias:{diff:-1.2, own:true}, alert:null, ...r, series:sampleSeriesCold(t, r.trend)}))};
+const SAMPLE_REGIONS_FOR_MODE = () => Shell.M.hot ? SAMPLE_REGIONS : SAMPLE_COLD;
+// 위험 모드(고수온/저수온) 기준은 shell.js 공통 (Shell.M · Shell.stageOfDay)
+const MR = Shell.M;
+const stageOfDay = (t, i, values) => Shell.stageOfDay(t, i, values);
 let regionInfo = {};
 function applyRegions(data){
   const [y,m,d] = data.base_date.split('-').map(Number);
@@ -654,10 +677,10 @@ function applyRegions(data){
   regionInfo = {};
   data.regions.forEach(region => {
     const series = region.series.slice().sort((a,b) => a.i - b.i);
-    const t = series.filter(point => point.src === 'ROMS').map(point => point.max);
+    const t = series.filter(point => point.src === 'ROMS').map(point => point[MR.key]);   // 고수온 = 일최고 · 저수온 = 일최저
     if(!t.length) throw new Error(`지역 수온 자료가 없습니다: ${region.id}`);
     const st = t.map((value,i,values) => stageOfDay(value,i,values));
-    const top = Math.max(...st), maxT = Math.max(...t);
+    const top = Math.max(...st), maxT = MR.hot ? Math.max(...t) : Math.min(...t);   // 7일 중 가장 위험한 값
     regionInfo[region.id] = {...region,t,series,st,top,d:st.indexOf(top),maxT,dMax:t.indexOf(maxT)};
   });
 }
@@ -665,7 +688,7 @@ const biasQuality = d => { const a = Math.abs(d); return a < 0.5 ? '높음' : a 
 const TREND = {up:'↗ 상승', flat:'→ 유지', down:'↘ 하강'};
 
 // 국립수산과학원(2024.7.19) 품종별 생존 상한. 자료 없는 어종은 지역 기준을 그대로 씀.
-const SPECIES_LIMIT = {'조피볼락':28, '전복':28, '넙치':29, '강도다리':27};
+const SPECIES_LIMIT = Shell.M.limits;   // 모드별 어종 기준 수온 (shell.js: 고수온 생존 상한 · 저수온 먹이 중단 수온)
 
 // 상품요약서·사업방법서(2026.5.13) 기준. 공개 자료에 없는 값은 비워 둠.
 const PRODUCTS = {
@@ -775,7 +798,7 @@ async function loadFarms(){
     const [rg, fm] = await Promise.all([getJSON(ENDPOINTS.regions), getJSON(ENDPOINTS.farms)]);
     applyRegions(rg); farms = toFarms(fm); setMode(true);
   }catch(e){
-    applyRegions(SAMPLE_REGIONS); farms = loadLocal() || withIds(structuredClone(FARMS0)); setMode(false, e);
+    applyRegions(SAMPLE_REGIONS_FOR_MODE()); farms = loadLocal() || withIds(structuredClone(FARMS0)); setMode(false, e);
   }
   const miss = [...new Set(farms.filter(f => !regionInfo[f.region]).map(f => f.region))];
   if(miss.length){
@@ -797,14 +820,14 @@ async function recordLog(f, {status, channel, memo, next, results = []}){
 
 /* ===== 판정·계산 ===== */
 function speciesRisk(f){
-  const L = SPECIES_LIMIT[f.species], R = regionInfo[f.region];
-  if(L == null) return {known:false, pts:0, stage:0, short:'기준 확인 필요', text:`${f.species} 한계 수온 자료 없음 · 지역 기준 적용`};
-  const d = R.t.findIndex(v => v >= L);
+  const L = Shell.limitOf(f.species), R = regionInfo[f.region];
+  if(L == null) return {known:false, pts:0, stage:0, short:'기준 확인 필요', text:`${f.species} ${MR.hot ? '한계 수온' : '저수온 기준'} 자료 없음 · 지역 기준 적용`};
+  const d = R.t.findIndex(v => Shell.reach(v, L));
   if(d >= 0) return {known:true, hit:true, L, d, pts:15, stage:2, short:`${L}℃ 도달 D-${d}`,
-    text:`${f.species} 견디는 한계 ${L}℃ · ${d === 0 ? '오늘' : d + '일 뒤'} 도달 예상`};
-  const gap = r1(L - R.maxT);
+    text:`${f.species} ${MR.limitWord} ${L}℃ · ${d === 0 ? '오늘' : d + '일 뒤'} 도달 예상`};
+  const gap = r1(MR.hot ? L - R.maxT : R.maxT - L);
   return {known:true, hit:false, L, pts: gap <= 1 ? 8 : 0, stage:0, short:`${L}℃까지 ${gap.toFixed(1)}℃`,
-    text:`${f.species} 견디는 한계 ${L}℃ · 7일 최고보다 ${gap.toFixed(1)}℃ 여유`};
+    text:`${f.species} ${MR.limitWord} ${L}℃ · 7일 ${MR.val}보다 ${gap.toFixed(1)}℃ 여유`};
 }
 function farmStage(f){ return Math.max(regionInfo[f.region].top, speciesRisk(f).stage); }
 
@@ -949,6 +972,7 @@ const BULK_TPL = {
   close:  {label:'판매 마감 안내', text:'[○○수협] 일부 양식보험은 이번 달 말에 판매가 끝나요. 아직 가입하지 않았거나 고수온 특약이 없다면 마감 전에 상담받아 보세요. 상담: [수협 전화]'},
   alert:  {label:'특보 발령 시 대응', text:'[○○수협] 고수온 특보가 발령됐어요. 먹이 주기를 멈추고 선별·분조는 미뤄 주세요. 산소 공급 장비를 점검하고, 피해가 보이면 바로 수협에 알려 주세요. 문의: [수협 전화]'},
 };
+for(const v of Object.values(BULK_TPL)) v.text = Shell.text(v.text);   // 저수온 모드면 저수온 문구로
 let bulkText = BULK_TPL.before.text;
 const openSecs = new Set(['check','record']);
 const picked = new Set();
@@ -998,11 +1022,11 @@ function renderHomeTemp(){
     <span class="tp">${I.t[0].toFixed(1)}℃</span>
     <span class="badge s${I.top}">${STAGE_ICON[I.top]} 7일 안 ${STAGE[I.top]}</span>
     <ul class="mini">
-      <li><span>7일 최고</span><b>${I.maxT.toFixed(1)}℃ · ${md(I.dMax)}</b></li>
+      <li><span>7일 ${MR.val}</span><b>${I.maxT.toFixed(1)}℃ · ${md(I.dMax)}</b></li>
       <li><span>${STAGE[I.top]} 첫 예상</span><b>${first}</b></li>
       <li><span>2~3주 흐름</span><b>${TREND[I.trend]}</b></li>
     </ul>
-    ${I.alert ? `<span class="alert-tag on">공식 특보: ${I.alert.type.replace('고수온 ','')} (${I.alert.since}~)</span>` : `<span class="alert-tag off">공식 특보: 미발령</span>`}
+    ${I.alert ? `<span class="alert-tag on">공식 특보: ${I.alert.type.replace(MR.word + ' ','')} (${I.alert.since}~)</span>` : `<span class="alert-tag off">공식 특보: 미발령</span>`}
     <button type="button" class="linkish" data-goto-fc="${homeRegion}" style="align-self:flex-start">수온 예측 자세히 →</button>`;
 }
 
@@ -1096,7 +1120,7 @@ function ctrCard(x, k){
   return `<div class="ctr-card">
     <div class="ctr-h"><span class="ctr-no">${k+1}</span><b>${esc(x.species)}</b><span class="note">${esc(x.method)} · ${P.name}</span><span class="${INS[x.ins].cls}" style="margin-left:auto">${x.p === 'unknown' && x.ins === 'full' ? '고수온 보장 · 약관 확인 필요' : INS[x.ins].label}</span></div>
     <dl class="facts">
-      <dt>고수온</dt><dd class="${heatCls}">${H.text}</dd>
+      <dt class="${MR.id}">${MR.icon} ${MR.word}</dt><dd class="${MR.id} ${heatCls}">${H.text}</dd>
       ${gap ? `<dt>판매기간</dt><dd>${P.saleText} → ${saleLine}</dd>` : ''}
     </dl>
     ${gap ? `<div class="ctr-q"><label>견적 <input data-quote="${x.ci}" type="number" min="0" inputmode="numeric" value="${x.quote ?? ''}" placeholder="입력"> 만 원</label><span>내 부담 약 <b data-mine="${x.ci}">–</b></span></div>` : ''}
@@ -1118,9 +1142,11 @@ const apiQuotes = {};   // mapping_id → 견적(만 원)
 
 function renderBrief(){ return detailMode === 'api' ? renderApiDetail() : renderMockBrief(); }
 
-function briefBoxes(leftHtml, rightHtml){
-  document.getElementById('brief').innerHTML = leftHtml;
-  document.getElementById('brief-side').innerHTML = rightHtml;
+// mockText=true(가상 데이터 브리핑)면 저수온 모드일 때 문구('고수온' · 수온 방향 · 대응 요령)를 Shell.text 로 바꿔서 그림.
+// 서버 데이터 브리핑은 바꾸지 않음: 백엔드가 ?mode= 에 맞춘 문구를 주고, 특약 이름 같은 실제 계약 내용이 바뀌면 안 되기 때문
+function briefBoxes(leftHtml, rightHtml, mockText = false){
+  document.getElementById('brief').innerHTML = mockText ? Shell.text(leftHtml) : leftHtml;
+  document.getElementById('brief-side').innerHTML = mockText ? Shell.text(rightHtml) : rightHtml;
 }
 
 // 어가 선택에는 담당 지역 어가만
@@ -1173,10 +1199,10 @@ function renderMockBrief(){
 
     <details class="b-sec b-temp">
       <summary><span class="t">수온 · 특보</span><span class="s"><span>오늘 ${I.t[0].toFixed(1)}℃</span><span class="badge s${st}">${STAGE_ICON[st]} ${STAGE[st]}</span>
-          <span class="note">· 7일 최고 ${I.maxT.toFixed(1)}℃ · </span>${I.alert ? `<span class="al-on">공식 특보 ${I.alert.type} 발령 중</span>` : '<span class="note">공식 특보 미발령</span>'}</span><span class="arw">▾</span></summary>
+          <span class="note">· 7일 ${MR.val} ${I.maxT.toFixed(1)}℃ · </span>${I.alert ? `<span class="al-on">공식 특보 ${I.alert.type} 발령 중</span>` : '<span class="note">공식 특보 미발령</span>'}</span><span class="arw">▾</span></summary>
       <div class="b-temp-body">
       <div class="risk-line">오늘 ${I.t[0].toFixed(1)}℃
-        ${I.top >= 2 ? `· ${I.d}일 뒤 ${I.t[I.d].toFixed(1)}℃ 예상` : `· 7일 최고 ${I.maxT.toFixed(1)}℃`}
+        ${I.top >= 2 ? `· ${I.d}일 뒤 ${I.t[I.d].toFixed(1)}℃ 예상` : `· 7일 ${MR.val} ${I.maxT.toFixed(1)}℃`}
         <span class="badge s${st}">${STAGE_ICON[st]} ${STAGE[st]}</span></div>
       <p class="note">${esc(sp.text)} · 2~3주 흐름 ${TREND[I.trend]} (참고)</p>
       <p class="note">앱 자체 판정, 공식 특보는 수과원 발표를 따라요 · <button type="button" class="linkish" data-goto-fc="${f.region}">${esc(f.region)} 수온 예측 보기 →</button></p>
@@ -1207,7 +1233,7 @@ function renderMockBrief(){
       </div>
       <p class="note" style="margin-top:6px">계약 결과는 어종마다 따로 남고, 가입 전환은 계약 수로 세요.</p>`)}
 
-    ${helpAcc()}`);
+    ${helpAcc()}`, true);
   loadGov({key:'m' + f.id, region:f.region, species:f.items.map(x => x.species)});
   updateCalc(f);
 }
@@ -1287,9 +1313,9 @@ function govCalc(){
   } else rows.push('<dt>정책자금 상환</dt><dd class="note">피해율을 넣으면 상환연기 기준을 보여 줘요</dd>');
   out.innerHTML = rows.join('');
 }
-// 정부 사이트(*.go.kr · 정부24 gov.kr) 링크만. 기사·민간 사이트 링크는 보여 주지 않음
+// 정부 사이트(*.go.kr · 정부24 gov.kr · 정책브리핑 korea.kr) 링크만. 기사·민간 사이트 링크는 보여 주지 않음
 const govUrl = u => {
-  try{ const x = new URL(u); return /^https?:$/.test(x.protocol) && /(^|\.)(go|gov)\.kr$/i.test(x.hostname) ? x.href : ''; }
+  try{ const x = new URL(u); return /^https?:$/.test(x.protocol) && /(^|\.)((go|gov)\.kr|korea\.kr)$/i.test(x.hostname) ? x.href : ''; }
   catch(_){ return ''; }
 };
 const govLink = (u, label) => govUrl(u) ? `<a class="linkish" href="${esc(govUrl(u))}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>` : '';
@@ -1332,13 +1358,13 @@ function govBody(g){
   }).join('');
   const progs = D.programs || [], top = progs.filter(x => x.kind === '지원금'), rest = progs.filter(x => x.kind !== '지원금');
   const splitSrc = govLink(S.link, S.source || '근거 규정') || esc(S.source || '');
-  return `<div class="gov-sub" style="margin-top:4px"><h4>고수온 피해가 나면 · 재해복구비(재난지원금) 계산</h4>
+  return `<div class="gov-sub" style="margin-top:4px"><h4>고수온·저수온 피해가 나면 · 재해복구비(재난지원금) 계산</h4>
       ${spRows}
       <div class="gov-calc"><label>피해율 (시·군 조사) <input id="gov-rate" type="number" min="0" max="100" inputmode="numeric" placeholder="입력"> %</label></div>
       <dl class="facts gov-out" id="gov-res"></dl>
       <p class="note" style="margin-top:6px">복구비 = 폐사 마릿수 × 정부 복구 단가(${notice}) · 보조·융자·자부담 비율과 한도는 ${splitSrc} 기준${S.confirmed ? '' : '이라 <b>확인 필요</b>'} · 보험금과 함께 받을 수 있는지는 시·군청과 수협에 확인해 주세요.</p>
     </div>
-    ${top.length ? `<h4 style="margin-top:14px">고수온 피해 지원 제도</h4>
+    ${top.length ? `<h4 style="margin-top:14px">고수온·저수온 피해 지원 제도</h4>
     <div class="gov-list">${top.map(govProgram).join('')}</div>` : ''}
     ${rest.length ? `<details class="est"><summary>대출·보증 등 ${rest.length}개 더 보기</summary><div class="gov-list" style="margin-top:8px">${rest.map(govProgram).join('')}</div></details>` : ''}
     ${items}${srcBox}`;
@@ -1462,7 +1488,7 @@ async function loadApiDetail(id, force){
   apiPending = pending;
   pending.promise = (async () => {
     try{
-      const data = await apiGet(`/api/households/${id}/detail`);
+      const data = await apiGet(`/api/households/${id}/detail?mode=${Shell.mode}`);
       if(requestId !== apiRequestId || apiSel !== id || detailMode !== 'api') return false;
       apiData = data;
     }catch(e){
@@ -1495,9 +1521,9 @@ async function renderApiDetail(force){
   const tSrc = T.source === 'risa' ? `<span class="src-tag live">실측</span> RISA ${esc(T.station_name || '')}${T.station_km != null ? ` (${T.station_km}km)` : ''} · ${esc(T.observed_at)}`
              : T.source === 'forecast' ? `<span class="src-tag">예측</span> 실시간 관측소 값이 없어 오늘 ROMS 예측(${esc(S.metric)})으로 표시`
              : '<span class="src-tag">정보 없음</span>';
-  // 전체 예측(1~7일 ROMS + 8~21일 ECMWF) 중 최고
+  // 전체 예측(1~7일 ROMS + 8~21일 ECMWF) 중 가장 위험한 값 (고수온 = 최고 · 저수온 = 최저)
   const allFc = S.roms.concat(S.om).filter(d => d.value != null);
-  const peak = allFc.length ? allFc.reduce((a, b) => b.value > a.value ? b : a) : null;
+  const peak = allFc.length ? allFc.reduce((a, b) => (MR.hot ? b.value > a.value : b.value < a.value) ? b : a) : null;
   const TREND_BIG = {up:'↗ 상승', flat:'→ 유지', down:'↘ 하강'};
   const AL = S.alert
     ? `<div class="alert-box on"><b>공식 특보: ${esc(S.alert.type || '')} 발령 중${S.alert.since ? ` (${esc(S.alert.since)}~)` : ''}</b><br>지금 가입해도 이번 피해는 보상 안 돼요 → 대응 요령 안내 + 다음 판매 기간 가입 권유</div>`
@@ -1520,12 +1546,12 @@ async function renderApiDetail(force){
 
     <details class="b-sec b-temp">
       <summary><span class="t">수온 · 특보</span><span class="s"><span>오늘 ${T.temp != null ? Number(T.temp).toFixed(1) + '℃' : '–'}</span><span class="badge s${st}">${STAGE[st]}</span>
-          <span class="note">· 예측 최고 ${peak ? Number(peak.value).toFixed(1) + '℃' : '–'} · </span>${S.alert ? `<span class="al-on">공식 특보 ${esc(S.alert.type || '')} 발령 중</span>` : '<span class="note">공식 특보 미발령</span>'}</span><span class="arw">▾</span></summary>
+          <span class="note">· 예측 ${MR.val} ${peak ? Number(peak.value).toFixed(1) + '℃' : '–'} · </span>${S.alert ? `<span class="al-on">공식 특보 ${esc(S.alert.type || '')} 발령 중</span>` : '<span class="note">공식 특보 미발령</span>'}</span><span class="arw">▾</span></summary>
       <div class="b-temp-body">
       <div class="tnow">
         <div class="tnow-main"><div class="tnow-head"><span class="lbl">오늘 수온</span><span class="badge s${st}">${STAGE[st]}</span></div>
           <span class="big">${T.temp != null ? Number(T.temp).toFixed(1) + '℃' : '–'}</span></div>
-        <div class="tnow-stat"><span class="lbl">예측 최고</span><b>${peak ? Number(peak.value).toFixed(1) + '℃' : '–'}</b><small>${peak ? mdStr(peak.day) + (peak.src === 'ECMWF' ? ' · 참고' : '') : esc(S.data_range && S.data_range.roms ? S.data_range.roms.reason : '예측 없음')}</small></div>
+        <div class="tnow-stat"><span class="lbl">예측 ${MR.val}</span><b>${peak ? Number(peak.value).toFixed(1) + '℃' : '–'}</b><small>${peak ? mdStr(peak.day) + (peak.src === 'ECMWF' ? ' · 참고' : '') : esc(S.data_range && S.data_range.roms ? S.data_range.roms.reason : '예측 없음')}</small></div>
         <div class="tnow-stat"><span class="lbl">2~3주 흐름</span><b>${S.trend ? TREND_BIG[S.trend] : '–'}</b><small>${S.trend ? 'ECMWF 보정 참고' : esc(S.data_range && S.data_range.om ? S.data_range.om.reason : '예측 없음')}</small></div>
       </div>
       <p class="note">${tSrc}${S.region_far ? ' · <span class="need">예측 지역이 멀어 대표성 낮음</span>' : ''}</p>
@@ -1567,14 +1593,26 @@ async function renderApiDetail(force){
   updateApiCalc();
 }
 
-// 주계약에 포함이면 그 사실만, 보장이 안 될 때만 '고수온 보장 X'로 표시
+// 주계약에 포함이면 그 사실만, 보장이 안 될 때만 '고수온 보장 X'(저수온 모드는 '저수온 보장 X')로 표시
+// 백엔드가 ?mode= 에 맞춰 card.heat 를 그 모드의 판정으로 채워 줘요
 function apiHeatLine(Hh){
-  if(Hh.ok === true) return Hh.via === '주계약' ? '<b class="ok">주계약에 포함</b>' : `<b class="ok">${esc(Hh.text)}</b>`;
+  const W = MR.word, okc = MR.hot ? 'ok' : 'cold-ok', ngc = MR.hot ? 'ng' : 'cold-ng';
+  if(Hh.ok === true) return Hh.via === '주계약' ? `<b class="${okc}">주계약에 포함</b>` : `<b class="${okc}">${esc(Hh.text)}</b>`;
   if(Hh.ok === false || Hh.via === '특약'){
-    const why = /고수온 보장(\(주계약·특약\))?이 없어요$/.test(Hh.text || '') ? '' : ` → ${esc(String(Hh.text || '').replace(/^고수온은\s*/, ''))}`;
-    return `<b class="ng">고수온 보장 X</b>${why}`;
+    const none = new RegExp(`${W} 보장(\\(주계약·특약\\))?이 없어요$`).test(Hh.text || '');
+    const why = none ? '' : ` → ${esc(String(Hh.text || '').replace(new RegExp(`^${W}은\\s*`), ''))}`;
+    return `<b class="${ngc}">${W} 보장 X</b>${why}`;
   }
   return esc(Hh.text || '확인 필요');
+}
+// 저수온 보장 줄 (백엔드 card.cold · 고수온과 같은 보장 표·같은 판정 규칙)
+function apiColdLine(C){
+  if(C.ok === true) return C.via === '주계약' ? '<b class="cold-ok">주계약에 포함</b>' : `<b class="cold-ok">${esc(C.text)}</b>`;
+  if(C.ok === false || C.via === '특약'){
+    const why = /저수온 보장(\(주계약·특약\))?이 없어요$/.test(C.text || '') ? '' : ` → ${esc(String(C.text || '').replace(/^저수온은\s*/, ''))}`;
+    return `<b class="cold-ng">저수온 보장 X</b>${why}`;
+  }
+  return esc(C.text || '확인 필요');
 }
 // 판매기간 원문에서 이 어종 기간만 짧게 (예: 1월~5월, 10월~12월 → 1~5월, 10~12월)
 function saleShort(text, species){
@@ -1594,7 +1632,7 @@ function scBars(rows, payLabel){
         <span class="scb-val"><b>${r.payout == null ? '–' : eok(r.payout)}</b> / 손해 ${eok(r.loss).replace(/ 원$/, '')}</span></div></div>`; }).join('')}`;
 }
 // '가입하면' → '가입했다면' (그래프 범례용)
-const pastAction = a => ({'가입하면':'가입했다면', '고수온 특약을 넣으면':'고수온 특약을 넣었다면', '부담보 특약을 빼면':'부담보 특약을 뺐다면'})[a || '가입하면'] || a;
+const pastAction = a => ({'가입하면':'가입했다면', '고수온 특약을 넣으면':'고수온 특약을 넣었다면', '저수온 특약을 넣으면':'저수온 특약을 넣었다면', '부담보 특약을 빼면':'부담보 특약을 뺐다면'})[a || '가입하면'] || a;
 const moreText = t => t ? `<details class="more"><summary>자세히 ▸</summary><p>${esc(t)}</p></details>` : '';
 
 function apiCard(c, k){
@@ -1602,7 +1640,8 @@ function apiCard(c, k){
   const gap = API_GAP.includes(c.ins);
   const sale = P.sale || {};
   const saleCls = sale.code === 'open' ? 'ok' : sale.code === 'soon' || sale.code === 'closed' ? 'ng' : '';
-  const facts = [`<dt>고수온 보장</dt><dd>${apiHeatLine(Hh)}</dd>`];
+  // 고른 모드의 보장 줄만 (고수온 모드 = 🌡 고수온 · 저수온 모드 = ❄ 저수온)
+  const facts = [`<dt class="${MR.id}">${MR.icon} ${MR.word} 보장</dt><dd class="${MR.id}">${apiHeatLine(Hh)}</dd>`];
   if(ct){
     facts.push(`<dt>보험기간</dt><dd>${esc(ct.start_date)} ~ ${esc(ct.end_date)}${ct.days_left != null && ct.days_left >= 0 ? ` (만기 D-${ct.days_left})` : ''} · ${esc(ct.status)}</dd>`);
     facts.push(`<dt>가입금액</dt><dd>${eok(ct.coverage_amount)}${ct.plan ? ` · ${esc(ct.plan)}` : ''}${ct.deductible_rate != null ? ` · 자기부담 ${pct(ct.deductible_rate)}` : ''}</dd>`);
@@ -1617,7 +1656,7 @@ function apiCard(c, k){
     facts.push(`<dt>판매기간</dt><dd><b>${esc(saleShort(P.sale_period, c.species))}</b> → <b class="${saleCls}">${esc(sale.text || '확인 필요')}</b>${moreText(P.sale_period)}</dd>`);
     if(P.subsidy) facts.push(`<dt>보험료 지원</dt><dd>${/국가/.test(P.subsidy) ? '보험료 일부를 <b>국가가 보조</b>해요' : esc(P.subsidy)}${/국가/.test(P.subsidy) ? moreText(P.subsidy) : ''}</dd>`);
   }
-  facts.push(`<dt>한계 수온</dt><dd class="${c.risk.hit ? 'ng' : ''}">${esc(c.risk.text).replace(/\d+(?:\.\d+)?℃/g, '<b>$&</b>')}</dd>`);
+  facts.push(`<dt>${MR.hot ? '한계 수온' : '기준 수온'}</dt><dd class="${c.risk.hit ? 'ng' : ''}">${esc(c.risk.text).replace(/\d+(?:\.\d+)?℃/g, '<b>$&</b>')}</dd>`);
   const rec = R.title ? `<div class="rec ${R.level}"><b>추천 · ${esc(R.title)}</b>${(R.actions || []).length ? `<ul>${R.actions.map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : ''}</div>` : '';
   const quote = ['none','expired','norider'].includes(c.ins)
     ? `<div class="ctr-q"><label>견적 <input data-aquote="${c.mapping_id}" type="number" min="0" inputmode="numeric" placeholder="입력"> 만 원</label><span>내 부담 약 <b data-amine="${c.mapping_id}">–</b></span></div>` : '';
@@ -1626,7 +1665,7 @@ function apiCard(c, k){
   let est = '';
   if(SC && SC.kind === 'compare'){
     est = `<div class="est sc-cmp">
-      <div class="scb-h">고수온 피해 정도별 예상 보험금 <span class="src-tag">예시</span></div>
+      <div class="scb-h">${MR.word} 피해 정도별 예상 보험금 <span class="src-tag">예시</span></div>
       <div class="scb-sub">${SC.amount ? `가입금액 ${eok(SC.amount)} 기준${SC.basis ? ` (${esc(String(SC.basis).replace(/\s*가입금액/, ''))})` : ''} · ` : ''}막대 전체 길이 = 손해액</div>
       ${scRows ? scBars(SC.rows, `${esc(pastAction(SC.action))} 받는 보험금`) : ''}
       ${apiData && apiData.sea.alert ? `<p class="note ng">${esc(apiData.sea.alert.type || '특보')} 발령 중이라 지금 가입해도 이번 피해는 보상되지 않아요 · 다음 피해부터 적용</p>` : ''}
@@ -1634,10 +1673,10 @@ function apiCard(c, k){
     </div>`;
   } else if(SC && SC.kind === 'uncovered'){
     const full = scRows ? SC.rows[SC.rows.length - 1] : null;
-    est = `<div class="est sc-ins"><b class="ng">고수온 피해가 나면 손해 전액 어가 부담</b>${full ? ` <span class="note">· 피해 ${Math.round(full.rate * 100)}%면 약 ${eok(full.loss)}</span>` : ''}</div>`;
+    est = `<div class="est sc-ins"><b class="ng">${MR.word} 피해가 나면 손해 전액 어가 부담</b>${full ? ` <span class="note">· 피해 ${Math.round(full.rate * 100)}%면 약 ${eok(full.loss)}</span>` : ''}</div>`;
   } else if(SC && SC.kind === 'insured'){
     est = `<div class="est sc-ins">
-      <div class="scb-h">고수온 피해 정도별 예상 보험금 <span class="src-tag">예시</span></div>
+      <div class="scb-h">${MR.word} 피해 정도별 예상 보험금 <span class="src-tag">예시</span></div>
       <div class="scb-sub">${ct && ct.coverage_amount ? `가입금액 ${eok(ct.coverage_amount)} 기준 · ` : ''}막대 전체 길이 = 손해액</div>
       ${scRows ? scBars(SC.rows, '받는 보험금') : ''}${SC.error ? `<p class="note">${esc(SC.error)}</p>` : ''}
     </div>`;
@@ -1718,7 +1757,7 @@ function chartSvg(I, pick, o = {}){
   const fcRegion = I.id;
   const pts = I.series, fcPick = pick;
   const W = 900, H = o.h || 300, L = 46, R = 16, T = 28, B = 40, pW = W - L - R, pH = H - T - B;
-  const temps = pts.map(p => p.max).concat([25, 28]);
+  const temps = pts.map(p => p[MR.key]).concat([MR.watch, MR.warn]);
   const lo = Math.floor(Math.min(...temps) - 0.5), hi = Math.ceil(Math.max(...temps) + 0.5);
   const x = i => L + i / 20 * pW, y = v => T + (hi - v) / (hi - lo) * pH;
   const step = hi - lo > 6 ? 2 : 1;
@@ -1729,19 +1768,20 @@ function chartSvg(I, pick, o = {}){
   for(let v = lo; v <= hi; v += step){
     svg += `<line class="g-line" x1="${L}" y1="${y(v)}" x2="${W-R}" y2="${y(v)}"/><text class="g-txt" x="${L-8}" y="${y(v)+4}" text-anchor="end">${v}°</text>`;
   }
-  [[25,'th25'],[28,'th28']].forEach(([v,c]) => {
-    svg += `<line class="${c}" x1="${L}" y1="${y(v)}" x2="${W-R}" y2="${y(v)}"/><text class="${c}t" x="${L+6}" y="${y(v)-5}" text-anchor="start" font-weight="700">${v === 25 ? '관심 25℃' : '주의 28℃'}</text>`;
+  [[MR.watch,'th25','관심'],[MR.warn,'th28','주의']].forEach(([v,c,lb]) => {
+    svg += `<line class="${c}" x1="${L}" y1="${y(v)}" x2="${W-R}" y2="${y(v)}"/><text class="${c}t" x="${L+6}" y="${y(v)-5}" text-anchor="start" font-weight="700">${lb} ${v}℃</text>`;
   });
   for(let i = 0; i <= 20; i += 2) svg += `<text class="g-txt" x="${x(i)}" y="${H - B + 20}" text-anchor="middle">${md(i)}</text>`;
-  const line = arr => arr.map(p => `${x(p.i)},${y(p.max)}`).join(' ');
+  const v = p => p[MR.key];
+  const line = arr => arr.map(p => `${x(p.i)},${y(v(p))}`).join(' ');
   svg += `<polyline class="s-roms" points="${line(pts.filter(p => p.src==='ROMS'))}"/>`;
   // 7일→8일 사이 끊김 없이 이어 그림
   svg += `<polyline class="s-om" points="${line([pts[6]].concat(pts.filter(p => p.src==='ECMWF')))}"/>`;
   pts.forEach(p => {
     const on = p.i === fcPick;
     svg += o.still
-      ? `<circle class="pt ${p.src==='ROMS'?'r':'o'}" style="cursor:default" cx="${x(p.i)}" cy="${y(p.max)}" r="3.5"><title>${mdw(p.i)} ${p.max.toFixed(1)}℃ · ${p.src}</title></circle>`
-      : `<circle class="pt ${p.src==='ROMS'?'r':'o'}" data-pt="${p.i}" tabindex="0" cx="${x(p.i)}" cy="${y(p.max)}" r="${on?7:4.5}"><title>${mdw(p.i)} ${p.max.toFixed(1)}℃ · ${p.src}</title></circle>`;
+      ? `<circle class="pt ${p.src==='ROMS'?'r':'o'}" style="cursor:default" cx="${x(p.i)}" cy="${y(v(p))}" r="3.5"><title>${mdw(p.i)} ${v(p).toFixed(1)}℃ · ${p.src}</title></circle>`
+      : `<circle class="pt ${p.src==='ROMS'?'r':'o'}" data-pt="${p.i}" tabindex="0" cx="${x(p.i)}" cy="${y(v(p))}" r="${on?7:4.5}"><title>${mdw(p.i)} ${v(p).toFixed(1)}℃ · ${p.src}</title></circle>`;
   });
   return svg + '</svg>';
 }
@@ -1756,13 +1796,13 @@ function renderForecastSide(I){
   const first = I.top >= 1 ? `${mdw(I.d)} (D-${I.d})` : '없음';
   document.getElementById('fc-summary').innerHTML = `
     <li><span>예상 단계</span><span class="badge s${I.top}">${STAGE_ICON[I.top]} ${STAGE[I.top]}</span></li>
-    <li><span>오늘 최고 예측</span><b>${I.t[0].toFixed(1)}℃</b></li>
-    <li><span>7일 최고</span><b>${I.maxT.toFixed(1)}℃ · ${md(I.dMax)}</b></li>
+    <li><span>오늘 ${MR.val} 예측</span><b>${I.t[0].toFixed(1)}℃</b></li>
+    <li><span>7일 ${MR.val}</span><b>${I.maxT.toFixed(1)}℃ · ${md(I.dMax)}</b></li>
     <li><span>${STAGE[I.top]} 첫 예상일</span><b>${first}</b></li>
     <li><span>2~3주 흐름</span><b>${TREND[I.trend]}</b></li>
 `;
   document.getElementById('fc-species').innerHTML = Object.entries(SPECIES_LIMIT).map(([s,v]) => {
-    const reach = I.t.findIndex(t => t >= v);
+    const reach = I.t.findIndex(t => Shell.reach(t, v));
     return `<li><span>${s}</span><b>${v}℃ ${reach >= 0 ? `<span class="sp-hit">· ${fcRegion} D-${reach} 도달</span>` : ''}</b></li>`;
   }).join('');
 
