@@ -2,6 +2,7 @@ import logging
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.responses import FileResponse
 from fastapi.exceptions import RequestValidationError
@@ -40,6 +41,8 @@ app.include_router(farm_detail_router)
 app.add_middleware(CORSMiddleware, allow_origins=get_settings().cors_origins,
                    allow_credentials=True, allow_methods=["GET", "POST", "PATCH", "DELETE"],
                    allow_headers=["Authorization", "Content-Type", "X-CSRF-Protection"])
+# Screens ship 30-150KB of uncompressed HTML/JS; gzip cuts the transfer to roughly a quarter.
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
 @app.exception_handler(RequestValidationError)
