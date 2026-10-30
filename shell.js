@@ -82,10 +82,20 @@
       set(next){
         if(!MODES[next] || next === id) return;
         try{ localStorage.setItem(MODE_KEY, next); }catch(e){}
-        const u = new URL(location.href); u.searchParams.delete('mode');
-        location.href = u.href;   // 화면 전체를 그 모드로 다시 그림
+        reloadPlain();   // 화면 전체를 그 모드로 다시 그림
       },
     };
+    // 주소의 ?mode= 를 지우고 새로 불러오기. location.href 만 바꾸면 '#detail' 같은 # 뒤만 다른 주소는
+    // 새로 불러오지 않아서(어가 상세에서 버튼이 먹통이던 원인) reload() 로 확실히 다시 불러요.
+    function reloadPlain(){
+      const u = new URL(location.href);
+      if(u.searchParams.has('mode')){ u.searchParams.delete('mode'); history.replaceState(history.state, '', u.href); }
+      location.reload();
+    }
+    // 다른 탭(다른 화면)에서 모드를 바꾸면 이 탭도 같은 모드로 다시 불러요 → 열려 있는 대시보드 화면이 모두 같이 바뀜
+    window.addEventListener('storage', e => {
+      if(e.key === MODE_KEY && MODES[e.newValue] && e.newValue !== id) reloadPlain();
+    });
     document.documentElement.dataset.mode = id;
   }
   const SM = window.ShellMode;
