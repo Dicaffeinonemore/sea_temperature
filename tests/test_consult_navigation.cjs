@@ -21,6 +21,7 @@ function setup(search = '') {
   };
   const context = vm.createContext({
     URLSearchParams, console, location: { search, hash: '' },
+    Shell: { mode: 'heat', reloadNoti() {} },
     apiOk: false, apiList: [], apiSel: null, apiData: null, apiErr: null,
     apiRequestId: 0, detailMode: 'mock', page: 'detail', farms: [], selected: null,
     apiListLoading: false, apiPending: null, homeRegion: 'test-region', fcRegion: 'test-region',
