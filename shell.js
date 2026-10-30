@@ -113,6 +113,19 @@
     me.insertAdjacentHTML('beforebegin', `<nav class="side" aria-label="화면 이동">${MENU.map(([k, href, ic, label]) =>
       `<a class="nav" href="${href}"${k === cur ? ' aria-current="page"' : ''}><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${ic}</svg></span>${label}${
         k === 'home' ? '<span class="cnt" id="nav-left" hidden></span>' : ''}</a>`).join('')}</nav>`);
+    // '마지막 조회'(#updated)를 상단 바에서 사이드바 맨 아래로 옮겨요.
+    // id 는 그대로라 각 화면에서 날짜를 넣는 코드는 그대로 동작해요. (메뉴가 없는 화면은 상단 바에 그대로 남음)
+    const upd = document.getElementById('updated');
+    if(upd){
+      upd.classList.add('side-foot'); me.previousElementSibling.append(upd);
+      // 각 화면이 넣는 '마지막 조회 2026.10.30 14:36' 을 '2026.10.30 14:36 조회' 로 바꿔요
+      const shorten = () => {
+        const m = upd.textContent.trim().match(/^(?:마지막\s*)?조회\s*:?\s*(.+)$/);
+        if(m) upd.textContent = `${m[1]} 조회`;
+      };
+      new MutationObserver(shorten).observe(upd, {childList:true, subtree:true, characterData:true});
+      shorten();
+    }
     return;
   }
   if(part !== 'header') return;
