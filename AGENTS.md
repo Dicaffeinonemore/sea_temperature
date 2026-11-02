@@ -1,4 +1,4 @@
-# sea_temperature (우리 바다 안심도우미)
+# sea_temperature (수온 위험 어가 관리 시스템)
 
 Team project: a proactive high-sea-temperature consultation dashboard for staff who contact aquaculture farms (contact list, farm detail, sea-temperature forecast, consultation status). Four developers share one repo through forks and PRs, so **team ownership rules come first** (see below).
 

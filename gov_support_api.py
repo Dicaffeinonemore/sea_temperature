@@ -1,5 +1,5 @@
 """
-우리 바다 안심도우미 - 정부지원(고수온 피해 지원) 조회 바로가기 (backend/backend/gov_support.py 를 부름)
+수온 위험 어가 관리 시스템 - 정부지원(고수온 피해 지원) 조회 바로가기 (backend/backend/gov_support.py 를 부름)
 
 Super DB는 쓰지 않습니다. backend/backend/data/damage/ 의 CSV 4개(해양수산부 복구 단가 고시 기준)만 읽습니다.
 화면에서 쓰는 API(/api/v1/gov-support/damage)는 팀 백엔드(uvicorn backend.main:app)에 등록되어 함께 뜹니다.

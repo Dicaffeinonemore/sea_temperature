@@ -1,5 +1,5 @@
 """
-고수온 선제 상담 대시보드 - '어가 상세' API
+수온 위험 어가 관리 시스템 - '어가 상세' API
 
 대시보드(HTML)의 '어가 상세' 화면을 채우는 백엔드입니다.
 모든 데이터는 customer_service.fishery_households 의 어가(household_id)를 기준으로 모읍니다.
