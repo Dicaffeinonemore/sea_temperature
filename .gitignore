@@ -33,4 +33,4 @@ logs/
 Thumbs.db
 
 # call_recording files
-data/
+**/data/call_recordings/
