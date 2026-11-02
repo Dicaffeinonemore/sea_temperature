@@ -222,6 +222,7 @@
   .bulk .btn:disabled{opacity:.45;cursor:not-allowed}
   td.ck,th.ck{width:30px;padding-right:0}
   td.ck input,th.ck input{width:16px;height:16px;accent-color:var(--accent)}
+  td.ck input:disabled,th.ck input:disabled{cursor:not-allowed;opacity:.35}
   .tag-why{display:inline-block;font-size:11px;font-weight:700;border-radius:4px;padding:0 5px;margin-left:4px;background:#fff1b8;color:#7a5a00;white-space:nowrap}
   .need{display:inline-block;font-size:11px;font-weight:700;border-radius:4px;padding:0 5px;margin-left:4px;background:#fff1b8;color:#7a5a00;white-space:nowrap}
   .consent-y{color:var(--normal);font-weight:700}
@@ -979,12 +980,14 @@ function renderPersonal(){
 
 /* ===== 상담 홈 ===== */
 function renderKpis(){
-  const L = listed();
+  // 담당 지역 어가만 셉니다 (연락 순서 목록·수온 칸과 같은 지역 기준)
+  const inRegion = f => !filter.region || f.region === filter.region;
+  const L = listed().filter(inRegion);
   const left = L.filter(f => f.status==='todo' || f.status==='absent').length;
   document.getElementById('k-all').textContent = L.length;
   document.getElementById('k-left').textContent = left;
   document.getElementById('k-book').textContent = L.filter(f => f.status==='book').length;
-  document.getElementById('k-win').textContent = farms.reduce((n,f) => n + f.items.filter(c => c.res === 'win').length, 0);
+  document.getElementById('k-win').textContent = farms.filter(inRegion).reduce((n,f) => n + f.items.filter(c => c.res === 'win').length, 0);
   const pre = L.filter(f => !alerted(f) && f.items.some(c => c.ins !== 'full'));
   document.getElementById('k-pre').innerHTML = `${pre.filter(f => f.status !== 'todo').length}<small> / ${pre.length}</small>`;
   document.getElementById('nav-left').textContent = left || '';
@@ -1069,6 +1072,7 @@ function renderRows(){
   const rows = all.filter(pass);
   // 지역·필터를 바꿔 목록에서 빠진 어가는 선택도 풀어요 (보이지 않는 어가에 문자가 나가지 않게)
   const shown = new Set(rows.map(f => f.id));
+  rows.forEach(f => { if(!f.consent) shown.delete(f.id); });   // 문자 미동의 어가는 선택 불가
   [...picked].forEach(id => { if(!shown.has(id)) picked.delete(id); });
   document.getElementById('empty').hidden = rows.length > 0;
   document.getElementById('rows').innerHTML = rows.map(f => {
@@ -1077,7 +1081,7 @@ function renderRows(){
     const stCls = stClass(f.status);
     const nx = f.next && f.status !== 'win' ? `<span class="next">상담일 ${f.next.slice(5).replace('-','/')}</span>` : '';
     return `<tr class="pick-row ${done?'done':''}" data-id="${f.id}" tabindex="0">
-      <td class="ck"><input type="checkbox" data-ck="${f.id}" ${picked.has(f.id)?'checked':''} aria-label="${esc(f.name)} 선택"></td>
+      <td class="ck"><input type="checkbox" data-ck="${f.id}" ${picked.has(f.id)?'checked':''} ${f.consent ? '' : 'disabled title="문자 수신 미동의 · 선택 불가"'} aria-label="${esc(f.name)} 선택${f.consent ? '' : ' (문자 수신 미동의 · 선택 불가)'}"></td>
       <td class="rank">${rank}</td>
       <td class="who"><b>${esc(f.name)}</b><small>${f.id} · ${esc(f.region)}${multi ? ` · 계약 ${f.items.length}건` : ''}</small>${f.consent?'':'<small class="consent-n">문자 미동의</small>'}</td>
       ${insCells(f)}
@@ -1111,7 +1115,9 @@ function renderBulk(rows){
   updateBulkLen();
   setBulkBtn(ok);
   const all = document.getElementById('ck-all');
-  all.checked = rows.length > 0 && rows.every(f => picked.has(f.id));
+  const selectable = rows.filter(f => f.consent);   // 문자 미동의 어가는 선택 대상에서 빼요
+  all.checked = selectable.length > 0 && selectable.every(f => picked.has(f.id));
+  all.disabled = !selectable.length;
   renderPersonal();
 }
 // 시연 발송: 실제 SMS는 보내지 않고 상담 이력만 저장해요. 저장에 성공한 어가만 상태를 바꾸고 선택에서 빼요.
@@ -1197,7 +1203,7 @@ const openDetail = id => { location.href = 'farm_detail.html?id=' + encodeURICom
 document.getElementById('office').addEventListener('change', e => {
   homeRegion = e.target.value; putOffice(homeRegion);
   filter.region = homeRegion;   // 담당을 바꾸면 연락 목록도 그 지역만
-  renderHomeTemp(); renderFilters(); renderRows(); showDash(dashKind);
+  renderKpis(); renderHomeTemp(); renderFilters(); renderRows(); showDash(dashKind);
 });
 document.getElementById('filters').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
@@ -1242,7 +1248,7 @@ rowsEl.addEventListener('click', e => {
 });
 document.getElementById('ck-all').addEventListener('change', e => {
   const rows = sorted().filter(pass);
-  rows.forEach(f => e.target.checked ? picked.add(f.id) : picked.delete(f.id));
+  rows.filter(f => f.consent).forEach(f => e.target.checked ? picked.add(f.id) : picked.delete(f.id));
   renderRows();
 });
 document.getElementById('bulk-sms').addEventListener('click', () => sendMsgs('bulk'));
