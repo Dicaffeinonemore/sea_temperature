@@ -113,6 +113,8 @@
     me.insertAdjacentHTML('beforebegin', `<nav class="side" aria-label="화면 이동">${MENU.map(([k, href, ic, label]) =>
       `<a class="nav" href="${href}"${k === cur ? ' aria-current="page"' : ''}><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${ic}</svg></span>${label}${
         k === 'home' ? '<span class="cnt" id="nav-left" hidden></span>' : ''}</a>`).join('')}</nav>`);
+    // 사이드바가 생겼으니 상단 바 로고를 바로 사이드바 가운데로 다시 맞춰요 (페이지를 다 읽을 때까지 기다리면 로고가 옆으로 점프해요)
+    document.dispatchEvent(new Event('shell:nav-ready'));
     // '마지막 조회'(#updated)를 상단 바에서 사이드바 맨 아래로 옮겨요.
     // id 는 그대로라 각 화면에서 날짜를 넣는 코드는 그대로 동작해요. (메뉴가 없는 화면은 상단 바에 그대로 남음)
     const upd = document.getElementById('updated');
@@ -227,6 +229,7 @@
     document.documentElement.style.setProperty('--logo-offset', `${sidebarWidth / 2 - logoCenter}px`);
   };
   updateShellLayout();
+  document.addEventListener('shell:nav-ready', updateShellLayout, {once:true});
   document.addEventListener('DOMContentLoaded', updateShellLayout, {once:true});
   new ResizeObserver(updateShellLayout).observe(header);
 
