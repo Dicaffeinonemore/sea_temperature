@@ -1,5 +1,7 @@
 # 백엔드 데이터 연동 테스트
 
+> ⚠️ **2026-11-02 기준 안내**: 아래에서 말하는 최상위 `tests/`의 Streamlit 화면 테스트(`test_guest_flow.py`, `test_species_selection.py`, `test_region_coordinates.py`)는 Streamlit 앱과 함께 삭제됐습니다. 최상위 `tests/`에는 지금 `test_consult_navigation.cjs`만 있습니다. 백엔드 테스트(`backend/backend/tests/`) 설명은 그대로 유효합니다.
+
 고객 데이터의 `입력 → API → PostgreSQL 저장 → 계정별 조회`를 검사합니다. 현재 `.env`에 설정된 **DB 접속 계정**의 연결·권한을 확인하고, 앱 고객 계정은 임시 테스트 회원 두 명을 생성해 검사합니다. 실제 회원의 전화번호나 비밀번호를 입력할 필요가 없습니다.
 
 ## 실행

@@ -1,5 +1,7 @@
 # 고객·비회원 API 연결 안내
 
+> ⚠️ **2026-11-02 기준 안내**: 이 문서의 Streamlit 화면(`app.py`·`client.py`)은 PRD 변경 이력(어민용 앱 → 담당자용 대시보드, Streamlit → HTML+FastAPI)에 따라 삭제됐습니다. 지금 화면 4개는 이 고객 API(회원가입·로그인·내 양식장)를 쓰지 않습니다. 아래 API 설명은 백엔드에 남아 있는 코드 기준입니다.
+
 기존 `customer_service` 테이블과 `public.sigungu_area_coordinates`의 실제 컬럼·제약조건에 맞춘 API입니다. Streamlit의 등록·회원가입·로그인 화면이 고객 API에 연결되어 있습니다. `public.roms_forecast`의 예측 격자 연결은 포함하지 않습니다. 현재 고객 ID는 DB가 생성하는 `C-...` 형식의 문자열이고 양식장 ID는 UUID입니다.
 
 ## 전복 품종 선택 저장
