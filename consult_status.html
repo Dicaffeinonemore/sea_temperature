@@ -213,6 +213,8 @@
     .wrap{padding:0 16px 32px}
   }
   @media (prefers-reduced-motion:reduce){.toast{transition:none}.hist-item{animation:none}}
+  /* 탭 전환으로 페이지 높이가 바뀌어도 스크롤바 자리 때문에 칸 너비가 흔들리지 않게 */
+  html{scrollbar-gutter:stable}
 </style>
 <link rel="stylesheet" href="shell.css">
 <link rel="stylesheet" href="figma-theme.css">

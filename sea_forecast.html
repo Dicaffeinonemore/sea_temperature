@@ -364,6 +364,8 @@
   .bm-ex{margin-top:10px;font-size:13.5px;color:var(--sub);font-variant-numeric:tabular-nums}
   .bm-foot{padding:10px 18px 14px;text-align:right}
   @media (max-width:640px){.bm-tiles{grid-template-columns:1fr}}
+  /* 탭 전환으로 페이지 높이가 바뀌어도 스크롤바 자리 때문에 칸 너비가 흔들리지 않게 */
+  html{scrollbar-gutter:stable}
 </style>
 <link rel="stylesheet" href="shell.css">
 <link rel="stylesheet" href="figma-theme.css">
