@@ -1261,7 +1261,7 @@ function ctrCard(x, k){
       <dt class="${MR.id}">${MR.icon} ${MR.word}</dt><dd class="${MR.id} ${heatCls}">${H.text}</dd>
       ${gap ? `<dt>판매기간</dt><dd>${P.saleText} → ${saleLine}</dd>` : ''}
     </dl>
-    ${gap ? `<div class="ctr-q"><label>견적 <input data-quote="${x.ci}" type="number" min="0" inputmode="numeric" value="${x.quote ?? ''}" placeholder="입력"> 만 원</label><span>내 부담 약 <b data-mine="${x.ci}">–</b></span></div>` : ''}
+    ${gap ? `<div class="ctr-q"><label>견적 <input data-quote="${x.ci}" type="number" min="0" inputmode="numeric" value="${x.quote ?? ''}" placeholder="입력"> 만 원</label><span>어가 부담 보험료 약 <b data-mine="${x.ci}">–</b></span></div>` : ''}
     ${P.caution && gap ? `<p class="note" style="margin-top:4px">${esc(P.caution)}</p>` : ''}
   </div>`;
 }
@@ -1812,7 +1812,7 @@ function apiCard(c, k){
   facts.push(`<dt>${MR.hot ? '한계 수온' : '기준 수온'}</dt><dd class="${c.risk.hit ? 'ng' : ''}">${esc(c.risk.text).replace(/\d+(?:\.\d+)?℃/g, '<b>$&</b>')}</dd>`);
   const rec = R.title ? `<div class="rec ${R.level}"><b>추천 · ${esc(R.title)}</b>${(R.actions || []).length ? `<ul>${R.actions.map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : ''}</div>` : '';
   const quote = ['none','expired','norider'].includes(c.ins)
-    ? `<div class="ctr-q"><label>견적 <input data-aquote="${c.mapping_id}" type="number" min="0" inputmode="numeric" placeholder="입력"> 만 원</label><span>내 부담 약 <b data-amine="${c.mapping_id}">–</b></span></div>` : '';
+    ? `<div class="ctr-q"><label>견적 <input data-aquote="${c.mapping_id}" type="number" min="0" inputmode="numeric" placeholder="입력"> 만 원</label><span>어가 부담 보험료 약 <b data-amine="${c.mapping_id}">–</b></span></div>` : '';
   const SC = c.scenarios;
   const scRows = SC && (SC.rows || []).length;
   let est = '';
