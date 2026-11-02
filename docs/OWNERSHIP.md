@@ -55,7 +55,7 @@ AI(언어 모델)와 팀원이 코드를 고치기 전에 담당자를 확인하
 | `dashboard.py` | **공동** · 주 Dicaffeinonemore (Dicaffeinonemore 70% · seungwonyyii-ai 21%) | |
 | `consult.py` | **공동** · 주 seungwonyyii-ai (seungwonyyii-ai 60% · Dicaffeinonemore 36%) | |
 | `consult_stt.py` | seungwonyyii-ai | |
-| `farm_detail.py`, `insurance.py`, `support.py` | sooui9 | |
+| `farm_detail.py`, `insurance.py` | sooui9 | |
 | `gov_support.py`, `n8n_bridge.py`, `data/damage/*.csv` | agh3724 | |
 
 ## 보험금 계산 (`backend/aqua-claim-api/`)
@@ -81,9 +81,17 @@ AI(언어 모델)와 팀원이 코드를 고치기 전에 담당자를 확인하
 |---|---|---|---|
 | `dash_chart.py` | agh3724 | 상담 홈 그래프 (백엔드 `dashboard.py`가 사용) | |
 | `gov_support_api.py` | agh3724 | 정부지원 조회 바로가기 (`n8n_bridge.py`가 사용) | |
-| `insurance_api.py` | tpfl1510-maker | 어디서도 불러오지 않음 · 삭제 여부 확인 필요 | |
 | `sea_temperature/*.csv` (가상 데이터 4개) | Dicaffeinonemore | 어디서도 참조하지 않음 · 삭제 여부 확인 필요 | |
-| `skills-lock.json` | LSH | AI 도구 설정 · 삭제 여부 확인 필요 | |
+
+## 보관 (`archive/`)
+
+지금 화면·백엔드가 쓰지 않아 옮겨 둔 파일입니다. 자세한 내용은 `archive/README.md`에 있습니다.
+
+| 파일 | 담당 | 확인 |
+|---|---|---|
+| `archive/insurance_api.py` | tpfl1510-maker | |
+| `archive/skills-lock.json` | LSH | |
+| `archive/backend/backend/support.py` | sooui9 | |
 
 ## 문서 · 규칙
 
