@@ -149,14 +149,15 @@
   }
   if(part !== 'header') return;
   const SYS_TITLE = '수온 위험 어가 관리 시스템';   // 고수온·저수온 모드와 상관없이 고정
+  const HOME_URL = 'consult_home.html';   // 상단 로고·제목을 누르면 가는 곳
 
   /* ===== 상단 바 ===== */
   me.insertAdjacentHTML('beforebegin', `
 <header class="top">
   <div class="top-in">
-    <img class="logo" src="suhyup-logo.png" alt="수협" width="92" height="30">
+    <img class="logo" src="suhyup-logo.png" alt="수협" width="92" height="30" title="상담 홈으로" draggable="false">
     <span class="logo-div" aria-hidden="true"></span>
-    <h1 id="sys-title">${SYS_TITLE}</h1>
+    <h1 id="sys-title"><a class="home-link" href="${HOME_URL}" title="상담 홈으로">${SYS_TITLE}</a></h1>
     <span class="demo" id="data-mode">불러오는 중</span>
     <div class="top-meta">
       <label>담당 지역 <select id="office" aria-label="담당 지역"></select></label>
@@ -217,6 +218,17 @@
     });
   });
   const logo = header.querySelector('.logo');
+  // 로고·제목 누르면 상담 홈으로. 제목 글자는 <a> 링크(키보드·새 탭 열기 지원)이고,
+  // 로고와 제목 칸의 나머지 부분(모드 글자 등)은 여기서 클릭을 받아요. 로고를 <a>로 감싸지 않는 건
+  // 로고 위치 계산(offsetLeft)·Figma 테마 선택자가 지금 구조에 맞춰져 있어서예요.
+  const goHome = e => {
+    if(e.target.closest('a')) return;   // 링크를 직접 눌렀으면 브라우저 기본 동작
+    if(e.ctrlKey || e.metaKey || e.button === 1) window.open(HOME_URL, '_blank');
+    else location.href = HOME_URL;
+  };
+  logo.addEventListener('click', goHome);
+  logo.addEventListener('mousedown', e => e.preventDefault());   // 누르는 순간 드래그·선택이 시작되지 않게
+  header.querySelector('#sys-title').addEventListener('click', goHome);
   const logoDivider = header.querySelector('.logo-div');
   const updateShellLayout = () => {
     document.documentElement.style.setProperty('--header-height', `${header.getBoundingClientRect().height}px`);
@@ -227,9 +239,24 @@
     const logoCenter = header.getBoundingClientRect().left + logo.offsetLeft + logo.offsetWidth / 2;
     document.documentElement.style.setProperty('--logo-offset', `${sidebarWidth / 2 - logoCenter}px`);
   };
+  // 페이지를 새로 불러올 때 로고 위치를 몇 단계(상단 바 → 메뉴 → 글꼴)에 걸쳐 다시 맞춰요.
+  // 그 사이에 화면이 한 번 그려지면 로고가 옆으로 움직여 흔들려 보여서(네트워크·캐시 속도에 따라 됐다 안 됐다),
+  // 자리가 정해질 때까지 로고를 숨기고 애니메이션도 꺼 둬요.
+  const root = document.documentElement;
+  root.classList.add('shell-loading');
+  let settled = false;
+  const settle = () => {
+    if(settled) return; settled = true;
+    updateShellLayout();
+    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('shell-loading')));
+  };
   updateShellLayout();
-  document.addEventListener('shell:nav-ready', updateShellLayout, {once:true});
-  document.addEventListener('DOMContentLoaded', updateShellLayout, {once:true});
+  document.addEventListener('shell:nav-ready', () => {
+    updateShellLayout();
+    // 글꼴이 늦게 오면 글자 폭이 바뀌니 글꼴까지 기다려요 (최대 1초)
+    Promise.race([document.fonts ? document.fonts.ready : Promise.resolve(), new Promise(r => setTimeout(r, 1000))]).then(settle);
+  }, {once:true});
+  document.addEventListener('DOMContentLoaded', () => { updateShellLayout(); setTimeout(settle, 1000); }, {once:true});   // 메뉴 없는 화면 대비
   new ResizeObserver(updateShellLayout).observe(header);
 
   /* ===== 돋보기: 복제 화면은 별도 DOM에 격리해 원본 ID와 클릭 동작을 보존해요 ===== */
