@@ -100,6 +100,7 @@ AI(언어 모델)와 팀원이 코드를 고치기 전에 담당자를 확인하
 | `README.md` | sooui9 | |
 | `AGENTS.md`, `CLAUDE.md`, `.github/instructions/*.md` | Dicaffeinonemore | |
 | `DESIGN.md`, `docs/design/*.md` | Dicaffeinonemore | |
+| `docs/DATA.md` | sooui9 | |
 | `docs/OWNERSHIP.md` | **공동** (Dicaffeinonemore 작성 · 2026-11-02 sooui9 갱신) | |
 | `backend/CUSTOMER_API.md` | Dicaffeinonemore | |
 | `LAN_SETUP.md` | LSH | |
