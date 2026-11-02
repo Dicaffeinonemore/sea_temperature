@@ -1,27 +1,32 @@
 import logging
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import JSONResponse
-from fastapi.responses import FileResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from psycopg import Connection, Error
 from psycopg.errors import UniqueViolation
 
-from backend.api import router as api_router
 from backend.config import get_settings
 from backend.db import get_db
-from backend.insurance import router as insurance_router
+
+# ----- 라우터 (화면별로 묶음) -----
+# 수온·적조 조회 (기존)
+from backend.api import router as api_router
 from backend.routes import router
-from backend.customer_api import router as customer_router
-from backend.consult import router as consult_router
 from backend.dashboard import router as dashboard_router
+# 상담 홈 · 고객 상담 현황
+from backend.consult import router as consult_router                 # 어가 목록 · 상담 기록 · STT · 참고사항
+from backend.contact_priority import router as priority_router       # 연락 우선순위 · 상담 홈 지역 수온
+# 어가 상세
+from backend.farm_detail import router as farm_detail_router         # 어가 상세 · 예상 보험금
+from backend.insurance import router as insurance_router
 from backend.gov_support import router as gov_support_router
-from backend.config import get_settings
-from backend.dashboard import router as dashboard_router     # 다른 import 줄들 맨 아래                        # 다른 app.include_router 줄들 맨 아래
-from backend.farm_detail import router as farm_detail_router
+# 고객 등록 · 자동화
+from backend.customer_api import router as customer_router
 from backend.n8n_bridge import router as n8n_router
 
 logger = logging.getLogger(__name__)
@@ -30,13 +35,10 @@ app = FastAPI(
     version="0.1.0",
     description="Streamlit에서 사용할 수온·적조 조회 API. 시각은 한국시간(Asia/Seoul)입니다.",
 )
-app.include_router(router)
-app.include_router(api_router)
-app.include_router(customer_router)
-app.include_router(consult_router)
-app.include_router(gov_support_router)
-app.include_router(dashboard_router)
-app.include_router(farm_detail_router)
+for _r in (router, api_router, dashboard_router,
+           consult_router, priority_router,
+           farm_detail_router, gov_support_router, customer_router):
+    app.include_router(_r)
 app.add_middleware(CORSMiddleware, allow_origins=get_settings().cors_origins,
                    allow_credentials=True, allow_methods=["GET", "POST", "PATCH", "DELETE"],
                    allow_headers=["Authorization", "Content-Type", "X-CSRF-Protection"])
@@ -90,17 +92,13 @@ def database_health(db: Connection = Depends(get_db)):
     if missing:
         return JSONResponse(status_code=503, content={"status": "schema_missing", "missing": missing})
     return {"status": "ok", "database": "connected", "schema": "ready"}
+
+
+# 아래 두 라우터는 기존처럼 /health 정의 뒤에 붙임 (같은 경로가 있어도 위 상태 확인이 우선)
 app.include_router(insurance_router)
-
 app.include_router(n8n_router)
-
 # --- 배포용: 화면 4개를 이 백엔드에서 같이 내보냄 (Render 등 한 주소로 실행) ---
 # 폴더 전체를 공개하면 backend/backend/.env 까지 열리므로 파일만 골라서 지정합니다.
-from pathlib import Path  # noqa: E402
-
-from fastapi.responses import FileResponse, RedirectResponse  # noqa: E402
-from fastapi.staticfiles import StaticFiles  # noqa: E402
-
 ROOT = Path(__file__).resolve().parents[2]   # sea_temperature/
 SCREENS = ("consult_home.html", "consult_status.html", "farm_detail.html", "sea_forecast.html")
 # 모든 화면이 함께 불러오는 공통 상단 바 · 왼쪽 메뉴 · 알림 (없으면 상단 바·사이드바가 안 그려져요)
@@ -131,4 +129,4 @@ def index():
     return RedirectResponse("/consult_home.html")
 
 
-app.mount("/out", StaticFiles(directory=ROOT / "out", check_dir=False), name="out")   # 상담 홈 예비 그래프
+app.mount("/out", StaticFiles(directory=ROOT / "out", check_dir=False), name="out")   # 상담 홈 예비 그래프
