@@ -80,8 +80,9 @@ th{background:var(--soft)}
   .nav[aria-current="page"]::before{content:"";position:absolute;top:0;bottom:0;right:100%;width:100vw;background:#fff}
   .top{position:sticky;top:0;z-index:30}
   .top .logo{transform:translateX(var(--logo-offset,0px))}
-  /* 메뉴는 화면 왼쪽에 붙여 넓은 화면에서도 아이콘 앞 여백이 늘어나지 않게 해요. */
-  .shell{max-width:none;margin:0;grid-template-columns:minmax(max-content,var(--sidebar-width,196px)) minmax(0,1fr)}
+  /* 메뉴는 화면 왼쪽에 붙여 넓은 화면에서도 아이콘 앞 여백이 늘어나지 않게 해요.
+     사이드바 폭은 위 160px 고정: 글자 폭(max-content)을 따르면 글꼴이 늦게 적용될 때 폭이 넓어졌다 줄어들어요. */
+  .shell{max-width:none;margin:0}
   .side{
     top:var(--header-height,0px);
     height:max(0px,calc(100dvh - var(--header-height,0px)));
