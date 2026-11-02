@@ -111,7 +111,7 @@ Values already used in the screens. Reuse them for consistency; they become deci
 
 | Item | Observed value | Where |
 |---|---|---|
-| Product name | 우리 바다 안심도우미 | `common.css`, `common.js` header |
+| Product name | 수온 위험 어가 관리 시스템 | `shell.js` header (`SYS_TITLE`) |
 | Tab bar design baseline | 홈 화면 v2 | `home_test.html` |
 | Font | "Noto Sans KR", system Korean fallbacks | `common.css` |
 | Active / accent color | `#1f5ae0` on `#e8effd` | `common.css` tokens `--tabbar-active*` |
