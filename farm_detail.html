@@ -1237,6 +1237,14 @@ const API_BASE = window.DETAIL_API_BASE ?? ((location.protocol === 'file:' ? 'ht
   : location.port === '8765' ? `${location.protocol}//${location.hostname}:8000`
   : location.origin));   // 배포(Render) 등 백엔드가 화면을 같이 내보낼 때는 같은 주소 (다른 화면과 동일)
 let apiOk = false, apiList = [], apiSel = null, apiData = null, apiErr = null, detailMode = 'mock';
+// 이름은 성만 보이게 가려요 (예: 배정숙 → 배○○) · 예시 멘트 속 이름도 같이 가려요
+const maskName = n => n ? n[0] + '○'.repeat(Math.max(1, [...n].length - 1)) : n;
+function maskHousehold(D){
+  const H = D && D.household; if(!H || !H.owner_name) return;
+  const full = H.owner_name, masked = maskName(full);
+  H.owner_name = masked;
+  if(typeof D.script === 'string') D.script = D.script.replaceAll(full, masked);
+}
 let apiRequestId = 0;
 let apiListLoading = false, apiPending = null;
 const apiQuotes = {};   // mapping_id → 견적(만 원)
@@ -1555,6 +1563,7 @@ async function initApi(){
   }
   try{
     apiList = await apiGet('/api/households?limit=1000');
+    apiList.forEach(h => { h.owner_name = maskName(h.owner_name); });
     apiOk = true;
     // 상담 홈 연락 목록에서 고른 어가 (farm_detail.html?id=어가번호)
     if(params.has('id') && (apiSel === wantId || apiSel == null)){
@@ -1593,6 +1602,7 @@ async function loadApiDetail(id, force){
       const data = await apiGet(`/api/households/${id}/detail?mode=${Shell.mode}`);
       if(requestId !== apiRequestId || apiSel !== id || detailMode !== 'api') return false;
       apiData = data;
+      maskHousehold(apiData);
     }catch(e){
       if(requestId !== apiRequestId || apiSel !== id || detailMode !== 'api') return false;
       apiErr = `어가 정보 조회 실패 · 잠시 후 새로고침 필요 · 오류코드: ${errCode(e)}`;
