@@ -499,7 +499,8 @@ const API_BASE = (location.protocol === 'file:' ? 'http://127.0.0.1:8000'
   : location.port === '8765' ? `${location.protocol}//${location.hostname}:8000`
   : location.origin);
 const ENDPOINTS = {
-  regions: '/api/dashboard/regions',        // 제안 · 지역별 21일 수온 예측
+  regions: `/api/consult/forecast-regions?mode=${Shell.mode}`,   // 지역별 21일 수온 · 위험 단계 (contact_priority.py)
+  priority:`/api/consult/priority?mode=${Shell.mode}`,           // 연락 우선순위 점수 · 순위 · 목록 사유 (contact_priority.py)
   farms:   `/api/consult/customers?mode=${Shell.mode}`,   // 어가 목록 · 어종별 보험 보장 상태 (모드별 고수온/저수온 보장)
   logs:    '/api/consult/logs',             // 있음 · 상담 결과 저장 (POST)
 };
@@ -623,7 +624,7 @@ function applyRegions(data){
   data.regions.forEach(r => {
     const series = r.series.slice().sort((a,b) => a.i - b.i);
     const t = series.filter(p => p.src === 'ROMS').map(p => p[MR.key]);   // 고수온 = 일최고 · 저수온 = 일최저
-    const st = t.map((v,i,a) => stageOfDay(v,i,a));
+    const st = Array.isArray(r.stages) && r.stages.length === t.length ? r.stages : t.map((v,i,a) => stageOfDay(v,i,a));   // 서버 단계 우선
     const top = Math.max(...st), maxT = MR.hot ? Math.max(...t) : Math.min(...t);   // 7일 중 가장 위험한 값
     regionInfo[r.id] = {...r, t, series, st, top, d:st.indexOf(top), maxT, dMax:t.indexOf(maxT)};
   });
@@ -773,11 +774,42 @@ function toFarms(customers){
         if(!Object.hasOwn(coverageKeys, contract.coverage)){
           throw new Error('어가 보험 보장 상태 확인 필요');
         }
-        // 상담 목록 API에는 상품·양식 방식·어종 매핑 번호가 없어요.
+        // 상품 · 판매기간 · 점수는 withPriority()가 서버 우선순위 결과로 채워요.
         return {species:contract.species, ins:coverageKeys[contract.coverage],
-                p:null, method:null, mapping_id:null, quote:null};
+                p:null, method:null, mapping_id:contract.mapping_id ?? null, quote:null};
       }),
     };
+  });
+}
+
+/* ===== 연락 우선순위: 서버 계산 결과 붙이기 (backend/contact_priority.py) =====
+   점수 · 목록 사유 · 위험 단계 · 어종 한계 수온 · 판매 기간은 서버가 계산하고, 화면은 받아서 그리기만 해요.
+   서버 우선순위를 못 받으면 아래 '판정·계산'의 같은 규칙(브라우저 계산)으로 대신 보여줘요. */
+// 서버 보장 상태 코드 → 화면 INS 키 (청약 중은 '가입'으로, 고수온 미보장 상품은 '모름'으로 표시)
+const SRV_INS = {full:'full', pending:'full', norider:'norider', none:'none', expired:'none', excl:'checkExcl', noheat:'unknown', unknown:'unknown'};
+const SALE_CLS = {open:'sale-open', soon:'sale-soon'};
+async function withPriority(list){
+  let pr;
+  try{ pr = await getJSON(ENDPOINTS.priority); }
+  catch(e){ addNotice('⚠️ 연락 우선순위를 서버에서 받지 못해 화면에서 계산했어요'); return list; }
+  const byHh = new Map(pr.households.map(h => [h.household_id, h]));
+  return list.map(f => {
+    const h = byHh.get(f.household_id);
+    if(!h) return f;
+    const byMap = new Map(h.items.map(x => [x.mapping_id, x]));
+    return {...f, items:f.items.map(c => {
+      const s = byMap.get(c.mapping_id);
+      if(!s) return c;
+      let p = c.p;
+      if(s.product){
+        p = 'db' + s.product.product_id;
+        const sale = s.product.sale || {code:'unknown', text:'판매기간 확인 필요'};
+        PRODUCTS[p] = {name:s.product.name, heat:s.product.heat, months:sale.months || [], saleText:sale.raw || sale.text,
+          subsidy:null, split4:false,
+          sale:{code:sale.code, text:sale.text, cls:SALE_CLS[sale.code] || 'sale-later', start:sale.start_month, end:sale.end_month}};
+      }
+      return {...c, p, ins:SRV_INS[s.ins] || c.ins, srv:s};
+    })};
   });
 }
 
@@ -785,7 +817,7 @@ async function loadFarms(){
   try{
     const [rg, fm] = await Promise.all([getJSON(ENDPOINTS.regions), getJSON(ENDPOINTS.farms)]);
     const loaded = toFarms(fm);
-    applyRegions(rg); farms = loaded; setMode(true);
+    applyRegions(rg); farms = await withPriority(loaded); setMode(true);
   }catch(e){
     applyRegions(SAMPLE_REGIONS_FOR_MODE()); farms = loadLocal() || withIds(structuredClone(SAMPLE_FARMS)); setMode(false, e);
   }
@@ -809,6 +841,7 @@ async function recordLog(f, {status, channel, memo, next, results = []}){
 
 /* ===== 판정·계산 ===== */
 function speciesRisk(f){
+  if(f.srv) return f.srv.species_risk;   // 서버 계산
   const L = Shell.limitOf(f.species), R = regionInfo[f.region];
   if(L == null) return {known:false, pts:0, stage:0, short:'기준 확인 필요', text:`${f.species} ${MR.hot ? '한계 수온' : '저수온 기준'} 자료 없음 · 지역 기준 적용`};
   const d = R.t.findIndex(v => Shell.reach(v, L));
@@ -818,9 +851,10 @@ function speciesRisk(f){
   return {known:true, hit:false, L, pts: gap <= 1 ? 8 : 0, stage:0, short:`${L}℃까지 ${gap.toFixed(1)}℃`,
     text:`${f.species} ${MR.limitWord} ${L}℃ · 7일 ${MR.val}보다 ${gap.toFixed(1)}℃ 여유`};
 }
-function farmStage(f){ return Math.max(regionInfo[f.region].top, speciesRisk(f).stage); }
+function farmStage(f){ return f.srv ? f.srv.stage : Math.max(regionInfo[f.region].top, speciesRisk(f).stage); }
 
 function saleState(p){
+  if(p && PRODUCTS[p] && PRODUCTS[p].sale) return PRODUCTS[p].sale;   // 서버 판매기간 판정
   if(p === null) return {code:'unknown', text:'판매 기간 확인 필요', cls:'sale-later'};
   const m = TODAY.m, months = PRODUCTS[p].months;
   if(months.includes(m)){
@@ -832,9 +866,10 @@ function saleState(p){
   return {code:'later', text:`${k}월부터`, cls:'sale-later', start:k};
 }
 
-/* ===== 연락 순서 (자동화 변수) =====
-   실제 서비스에서는 이 가중치를 n8n 자동화 쪽 설정값(변수)으로 두고, 순위만 계산해서 DB에 넣어요.
-   대시보드는 계산된 순위만 보여줘요. 아래는 시연용으로 같은 규칙을 브라우저에서 돌린 것이에요. */
+/* ===== 연락 순서 =====
+   서버 연결 시: 점수 · 순위 · 목록 사유는 backend/contact_priority.py 가 계산해요 (가중치 = public.priority_weights).
+   n8n 은 POST /api/consult/priority/refresh 로 같은 결과를 contact_queue 에 저장해요.
+   아래 PRIORITY 는 서버에 연결 못 했을 때(가상 데이터)만 쓰는 같은 규칙이에요. 바꿀 때는 서버 DEFAULT_WEIGHTS 와 같이 바꿔 주세요. */
 const PRIORITY = {
   stage:   [0, 10, 30, 40],                                   // 정상·관심·주의·경보
   perDay:  2,                                                 // 주의 도달이 하루 빠를수록 +2 (D-0 = +14)
@@ -844,6 +879,7 @@ const PRIORITY = {
 };
 const alerted = f => !!regionInfo[f.region].alert;
 function score(f){
+  if(f.srv) return {total:f.srv.score, detail:f.srv.score_detail};   // 서버 계산
   const R = regionInfo[f.region], S = speciesRisk(f), sale = saleState(f.p), st = farmStage(f), W = PRIORITY;
   let t = W.stage[st];
   if(st >= 2){ const d = R.top >= 2 ? R.d : S.d; t += Math.max(0, 7 - d) * W.perDay; }
@@ -855,6 +891,7 @@ function score(f){
 }
 // 목록에 올리는 조건: 주의 이상 · 판매 마감 임박 · 공식 특보 발령 지역
 function why(f){
+  if(f.srv) return f.srv.why;   // 서버 계산
   const st = farmStage(f), sale = saleState(f.p), gap = f.ins !== 'full';
   if(st >= 2) return 'stage';
   if(st >= 1 && alerted(f)) return 'alert';
