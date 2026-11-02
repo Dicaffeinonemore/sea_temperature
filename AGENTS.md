@@ -1,6 +1,6 @@
 # sea_temperature (수온 위험 어가 관리 시스템)
 
-Team project: a proactive high-sea-temperature consultation dashboard for staff who contact aquaculture farms (contact list, farm detail, sea-temperature forecast, consultation status). Four developers share one repo through forks and PRs, so **team ownership rules come first** (see below).
+Team project: a proactive high/low sea-temperature consultation dashboard for staff who contact aquaculture farms (contact list, farm detail, sea-temperature forecast, consultation status). The team shares one repo through forks and PRs, so **team ownership rules come first** (see below).
 
 Rule files for VS Code live in `.github/instructions/` (GitHub Copilot attaches them by `applyTo`/`description`). Other agents (Claude Code, Codex) must open the file named in each "Details" line when the task matches.
 

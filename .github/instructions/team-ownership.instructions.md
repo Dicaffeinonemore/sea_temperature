@@ -31,8 +31,8 @@ For code that belongs to someone else, do not do any of the following until the 
 How to ask:
 ```
 [팀원 코드 수정 요청]
-파일: insurance.html (담당: sooui9)
-이유: 홈 화면에서 보험 카드로 넘어갈 때 species 값을 받아야 함
+파일: farm_detail.html (담당: 공동 · 주 sooui9)
+이유: 상담 홈에서 어가 상세로 넘어갈 때 어가 번호를 받아야 함
 변경안: (diff 10줄 이내 요약)
 대안: 내 파일에서 처리하는 방법 — (있으면 적기)
 ```
@@ -51,10 +51,10 @@ How to ask:
 - Change shared DB tables, data, or permissions created by others.
 
 ## 6. Shared files
-`common.css`, `common.js`, `README.md`, `.gitignore`, `backend/backend/main.py`, `backend/backend/config.py`, `backend/backend/db.py`, and requirement files are used by everyone.
+`shell.js`, `shell.css`, `figma-theme.css`, `README.md`, `.gitignore`, `backend/backend/main.py`, `backend/backend/config.py`, `backend/backend/db.py`, and requirement files are used by everyone.
 - Additive changes only (a new row, route registration, or variable), each one approved.
 - Never remove or rewrite another person's lines in them.
-- `common.css` and `common.js` (shared tab bar): change only through their maintainer listed in `docs/OWNERSHIP.md`. Do not override tab bar styles per page.
+- `shell.js`, `shell.css`, and `figma-theme.css` (shared top bar, side menu, theme): change only through their maintainers listed in `docs/OWNERSHIP.md`. Do not override their styles per page.
 
 ## 7. When you find a problem in others' code
 Report it with file, line, and the reason. Do not fix it. Suggest the user tell the owner, or offer a fix the user can forward.

@@ -25,7 +25,7 @@
 
 현재 서버는 `listen_addresses=*`이므로 수신 주소 변경과 PostgreSQL 재시작이 필요 없습니다. 다른 서버가 `localhost`만 수신한다면 `server-info`에 나온 `postgresql.conf`에서 `listen_addresses = 'localhost,서버내부IP'`로 변경하고 PostgreSQL 서비스를 재시작하세요. [PostgreSQL 접속 설정](https://www.postgresql.org/docs/18/runtime-config-connection.html)
 
-**관리자 권한 PowerShell**을 열고 프로젝트 폴더로 이동해 실행합니다.
+**관리자 권한 PowerShell**을 열고 프로젝트 폴더로 이동해 실행합니다. `scripts/enable-lan.ps1`은 저장소에 포함되어 있지 않으므로 서버 관리자(LSH)에게 받아서 실행합니다.
 
 ```powershell
 # 미리 보기: 실제 변경 없음

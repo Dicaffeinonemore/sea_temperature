@@ -112,11 +112,11 @@ Values already used in the screens. Reuse them for consistency; they become deci
 | Item | Observed value | Where |
 |---|---|---|
 | Product name | 수온 위험 어가 관리 시스템 | `shell.js` header (`SYS_TITLE`) |
-| Tab bar design baseline | 홈 화면 v2 | `home_test.html` |
-| Font | "Noto Sans KR", system Korean fallbacks | `common.css` |
-| Active / accent color | `#1f5ae0` on `#e8effd` | `common.css` tokens `--tabbar-active*` |
-| Content max width | 420px | `common.css` `.tabbar` |
-| Focus outline | 3px `#93b4f5`, offset 2px | `common.css` |
+| Layout | Top bar + left side menu 160px (horizontal menu at 900px or less) | `shell.js`, `shell.css`, `figma-theme.css` |
+| Font | Pretendard for top bar and side menu, "Noto Sans KR" elsewhere ("Noto Sans KR" approved, see log) | `figma-theme.css` |
+| Active / accent color | `#007f98` (approved, see log) | `figma-theme.css` token `--accent` |
+| Top bar max width | 1440px | `shell.css` `.top-in` |
+| Focus outline | 3px `#93b4f5` or `--accent` | `shell.css` |
 
 ## Approved values log
 | Date | Item | Value | Approved by |
