@@ -34,12 +34,10 @@
     //         어종 = 수협 수산경제연구원 「이상수온 대응 어류가두리 양식장 이동 지원 검토」(2026.1) 먹이 중단 수온 (농어는 폐사 5~8℃ → 8℃)
     const MODES = {
       heat:{id:'heat', word:'고수온', icon:'🌡', key:'max', val:'최고', watch:25, warn:28, hot:true,
-            limits:{'조피볼락':28, '전복':28, '넙치':29, '강도다리':27}, limitWord:'견디는 한계', moveUp:'오르', cross:'넘는',
-            title:'고수온 위험 어가 관리 시스템'},
+            limits:{'조피볼락':28, '전복':28, '넙치':29, '강도다리':27}, limitWord:'견디는 한계', moveUp:'오르', cross:'넘는'},
       cold:{id:'cold', word:'저수온', icon:'❄', key:'min', val:'최저', watch:7, warn:4, hot:false,
             limits:{'조피볼락':5, '농어':8, '참돔':10, '감성돔':10, '숭어':10, '가숭어':10, '돌돔':13, '쥐치':15, '능성어':15},
-            limitWord:'먹이 끊는 수온', moveUp:'내려가', cross:'밑도는',
-            title:'저수온 위험 어가 관리 시스템'},
+            limitWord:'먹이 끊는 수온', moveUp:'내려가', cross:'밑도는'},
     };
     // 저수온 대응 요령은 일반 안내 (약관상 의무 사항은 수협 확인)
     const COLD_PHRASES = [
@@ -150,6 +148,7 @@
     return;
   }
   if(part !== 'header') return;
+  const SYS_TITLE = '수온 위험 어가 관리 시스템';   // 고수온·저수온 모드와 상관없이 고정
 
   /* ===== 상단 바 ===== */
   me.insertAdjacentHTML('beforebegin', `
@@ -157,7 +156,7 @@
   <div class="top-in">
     <img class="logo" src="suhyup-logo.png" alt="수협" width="92" height="30">
     <span class="logo-div" aria-hidden="true"></span>
-    <h1 id="sys-title">${SM.M.title}</h1>
+    <h1 id="sys-title">${SYS_TITLE}</h1>
     <span class="demo" id="data-mode">불러오는 중</span>
     <div class="top-meta">
       <label>담당 지역 <select id="office" aria-label="담당 지역"></select></label>
