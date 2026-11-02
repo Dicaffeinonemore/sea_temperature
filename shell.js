@@ -359,10 +359,21 @@
   /* ===== 담당 지역 선택: 선택지는 지역 이름만 ('사천 지역 담당' → '사천') =====
      선택지는 각 화면이 채우므로, 채워질 때마다 여기서 글자만 정리해요 (값은 그대로라 화면 동작은 같아요). */
   const officeSel = document.getElementById('office');
+  // 모든 화면에서 같은 순서로 보여요. 목록에 없는 지역은 맨 뒤에 원래 순서대로 붙어요.
+  const OFFICE_ORDER = ['통영', '거제', '고성', '남해', '하동', '창원', '사천'];
+  const officeRank = o => { const i = OFFICE_ORDER.indexOf(o.value); return i < 0 ? OFFICE_ORDER.length : i; };
   const tidyOffice = () => {
     for(const o of officeSel.options){
       const t = o.textContent.replace(/\s*지역\s*담당\s*$/, '').trim();
       if(t && t !== o.textContent) o.textContent = t;
+    }
+    // 순서가 다를 때만 다시 줄 세워요 (이미 맞으면 건드리지 않아 감시가 반복되지 않음)
+    const opts = [...officeSel.options];
+    const sorted = opts.map((o, i) => [o, i]).sort((a, b) => officeRank(a[0]) - officeRank(b[0]) || a[1] - b[1]).map(([o]) => o);
+    if(sorted.some((o, i) => o !== opts[i])){
+      const v = officeSel.value;   // 고른 지역은 그대로 유지
+      officeSel.append(...sorted);
+      officeSel.value = v;
     }
   };
   new MutationObserver(tidyOffice).observe(officeSel, {childList:true, subtree:true, characterData:true});
