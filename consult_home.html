@@ -383,6 +383,8 @@
   .ht-legend .l-apply{background:var(--teal)}.ht-legend .l-warn{background:#c2620a}
   /* 가운데 수온 칸의 정보 행이 왼쪽 '오늘 연락할 어가' 행과 같은 높이에서 시작하도록, 수온 숫자 줄을 왼쪽 강조 상자(.ht-hl)와 같은 58px로 */
   #home-temp .ht-now{min-height:58px;flex-wrap:wrap;align-content:center}
+  /* 탭 전환으로 페이지 높이가 바뀌어도 스크롤바 자리 때문에 칸 너비가 흔들리지 않게 */
+  html{scrollbar-gutter:stable}
 </style>
 <link rel="stylesheet" href="shell.css">
 <link rel="stylesheet" href="figma-theme.css">
