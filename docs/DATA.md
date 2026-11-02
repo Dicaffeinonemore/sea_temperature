@@ -59,6 +59,7 @@
 | `example_region_daily` | 지역 1곳의 하루 ROMS 예측 | `region`, `day`, `max_c`, `mean_c`, `min_c`, `dist_km` | 코드 (`farm_detail.py`) |
 | `example_region_daily_om` | 지역 1곳의 하루 ECMWF 예측 | `region`, `day`, `max_c`, `mean_c`, `min_c`, `dist_km` | 코드 (`farm_detail.py`) |
 | `om_region_bias` | 지역 1곳의 ECMWF 보정값 | `region`, `bias`, `basis` | 코드 (`dashboard.py`) |
+| `priority_weights` | 연락 우선순위 가중치 1개 (PRD 6.2에 없음, 2026-11-02 추가) | `key`, `value`, `note` | DDL `07_priority_weights.sql` |
 | `forecast_21d` (뷰) | 지역 1곳의 21일 중 하루 (1~7일 ROMS + 8~21일 보정 ECMWF) | `region`, `day_no`, `max_c`, `mean_c`, `min_c`, `source` | 코드 (`dashboard.py`) |
 | `sigungu_area_coordinates` | 시군·세부지역 1곳 | `region_id`, `sigungu_name`, `area_name`, `latitude`, `longitude` | 코드 |
 
@@ -73,7 +74,7 @@
 | 위험 단계 | 고수온(일 최고): 관심 25℃ · 주의 28℃ · 경보 28℃ 이상 3일 연속 / 저수온(일 최저): 관심 7℃ · 주의 4℃ · 경보 4℃ 이하 3일 연속 | 4단계(정상·관심·주의·경보). 어가 단계는 지역 단계와 어종 한계 수온 도달 중 높은 쪽 | `forecast_21d`, `fish_species` | `farm_detail.py` `WATCH_TEMP`·`CAUTION_TEMP`·`MODE_RULES` |
 | 어종 한계 수온 도달일 | 7일 예측 중 어종별 한계 수온에 처음 닿는 날 (D-n) | 일, 한계 수온 자료가 없는 어종은 지역 기준만 적용 | `forecast_21d`, 어종별 한계 수온 | `farm_detail.py` `SPECIES_LIMIT`·`SPECIES_COLD_LIMIT` |
 | 보장 상태 | 계약·특약으로 판정: 가입(`full`) · 특약 없음(`norider`) · 미가입(`none`) · 만료(`expired`) · 청약 중(`pending`) · 보장 없는 상품(`noheat`) · 부담보(`excl`) · 확인 필요(`unknown`) | 어종(계약) 단위 | `insurance_contracts`, `insurance_targets`, `insurance_coverages` | `farm_detail.py` |
-| 연락 우선순위 점수 | 위험 단계 + 주의 도달 임박 + 보험 공백 + 지금 가입 가능 + 어종 한계 수온 도달 가중치 합 | 점수 높은 순. 상담 진행 상태가 먼저 | `contact_queue`(PRD) | **확인 필요**: 지금은 화면이 계산(`consult_home.html`·`farm_detail.html`의 `PRIORITY`), `contact_queue`에 저장하는 코드는 팀원이 작업 중 |
+| 연락 우선순위 점수 | 위험 단계(관심 10·주의 30·경보 40) + 도달 임박((7 − 도달일) × 2) + 보장 공백(미가입·만료 25, 특약 없음·보장 없는 상품 20, 확인 필요 15, 부담보 10) + 지금 가입 가능 20 + 어종 한계 수온 도달 10. 어가 점수 = 가장 급한 어종의 점수 | 점수 높은 순. 목록 사유: 주의 이상 · 관심+공식 특보 · 관심+보장 공백+이번 달 판매 마감 | 가중치 `priority_weights`, 결과 `contact_queue` | `contact_priority.py` (`GET /api/consult/priority`로 화면에 제공, `POST /api/consult/priority/refresh`로 `contact_queue` 저장 · n8n 예약 실행). 서버 연결 실패 시에만 화면 `PRIORITY`로 같은 규칙 계산 |
 
 ## 4. 저장소 안 데이터 파일
 

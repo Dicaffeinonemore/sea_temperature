@@ -54,7 +54,7 @@ AI(언어 모델)와 팀원이 코드를 고치기 전에 담당자를 확인하
 | `customer_api.py`, `customer_schemas.py`, `customer_security.py`, `species_catalog.py`, `farm_detail_query_cache.py` | Dicaffeinonemore | |
 | `dashboard.py` | **공동** · 주 Dicaffeinonemore (Dicaffeinonemore 70% · seungwonyyii-ai 21%) | |
 | `consult.py` | **공동** · 주 seungwonyyii-ai (seungwonyyii-ai 60% · Dicaffeinonemore 36%) | |
-| `consult_stt.py` | seungwonyyii-ai | |
+| `consult_stt.py`, `contact_priority.py` | seungwonyyii-ai | |
 | `farm_detail.py`, `insurance.py` | sooui9 | |
 | `gov_support.py`, `n8n_bridge.py`, `data/damage/*.csv` | agh3724 | |
 
@@ -69,6 +69,7 @@ AI(언어 모델)와 팀원이 코드를 고치기 전에 담당자를 확인하
 | 파일 | 담당 | 확인 |
 |---|---|---|
 | `backend/database/*.sql` | Dicaffeinonemore | |
+| `backend/database/07_priority_weights.sql` | seungwonyyii-ai | |
 | `backend/run_tests.py` | Dicaffeinonemore | |
 | `backend/backend/tests/test_api.py`, `test_db.py` | LSH | |
 | `backend/backend/tests/test_dashboard.py` | UseUpname | |
