@@ -12,7 +12,7 @@
 | ROMS 7일 수온 예측 · 국립수산과학원(NIFS) | API 수집 | 경남 연안 7개 지역, 일 최고·평균·최저 ℃ | 1~7일 예측, 위험 단계 판정 | 수집은 저장소 밖(n8n·DB). DB `public.example_region_daily` → `farm_detail.py`, `forecast_21d` 뷰 → `dashboard.py` |
 | ECMWF 해양 예측 · Open-Meteo | API 수집 | 7개 지역, 일 최고·평균·최저 ℃ | 8~21일 전망 (참고값) | DB `public.example_region_daily_om`, 보정값 `public.om_region_bias` |
 | 오늘 실측 수온 · 국립수산과학원 RISA | API 실시간 조회 | 관측소별 ℃ | 어가 상세 '오늘 수온' (실패 시 오늘 ROMS 예측값) | `farm_detail.py`가 화면 요청 때 직접 조회 (DB 저장 안 함) |
-| 양식수산물재해보험 약관·상품설명서 · 수협 | PDF → AI 구조화 | 상품·문서 버전별, 원문 근거(`source_evidence`) 포함 (PRD 기준 · 백엔드 코드에서는 쓰지 않음, 확인 필요) | 계약별 보장 판정, 특약 유무 안내 | DB `insurance.insurance_products`·`insurance_coverages`·`insurance_map`. 보험금 산정 규칙 원본 `backend/aqua-claim-api/data/calc_rules.csv` |
+| 양식수산물재해보험 약관·상품설명서 · 수협 | PDF → AI 구조화 | 상품·문서 버전별, 원문 근거(`source_evidence`) 포함 (원문 근거는 구조화 원본 데이터에만 있고, 백엔드는 가공한 결과 테이블만 사용) | 계약별 보장 판정, 특약 유무 안내 | DB `insurance.insurance_products`·`insurance_coverages`·`insurance_map`. 보험금 산정 규칙 원본 `backend/aqua-claim-api/data/calc_rules.csv` |
 | 보험 적용 가격표 · 수협 공시 | CSV | 공시월·어종·지역·크기·월별, 원 | 피해 정도별 예상 보험금 계산 | `backend/aqua-claim-api/data/applied_price_r7_r8.csv`, `applied_price_formula.csv` → DB `insurance.insurance_applied_price`, `insurance_applied_price_formula` |
 | 시군·세부지역 좌표 · 공공 자료 | CSV | 경남 연안 시군·세부지역, WGS84 | 담당 지역 선택, 예측 지역과 어가 연결 | DB `public.sigungu_area_coordinates` |
 | 정부 지원(재해복구비·정책자금) · 해양수산부 등 | CSV (직접 정리) | 제도·품목별 단가(원)·피해율별 상환연기 | 어가 상세 '정부 지원금' | `backend/backend/data/damage/*.csv` 4개 → `gov_support.py` (DB 미사용) |
