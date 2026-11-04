@@ -19,7 +19,7 @@ The team shares one PostgreSQL server (`nifs_ocean`, see `LAN_SETUP.md`). A wron
 - Seed SQL in `backend/database/` must be idempotent (re-running keeps existing IDs), like `02_abalone_species.sql`.
 
 ## Code
-- Follow the existing module split: router and logic per feature (`consult.py`, `farm_detail.py`, `insurance.py`), schemas in `*_schemas.py`, settings only in `config.py`.
+- Follow the existing module split: router and logic per feature (`consult.py`, `farm_detail.py`, `gov_support.py`), schemas in `*_schemas.py`, settings only in `config.py`.
 - Parameterized queries only. Keep `db_statement_timeout_ms` limits.
 - Empty results are not failures: return an empty list and let the screen show "확인된 정보가 아직 없어요".
 

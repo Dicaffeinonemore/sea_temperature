@@ -25,14 +25,18 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Query
 from pydantic import BaseModel
 
-from backend.insurance import species_terms
-
 router = APIRouter(prefix="/api/v1/gov-support", tags=["정부지원금"])
 
 HEAT = r"고수온|저수온|이상\s*수온"   # 이상수온 피해(고수온·저수온) 지원 제도만 남김
 # 품종 별칭 (가두리 어류는 '어류'·'가두리'로도 찾음)
 ALIAS = {"우럭": "조피볼락", "광어": "넙치", "우렁쉥이": "멍게", "참굴": "굴", "참전복": "전복"}
 CAGE_FISH = {"조피볼락", "참돔", "돌돔", "감성돔", "농어", "점농어", "쥐치", "말쥐치", "숭어", "가숭어", "능성어", "방어", "넙치", "강도다리"}
+
+
+def species_terms(species: str) -> list[str]:
+    """'조피볼락 (우럭)' → ['조피볼락', '우럭']: 괄호 밖 이름과 괄호 안 별칭 모두로 찾는다."""
+    terms = [species.split("(")[0], *re.findall(r"\(([^)]*)\)", species)]
+    return [t.strip() for t in terms if t.strip()]
 
 
 def species_words(species: str | None) -> list[str]:
