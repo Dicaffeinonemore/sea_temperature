@@ -34,3 +34,6 @@ Thumbs.db
 
 # call_recording files
 **/data/call_recordings/
+
+# Personal notes (real server IP etc.)
+*.local.md

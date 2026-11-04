@@ -1,10 +1,10 @@
 # 내부망 공용 PostgreSQL
 
-같은 공유기/내부망에 있는 팀원들이 서버 PC 한 대의 DB에 접속합니다. 현재 서버는 `192.168.0.96:5432`, DB는 `nifs_ocean`, 내부망은 `192.168.0.0/24`입니다. 팀원은 PostgreSQL 서버를 설치하거나 DB를 별도로 만들 필요가 없습니다.
+같은 공유기/내부망에 있는 팀원들이 서버 PC 한 대의 DB에 접속합니다. 현재 서버는 `<서버PC 내부 IP>:5432`, DB는 `nifs_ocean`, 내부망은 `<내부망 대역>`입니다. 팀원은 PostgreSQL 서버를 설치하거나 DB를 별도로 만들 필요가 없습니다.
 
 ```text
 팀원 PC 1 (DBeaver / IDE / FastAPI) ─┐
-                                  ├─ PostgreSQL 192.168.0.96:5432/nifs_ocean
+                                  ├─ PostgreSQL <서버PC 내부 IP>:5432/nifs_ocean
 팀원 PC 2 (DBeaver / IDE / FastAPI) ─┘       서버 PC
 ```
 
@@ -29,19 +29,19 @@
 
 ```powershell
 # 미리 보기: 실제 변경 없음
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/enable-lan.ps1 -ServerAddress 192.168.0.96 -AllowedSubnet 192.168.0.0/24 -WhatIf
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/enable-lan.ps1 -ServerAddress <서버PC 내부 IP> -AllowedSubnet <내부망 대역> -WhatIf
 
 # 실제 적용
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/enable-lan.ps1 -ServerAddress 192.168.0.96 -AllowedSubnet 192.168.0.0/24
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/enable-lan.ps1 -ServerAddress <서버PC 내부 IP> -AllowedSubnet <내부망 대역>
 ```
 
 스크립트는 기존 `pg_hba.conf`를 같은 위치에 백업하고 다음 규칙을 추가합니다. Windows에서는 새 연결부터 적용됩니다. [PostgreSQL HBA 문서](https://www.postgresql.org/docs/18/auth-pg-hba-conf.html)
 
 ```text
-host nifs_ocean nifs_team1,nifs_team2 192.168.0.0/24 scram-sha-256
+host nifs_ocean nifs_team1,nifs_team2 <내부망 대역> scram-sha-256
 ```
 
-방화벽 규칙 `NIFS-PostgreSQL-LAN`은 개인/도메인 네트워크에서 내부망 `192.168.0.0/24`가 서버 `192.168.0.96`의 TCP 5432로 접속하도록 허용합니다. 신뢰하는 팀 공유기인데 Windows 네트워크 프로필이 공용이라면 설정에서 개인으로 변경하세요. 기존 다른 HBA/방화벽 규칙을 없애지는 않으므로 이미 더 넓은 허용 규칙이 있으면 별도로 검토해야 합니다.
+방화벽 규칙 `NIFS-PostgreSQL-LAN`은 개인/도메인 네트워크에서 내부망 `<내부망 대역>`가 서버 `<서버PC 내부 IP>`의 TCP 5432로 접속하도록 허용합니다. 신뢰하는 팀 공유기인데 Windows 네트워크 프로필이 공용이라면 설정에서 개인으로 변경하세요. 기존 다른 HBA/방화벽 규칙을 없애지는 않으므로 이미 더 넓은 허용 규칙이 있으면 별도로 검토해야 합니다.
 
 ## 팀원 PC
 
@@ -49,7 +49,7 @@ DBeaver의 새 PostgreSQL 연결 또는 IDE의 DB 연결 기능에 아래 값을
 
 | 항목 | 값 |
 | --- | --- |
-| 호스트 | `192.168.0.96` |
+| 호스트 | `<서버PC 내부 IP>` |
 | 포트 | `5432` |
 | DB | `nifs_ocean` |
 | 사용자 | `nifs_team1` 또는 `nifs_team2` |
@@ -70,7 +70,7 @@ FastAPI는 팀원 PC에서 실행되지만 데이터는 공용 DB에서 조회�
 팀원 PC에서 아래 명령의 `TcpTestSucceeded=True`를 확인하고 DBeaver의 Test Connection 또는 `check-db`를 실행하세요.
 
 ```powershell
-Test-NetConnection 192.168.0.96 -Port 5432
+Test-NetConnection <서버PC 내부 IP> -Port 5432
 ```
 
 - 포트 연결 실패: 서버 전원/절전, IP, 방화벽, 네트워크 프로필, 게스트 Wi-Fi의 기기 간 격리를 확인합니다.

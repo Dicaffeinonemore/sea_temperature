@@ -75,10 +75,10 @@
 ### 4. `LAN_SETUP.md`: 팀 공용 DB 접속
 
 - 같은 공유기(내부망)에 있는 팀원은 서버 PC 한 대의 DB에 접속합니다. 각자 PostgreSQL을 설치할 필요가 없습니다.
-- 접속 정보: 호스트 `192.168.0.96`, 포트 `5432`, DB `nifs_ocean`, 사용자는 본인 팀원 계정(`nifs_team1`·`nifs_team2`)입니다.
+- 접속 정보: 호스트 `<서버PC 내부 IP>`, 포트 `5432`, DB `nifs_ocean`, 사용자는 본인 팀원 계정(`nifs_team1`·`nifs_team2`)입니다.
 - 기본 권한은 **조회만** 가능합니다. 데이터 쓰기 권한은 계정을 만들 때 따로 받아야 합니다.
 - 팀원 PC에서 FastAPI를 돌리려면 `team.env.example`을 `.env`로 복사하고 본인 계정과 비밀번호를 적습니다.
-- 접속 확인: `Test-NetConnection 192.168.0.96 -Port 5432`의 결과가 `TcpTestSucceeded=True`면 됩니다.
+- 접속 확인: `Test-NetConnection <서버PC 내부 IP> -Port 5432`의 결과가 `TcpTestSucceeded=True`면 됩니다.
 - 서버 PC가 켜져 있어야 하고, 팀원은 `init-db`나 백업 복원을 실행하지 않습니다.
 
 ## 수온 위험 어가 관리 시스템
