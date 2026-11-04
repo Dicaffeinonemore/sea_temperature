@@ -45,7 +45,7 @@ AI(언어 모델)와 팀원이 코드를 고치기 전에 담당자를 확인하
 | 파일 | 담당 | 확인 |
 |---|---|---|
 | `main.py` | **공동** (LSH 39% · sooui9 24% · Dicaffeinonemore 22% · seungwonyyii-ai 10%) | |
-| `api.py`, `routes.py`, `schemas.py`, `team.py`, `config.py`, `manage.py`, `__init__.py` | LSH | |
+| `routes.py`, `schemas.py`, `team.py`, `config.py`, `manage.py`, `__init__.py` | LSH | |
 | `requirements-dev.txt`, `requirements-lock.txt` | LSH | |
 | `requirements.txt` | **공동** (Dicaffeinonemore 58% · LSH 25% · seungwonyyii-ai 17%) | |
 | `db.py` | **공동** (Dicaffeinonemore 65% · LSH 35%) | |
@@ -93,6 +93,7 @@ AI(언어 모델)와 팀원이 코드를 고치기 전에 담당자를 확인하
 | `archive/insurance_api.py` | tpfl1510-maker | |
 | `archive/skills-lock.json` | LSH | |
 | `archive/backend/backend/support.py` | sooui9 | |
+| `archive/backend/backend/api.py` | LSH | |
 
 ## 문서 · 규칙
 

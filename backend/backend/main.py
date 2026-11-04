@@ -15,7 +15,6 @@ from backend.db import get_db
 
 # ----- 라우터 (화면별로 묶음) -----
 # 수온·적조 조회 (기존)
-from backend.api import router as api_router
 from backend.routes import router
 from backend.dashboard import router as dashboard_router
 # 상담 홈 · 고객 상담 현황
@@ -35,7 +34,7 @@ app = FastAPI(
     version="0.1.0",
     description="Streamlit에서 사용할 수온·적조 조회 API. 시각은 한국시간(Asia/Seoul)입니다.",
 )
-for _r in (router, api_router, dashboard_router,
+for _r in (router, dashboard_router,
            consult_router, priority_router,
            farm_detail_router, gov_support_router, customer_router):
     app.include_router(_r)
