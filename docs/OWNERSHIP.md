@@ -55,7 +55,7 @@ AI(언어 모델)와 팀원이 코드를 고치기 전에 담당자를 확인하
 | `dashboard.py` | **공동** · 주 Dicaffeinonemore (Dicaffeinonemore 70% · seungwonyyii-ai 21%) | |
 | `consult.py` | **공동** · 주 seungwonyyii-ai (seungwonyyii-ai 60% · Dicaffeinonemore 36%) | |
 | `consult_stt.py`, `contact_priority.py` | seungwonyyii-ai | |
-| `farm_detail.py`, `insurance.py` | sooui9 | |
+| `farm_detail.py` | sooui9 | |
 | `gov_support.py`, `n8n_bridge.py`, `data/damage/*.csv` | agh3724 | |
 
 ## 보험금 계산 (`backend/aqua-claim-api/`)
@@ -94,6 +94,7 @@ AI(언어 모델)와 팀원이 코드를 고치기 전에 담당자를 확인하
 | `archive/skills-lock.json` | LSH | |
 | `archive/backend/backend/support.py` | sooui9 | |
 | `archive/backend/backend/api.py` | LSH | |
+| `archive/backend/backend/insurance.py` | sooui9 | |
 
 ## 문서 · 규칙
 

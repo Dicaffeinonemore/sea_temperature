@@ -22,7 +22,6 @@ from backend.consult import router as consult_router                 # 어가 �
 from backend.contact_priority import router as priority_router       # 연락 우선순위 · 상담 홈 지역 수온
 # 어가 상세
 from backend.farm_detail import router as farm_detail_router         # 어가 상세 · 예상 보험금
-from backend.insurance import router as insurance_router
 from backend.gov_support import router as gov_support_router
 # 고객 등록 · 자동화
 from backend.customer_api import router as customer_router
@@ -93,8 +92,7 @@ def database_health(db: Connection = Depends(get_db)):
     return {"status": "ok", "database": "connected", "schema": "ready"}
 
 
-# 아래 두 라우터는 기존처럼 /health 정의 뒤에 붙임 (같은 경로가 있어도 위 상태 확인이 우선)
-app.include_router(insurance_router)
+# 아래 라우터는 기존처럼 /health 정의 뒤에 붙임 (같은 경로가 있어도 위 상태 확인이 우선)
 app.include_router(n8n_router)
 # --- 배포용: 화면 4개를 이 백엔드에서 같이 내보냄 (Render 등 한 주소로 실행) ---
 # 폴더 전체를 공개하면 backend/backend/.env 까지 열리므로 파일만 골라서 지정합니다.
