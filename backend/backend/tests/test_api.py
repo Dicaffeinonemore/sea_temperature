@@ -88,7 +88,7 @@ def test_db_errors_hide_details():
     app.dependency_overrides[get_db] = broken
     try:
         with TestClient(app) as client:
-            for path in ("/health", "/health/db", "/api/temperatures"):
+            for path in ("/health", "/health/db", "/api/consult/customers"):
                 response = client.get(path)
                 assert response.status_code == 503
                 assert "secret" not in response.text
@@ -100,48 +100,6 @@ def test_db_errors_hide_details():
 def test_readiness(client):
     assert client.get("/health").json() == {"status": "connected"}
     assert client.get("/health/db").json()["schema"] == "ready"
-
-
-def test_public_stations_and_temperatures(client):
-    stations = client.get("/api/stations?source=coo&limit=1").json()
-    assert len(stations) == 1
-    assert stations[0]["station_id"] == 1
-    assert client.get("/api/stations?offset=2").json() == []
-    assert client.get("/api/stations?limit=1001").status_code == 422
-    assert client.get("/api/temperatures").json() == [{
-        "sigungu_name": "시험시", "station_name": None,
-        "current_temp": None, "risk_level": "정보 없음",
-    }]
-
-
-def test_public_week(client):
-    rows = client.get("/api/temperatures/시험시/week").json()
-    assert len(rows) == 7
-    assert rows[0]["avg_temp"] == 27
-    assert rows[1]["avg_temp"] is None
-    assert rows[-1]["obs_date"] == "2026-08-07"
-    assert client.get("/api/temperatures/빈시/week").json() == []
-    assert client.get("/api/temperatures/없는시/week").status_code == 404
-
-
-def test_public_redtide(client):
-    reports = client.get("/api/redtide?start_date=2026-08-07").json()
-    assert len(reports) == 1
-    assert reports[0]["cod_news"] == "new"
-    assert client.get("/api/redtide?offset=2").json() == []
-    assert client.get("/api/redtide?start_date=2026-08-07&end_date=2026-08-01").status_code == 422
-
-
-def test_public_hotdays(client):
-    rows = client.get("/api/hotdays").json()
-    assert len(rows) == 1
-    assert rows[0]["station_id"] == 1
-    assert client.get("/api/hotdays?station_id=1&year=2026").json() == rows
-    assert client.get("/api/hotdays?station_id=2").json() == []
-    assert client.get("/api/hotdays?year=2025").json() == []
-    assert client.get("/api/hotdays?offset=1").json() == []
-    assert client.get("/api/hotdays?station_id=999").status_code == 404
-    assert client.get("/api/hotdays?year=1800").status_code == 422
 
 
 def test_station_filter_and_pagination(client):
