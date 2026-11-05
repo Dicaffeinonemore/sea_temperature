@@ -757,6 +757,8 @@ function loadLocal(){ try{ const s = localStorage.getItem(KEY); if(s) return JSO
 function save(){ if(mode !== 'sample') return; try{ localStorage.setItem(KEY, JSON.stringify(farms)); }catch(e){} }
 let farms = [];
 
+// 이름은 성만 보이게 가려요 (예: 배정숙 → 배○○) · 상담 현황 · 어가 상세와 같은 규칙
+const maskName = n => n ? n[0] + '○'.repeat(Math.max(1, [...n].length - 1)) : n;
 function toFarms(customers){
   const statusKeys = Object.fromEntries(Object.entries(STATUS_DB).map(([key, value]) => [value, key]));
   const coverageKeys = {none:'none', no_rider:'norider', covered:'full'};
@@ -817,6 +819,7 @@ async function loadFarms(){
   try{
     const [rg, fm] = await Promise.all([getJSON(ENDPOINTS.regions), getJSON(ENDPOINTS.farms)]);
     const loaded = toFarms(fm);
+    loaded.forEach(f => { f.name = maskName(f.name); });
     applyRegions(rg); farms = await withPriority(loaded); setMode(true);
   }catch(e){
     applyRegions(SAMPLE_REGIONS_FOR_MODE()); farms = loadLocal() || withIds(structuredClone(SAMPLE_FARMS)); setMode(false, e);
